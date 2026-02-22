@@ -60,7 +60,7 @@
     "@vitest/coverage-v8": "^2.0.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
-    "eslint-plugin-solid": "^0.13.0",
+    "eslint-plugin-solid": "^0.14.5",
     "jsdom": "^28.1.0",
     "postcss": "^8.4.32",
     "postcss-import": "^16.1.1",
