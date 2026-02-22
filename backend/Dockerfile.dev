@@ -1,0 +1,26 @@
+# ==============================================================================
+# Golid Backend - Development Dockerfile
+# Hot reload with Air
+# ==============================================================================
+
+FROM golang:1.26-alpine
+
+# Install development tools
+RUN apk add --no-cache git make curl
+
+# Install Air for hot reload (pinned to compatible version)
+RUN go install github.com/air-verse/air@v1.61.0
+
+# Install golang-migrate for database migrations
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.18.1
+
+# Install sqlc for code generation
+RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0
+
+WORKDIR /app
+
+# Expose port
+EXPOSE 8080
+
+# Start with Air hot reload (source mounted via volumes)
+CMD ["sh", "-c", "go mod download && air -c .air.toml"]

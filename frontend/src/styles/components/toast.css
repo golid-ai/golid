@@ -1,0 +1,64 @@
+/* ============================================================================
+   TOAST & SNACKBAR ANIMATIONS
+   Fly transition: y: -20, duration: 400
+   ============================================================================ */
+
+@keyframes toast-fly-in {
+	from {
+		transform: translateY(-20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes toast-fly-out {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateY(-20px);
+		opacity: 0;
+	}
+}
+
+@keyframes snack-fly-in {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes snack-fly-out {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+}
+
+.toast-enter {
+	animation: toast-fly-in 400ms ease-out forwards;
+}
+
+.toast-exit {
+	animation: toast-fly-out 400ms ease-in forwards;
+}
+
+.snack-enter {
+	animation: snack-fly-in 400ms ease-out forwards;
+}
+
+.snack-exit {
+	animation: snack-fly-out 400ms ease-in forwards;
+}

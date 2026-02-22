@@ -1,0 +1,253 @@
+---
+description: Patterns for SolidJS route pages — data fetching, state, modals, auth
+globs: frontend/src/routes/**/*.tsx
+alwaysApply: false
+---
+
+# SolidJS Page Patterns
+
+Follow the established patterns in `dashboard/index.tsx` and `settings/index.tsx`.
+
+## Data Fetching
+
+**Always use `onMount` + `createSignal` + `alive` guard + `batch`.** This is the established pattern across all pages. Do not use `createResource` — it causes orphaned computation warnings on route transitions and triggers route-level Suspense when inside conditional components.
+
+> `createAsync` + `query` from `@solidjs/router` is the official SolidJS recommendation going forward (Solid 2.0). Not yet adopted in this project — use the signals pattern for consistency.
+
+```tsx
+// STANDARD — used on all pages
+const [data, setData] = createSignal<MyType[]>([]);
+const [loading, setLoading] = createSignal(true);
+const [error, setError] = createSignal("");
+
+let alive = true;
+onCleanup(() => {
+  alive = false;
+});
+
+const fetchData = async () => {
+  setLoading(true);
+  setError("");
+  try {
+    const result = await myApi.list();
+    if (!alive) return;
+    batch(() => {
+      setData(result);
+      setLoading(false);
+    });
+  } catch (err) {
+    if (!alive) return;
+    batch(() => {
+      setError(getErrorMessage(err, "Failed to load"));
+      setLoading(false);
+    });
+  }
+};
+
+onMount(() => {
+  fetchData();
+});
+```
+
+## Async Data Pattern (batch + defer + onMount)
+
+Three rules that MUST be used together for any page that fetches data:
+
+**1. `batch()` signal updates** — wrap `setData` + `setLoading(false)` in `batch()` so they update atomically. Without this, nested reactive scopes resolve in intermediate states during route transitions, creating computations outside the reactive root.
+
+**2. `onMount` for initial fetch** — never rely on `createEffect` for the first fetch.
+
+**3. `defer: true` on `createEffect(on(...))` for reactive refetches** — prevents the effect from firing synchronously during mount (which overlaps with route transitions).
+
+**Exception: Auth guards** use `on()` without `defer` — they must fire synchronously to prevent flash of unauthorized content. SSR middleware handles the server-side redirect; the client-side effect is a safety net for SPA navigation. See `routes/(private).tsx`.
+
+```tsx
+import { batch, onMount, createEffect, on } from "solid-js";
+
+const fetchData = async () => {
+  setLoading(true);
+  setError("");
+  try {
+    const result = await api.list({ page: page() });
+    if (!alive) return;
+    batch(() => {
+      // ← atomic update
+      setData(result);
+      setLoading(false);
+    });
+  } catch (err) {
+    if (!alive) return;
+    batch(() => {
+      setError(getErrorMessage(err, "Failed to load"));
+      setLoading(false);
+    });
+  }
+};
+
+onMount(() => {
+  fetchData();
+}); // ← initial fetch
+createEffect(
+  on(
+    () => [filter(), page()] as const,
+    () => {
+      fetchData();
+    },
+    { defer: true }, // ← skip synchronous initial run
+  ),
+);
+```
+
+## Alive Guard
+
+Every component with async operations needs the cleanup guard:
+
+```tsx
+let alive = true;
+onCleanup(() => {
+  alive = false;
+});
+```
+
+Check `if (!alive) return;` before every signal setter after an `await`.
+
+````
+
+## Signal-Driven Modals
+
+Detail views within list pages use a signal, not a sub-route:
+
+```tsx
+const [activeItem, setActiveItem] = createSignal<Item | null>(null);
+// Open: setActiveItem(item)
+// Close: setActiveItem(null)
+
+<Show when={activeItem()}>
+  {(item) => <DetailModal item={item()} onClose={() => setActiveItem(null)} />}
+</Show>
+````
+
+## Destructive Actions
+
+Never `window.confirm()`. Always use `DestructiveModal`:
+
+```tsx
+const [deleteTarget, setDeleteTarget] = createSignal(false);
+// ...
+<DestructiveModal
+  open={deleteTarget()}
+  onOpenChange={(open) => {
+    if (!open) setDeleteTarget(false);
+  }}
+  onConfirm={handleDelete}
+  title="Delete item?"
+  message="This action cannot be undone."
+  confirmText="Delete"
+/>;
+```
+
+## Page Titles
+
+**Never put reactive expressions directly inside `<Title>`.** The `@solidjs/meta` `<Title>` component creates an internal computation to track children. During route transitions, this computation is re-evaluated outside the component's reactive root, causing "computations created outside createRoot" warnings.
+
+```tsx
+// BAD — reactive ternary inside <Title> leaks during route transition
+<Title>{userType() === "admin" ? "Manage Items" : "Items"} | My App</Title>
+
+// GOOD — pre-compute as a memo, pass resolved string
+const pageTitle = createMemo(() =>
+  `${userType() === "admin" ? "Manage Items" : "Items"} | My App`
+);
+// ...
+<Title>{pageTitle()}</Title>
+
+// ALSO GOOD — static string (no reactive expression)
+<Title>Dashboard | My App</Title>
+```
+
+## Auth & Routing
+
+- Add every new private route to `PRIVATE_ROUTES` in `frontend/src/lib/constants.ts`.
+- Redirect wrong user types at the top of the component:
+
+```tsx
+if (auth.user && auth.user.type !== "admin") {
+  navigate("/dashboard", { replace: true });
+  return null;
+}
+```
+
+## Content States: Switch/Match, NOT nested Show
+
+**NEVER nest `<Show>` for loading/error/empty/data states.** Nested `<Show>` creates stacked reactive scopes that leak computations during route transitions ("computations created outside createRoot" warning).
+
+```tsx
+// BAD — 4 nested reactive scopes, leaks on route transition
+<Show when={!loading()} fallback={<Spinner />}>
+  <Show when={error()}><ErrorCard /></Show>
+  <Show when={!error() && items().length > 0} fallback={
+    <Show when={!error()}><EmptyState /></Show>
+  }>
+    <For each={items()}>{(item) => <Card />}</For>
+  </Show>
+</Show>
+
+// GOOD — flat, one active scope at a time
+<Switch>
+  <Match when={loading()}><Spinner /></Match>
+  <Match when={error()}><ErrorCard /></Match>
+  <Match when={items().length === 0}><EmptyState /></Match>
+  <Match when={items().length > 0}>
+    <For each={items()}>{(item) => <Card />}</For>
+  </Match>
+</Switch>
+```
+
+Import: `import { Switch, Match } from "solid-js"`
+
+Reference: Dashboard and Settings pages use flat `Switch/Match` for content states.
+
+## List Page Structure
+
+1. Header (title + subtitle + primary action button)
+2. Summary bar (optional — stat cards)
+3. Filter tabs (status-based, using `createSignal`)
+4. Content (`Switch/Match` for loading/error/empty/data states)
+5. Empty states (contextual: "no items yet" vs "no items matching filter")
+6. Pagination (if applicable)
+
+## Consistent Styling
+
+- Section cards: follow the `Section` component pattern from settings/index.tsx
+- Status/priority chips: use `<Chip variant="..." size="xs">`
+- Page container: `p-6 sm:p-10 max-w-[1400px] mx-auto w-full`
+- Headers: `text-3xl font-bold font-montserrat text-foreground`
+
+## Imports and Components
+
+Use the component barrel: `import { Button, Chip, Icon, Card, Modal, DestructiveModal, Select, SelectItem } from "~/components"`
+
+**Never use raw HTML elements when a component exists.** Check `frontend/src/components/index.ts` for available exports:
+
+- `<select>` → `<Select>` + `<SelectItem>`
+- `<input>` → `<Input>`
+- `<textarea>` → `<Textarea>`
+- `confirm()` → `<DestructiveModal>`
+
+If a needed component doesn't exist, ask before building a raw HTML fallback.
+
+## Avatars and Logos
+
+Use the `Avatar` component from `~/components/atoms/Avatar`. Pass `src` (URL or empty), `alt` (name for initials fallback), and `size`.
+
+## Modal Content
+
+The global `Modal` component has `max-h-[90vh] overflow-y-auto`. For modals with embedded content (iframes, long forms):
+
+- **Iframe modals:** Set explicit height with `calc(80vh - 160px)` and `max-height: 700px`. Add a Cancel/Close button below the iframe.
+- **Form modals:** Content scrolls automatically within the 90vh cap.
+- **Never use `centered` prop** for tall modals — it vertically centers which can push content off-screen.
+
+## Page Container Width
+
+All private route pages use `max-w-[1400px] mx-auto` for the main container. Settings uses `max-w-3xl`. Be consistent with the module type.

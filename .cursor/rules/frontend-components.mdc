@@ -1,0 +1,138 @@
+---
+description: Patterns for creating and maintaining SolidJS components (atoms, molecules, organisms)
+globs: frontend/src/components/**/*.tsx,frontend/src/components/index.ts
+alwaysApply: false
+---
+
+# Component Creation Patterns
+
+Follow the established patterns from `Button.tsx` (atom) and `Modal.tsx` (molecule).
+
+## Atom vs Molecule vs Organism
+
+- **Atom**: No dependencies on other components. Self-contained. (Button, Input, Chip, Avatar, StarRating)
+- **Molecule**: Composes atoms. (Card, Modal, Tabs, Dropzone, Select, DestructiveModal)
+- **Organism**: Composes molecules + atoms into a page section. (Navbar, Sidebar, Footer)
+
+## File Structure
+
+```
+components/
+├── atoms/
+│   └── NewComponent/
+│       └── NewComponent.tsx
+├── molecules/
+│   └── NewComponent/
+│       └── NewComponent.tsx
+├── organisms/
+│   └── NewComponent.tsx
+└── index.ts                    ← MUST export here
+```
+
+## Component Template
+
+```tsx
+import { type Component, splitProps, Show } from "solid-js";
+import { cn } from "~/lib/utils";
+
+export type NewComponentSize = "sm" | "md" | "lg";
+
+export interface NewComponentProps {
+  size?: NewComponentSize;
+  class?: string;
+  children?: JSX.Element;
+}
+
+const sizeStyles: Record<NewComponentSize, string> = {
+  sm: "text-sm px-2 py-1",
+  md: "text-base px-3 py-2",
+  lg: "text-lg px-4 py-3",
+};
+
+export const NewComponent: Component<NewComponentProps> = (props) => {
+  const [local, rest] = splitProps(props, ["size", "class", "children"]);
+  const size = () => local.size ?? "md";
+
+  return (
+    <div class={cn(sizeStyles[size()], local.class)} {...rest}>
+      {local.children}
+    </div>
+  );
+};
+
+export default NewComponent;
+```
+
+## Key Rules
+
+### Styling
+- Use **CSS variables** from `styles/theme.css` for colors — never hardcode hex values
+- Use `cn()` (from `~/lib/utils`) for conditional class merging
+- Support dark mode automatically via CSS variables (`text-foreground`, `bg-background`, etc.)
+- Size variants (`sm`, `md`, `lg`) when the component has variable sizing
+
+### Accessibility
+- Interactive elements need `aria-label` or visible label
+- Keyboard navigation: `onKeyDown` for Enter/Space on custom buttons
+- Focus management: `tabindex`, `focus-visible:` styles
+- Screen reader text: `<span class="sr-only">` for icon-only buttons
+
+### Props
+- Always export the props interface
+- Use `splitProps` to separate local props from spread props
+- Optional props have sensible defaults
+- `class?: string` for style overrides
+
+### Barrel Export
+**Always add to `frontend/src/components/index.ts`:**
+
+```tsx
+export { NewComponent, type NewComponentProps } from "./atoms/NewComponent/NewComponent";
+```
+
+### Lazy Loading (Browser-Only Components)
+
+Components that use browser APIs (Three.js, WebRTC, canvas) must be lazy-loaded with `<Suspense>`:
+
+```tsx
+// In the CONSUMER file (e.g., a section or page):
+import { lazy, Suspense } from "solid-js";
+const Canvas3D = lazy(() => import("~/components/molecules/Canvas3D/Canvas3D")
+  .then(m => ({ default: m.Canvas3D })));
+
+// Usage — Suspense is REQUIRED or the component silently renders nothing:
+<Suspense>
+  <Canvas3D />
+</Suspense>
+```
+
+Inside the lazy component, if `onMount` appends DOM nodes (e.g., `containerRef.appendChild(canvas)`), the return JSX **must include a static wrapper div** — not just a `Switch/Match`. Without a static element, `onMount` may not fire:
+
+```tsx
+// GOOD — static div always in DOM, conditional content inside
+<div ref={containerRef} class="relative w-full h-full">
+  <div class="absolute inset-0 pointer-events-none"
+    style={{ display: loading() || error() ? undefined : "none" }}>
+    <Switch>
+      <Match when={loading()}><Spinner /></Match>
+      <Match when={error()}><ErrorText /></Match>
+    </Switch>
+  </div>
+</div>
+
+// BAD — Switch as only child can prevent onMount from firing
+<div ref={containerRef}>
+  <Switch>
+    <Match when={loading()}>...</Match>
+  </Switch>
+</div>
+```
+
+Never call `onCleanup()` after an `await` — use mutable refs cleaned up in the synchronous `onCleanup` registered during component creation.
+
+### Do NOT
+- Import from other atoms inside an atom (that makes it a molecule)
+- Use `createSignal` for internal state unless the component is interactive (forms, toggles)
+- Use inline styles — use Tailwind classes
+- Create a raw HTML element when a component exists (`<select>` → use `<Select>`, `confirm()` → use `<DestructiveModal>`)
+- Use `lazy()` without a `<Suspense>` boundary — it silently renders nothing

@@ -1,0 +1,66 @@
+# ==============================================================================
+# Cloud Run Service Configuration - Backend API (REFERENCE TEMPLATE)
+# This file documents the desired service configuration but is NOT used by
+# deploy.sh, which deploys via gcloud run deploy with equivalent flags.
+# To apply directly: gcloud run services replace infra/backend-service.yaml
+# ==============================================================================
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: golid-api
+  labels:
+    app: golid
+    component: api
+  annotations:
+    run.googleapis.com/description: "Golid API backend"
+    run.googleapis.com/ingress: internal
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/vpc-access-connector: projects/PROJECT_ID/locations/REGION/connectors/golid-vpc
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      serviceAccountName: golid-api@PROJECT_ID.iam.gserviceaccount.com
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/golid/api:TAG
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          env:
+            - name: ENVIRONMENT
+              value: "ENV"
+            - name: DATABASE_URL
+              value: "CONSTRUCTED_AT_DEPLOY_TIME"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: golid-jwt-secret-ENV
+                  key: latest
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+  traffic:
+    - percent: 100
+      latestRevision: true

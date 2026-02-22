@@ -1,0 +1,489 @@
+openapi: 3.1.0
+info:
+  title: Golid API
+  version: 1.0.0
+  description: Go + SolidJS framework API. All endpoints prefixed with /api/v1.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+security: []
+
+tags:
+  - name: Auth
+    description: Authentication, registration, password management
+  - name: Users
+    description: User profile operations
+  - name: Features
+    description: Feature flag management
+  - name: SSE
+    description: Server-Sent Events real-time streaming
+
+paths:
+  # ===========================================================================
+  # AUTH
+  # ===========================================================================
+  /auth/register:
+    post:
+      summary: Create a new account
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, first_name, last_name]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                first_name: { type: string }
+                last_name: { type: string }
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AppError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/login:
+    post:
+      summary: Authenticate a user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        "200":
+          description: Tokens refreshed (old refresh token revoked)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/logout:
+    post:
+      summary: Revoke all refresh tokens for the user
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/password:
+    put:
+      summary: Change password (authenticated)
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Password changed, all refresh tokens revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/forgot-password:
+    post:
+      summary: Request a password reset email
+      description: Always returns 200 regardless of whether the email exists (prevents enumeration).
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: If the email exists, a reset link was sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/verify-reset-token:
+    get:
+      summary: Check if a password reset token is valid
+      tags: [Auth]
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Token validity result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  email: { type: string, format: email }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/reset-password:
+    post:
+      summary: Reset password using a valid reset token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Password reset, all refresh tokens revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/verify-email:
+    get:
+      summary: Verify a user's email address
+      tags: [Auth]
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Email verified
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/resend-verification:
+    post:
+      summary: Resend verification email
+      description: Always returns 200 regardless of whether the email exists (prevents enumeration).
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: If account exists and is unverified, a new email was sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  # ===========================================================================
+  # USERS
+  # ===========================================================================
+  /me:
+    get:
+      summary: Get current user profile
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      summary: Update current user profile
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name: { type: string }
+                last_name: { type: string }
+                avatar_url: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ===========================================================================
+  # FEATURES
+  # ===========================================================================
+  /features:
+    get:
+      summary: Get all enabled feature flags (public)
+      description: Returns a key-to-boolean map. No auth required.
+      tags: [Features]
+      responses:
+        "200":
+          description: Feature flag map
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: boolean }
+              example:
+                dark_mode: true
+                beta_dashboard: false
+
+  /admin/features:
+    get:
+      summary: List all feature flags with descriptions (admin only)
+      tags: [Features]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Feature flag list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/FeatureFlag" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/features/{key}:
+    put:
+      summary: Toggle a feature flag (admin only)
+      tags: [Features]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200":
+          description: Feature flag updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ===========================================================================
+  # SSE
+  # ===========================================================================
+  /events/ticket:
+    post:
+      summary: Get a one-time SSE connection ticket
+      description: Returns a 30-second single-use ticket for EventSource auth.
+      tags: [SSE]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: SSE connection ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /events/stream:
+    get:
+      summary: SSE event stream
+      description: |
+        Opens a Server-Sent Events stream using one-time ticket auth.
+        EventSource cannot set Authorization headers, so use the ticket query param.
+      tags: [SSE]
+      parameters:
+        - name: ticket
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: SSE stream opened
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /events/demo:
+    post:
+      summary: Send a demo SSE event to yourself (development only)
+      description: Only registered when ENVIRONMENT=development. Not available in production.
+      tags: [SSE]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Demo event sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+# =============================================================================
+# COMPONENTS
+# =============================================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from /auth/login or /auth/refresh
+
+  schemas:
+    AuthResult:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer, description: "Access token TTL in seconds" }
+        user: { $ref: "#/components/schemas/User" }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        type: { type: string, enum: [user, admin] }
+        created_at: { type: string, format: date-time }
+
+    UserProfile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        type: { type: string, enum: [user, admin] }
+        email_verified: { type: boolean }
+        first_name: { type: string }
+        last_name: { type: string }
+        avatar_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    FeatureFlag:
+      type: object
+      properties:
+        key: { type: string }
+        enabled: { type: boolean }
+        description: { type: string }
+
+    MessageResponse:
+      type: object
+      properties:
+        message: { type: string }
+
+    AppError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: "Error codes: BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, CONFLICT, VALIDATION, RATE_LIMITED, INTERNAL, HTTP_ERROR"
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: { type: string }
+          description: Field-level validation errors
+
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AppError" }
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AppError" }
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AppError" }
+    RateLimited:
+      description: Too many requests (auth endpoints limited to 5/min)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AppError" }

@@ -1,0 +1,92 @@
+---
+description: Deep codebase audit checklist — use when asked to audit, review for release, or grade the codebase
+alwaysApply: false
+---
+
+# Codebase Audit Checklist
+
+Run this checklist for release readiness audits. Cite exact file paths and line numbers for every finding. Check docs/decisions/ for ADRs before flagging documented design decisions.
+
+## Backend
+
+- [ ] All SQL uses $N parameterized placeholders (no fmt.Sprintf with values)
+- [ ] No `_ = fn()` discarded errors in production code
+- [ ] No `echo.NewHTTPError` in production code (use apperror)
+- [ ] Token refresh is transactional and TOCTOU-safe (atomic UPDATE...RETURNING)
+- [ ] Password reset uses SELECT...FOR UPDATE inside transaction
+- [ ] Verification tokens hashed with selector/verifier pattern
+- [ ] All `rows.Next()` loops check `rows.Err()` after iteration
+- [ ] JWT_SECRET rejects CHANGE_ME placeholder at startup
+- [ ] Production entrypoint exits on migration failure
+- [ ] Timeout middleware uses Echo's built-in (no custom goroutine race)
+- [ ] All operational constants in Config struct with env var overrides
+- [ ] ForgotPassword/ResendVerification log errors server-side (anti-enumeration: always return 200)
+
+## Frontend
+
+- [ ] Zero `createResource` (use onMount + signals)
+- [ ] Zero nested `<Show>` for mutually exclusive content states (use Switch/Match)
+- [ ] Zero `window.confirm()` (use DestructiveModal)
+- [ ] Zero onMount/createEffect returning cleanup functions (use onCleanup)
+- [ ] Zero `any` in production code (test files acceptable)
+- [ ] Auth store reacts to token clearing (`auth:session-expired` event)
+- [ ] Auth cookie Secure on HTTPS (both set and clear paths)
+- [ ] Skip link present with correct target and tabindex
+- [ ] Auth guard effects use `on()` syntax (without defer — documented exception in solidjs-pages.mdc)
+- [ ] `batch()` wraps signal updates after every `await`
+
+## Security
+
+- [ ] No endpoints leak DB errors or stack traces to clients
+- [ ] Rate limiting covers auth (strict) and general API
+- [ ] SSE excluded from gzip and timeout middleware
+- [ ] CSP configurable via `CSP_POLICY` env var
+- [ ] CORS rejects all origins when `ALLOWED_ORIGINS` unset (deny-by-default)
+- [ ] Password hashing uses bcrypt with 72-byte max enforcement
+- [ ] Refresh token rotation is atomic (revoke + issue in one transaction)
+
+## Tooling — Rename Tool
+
+- [ ] Handles hyphenated names (`my-app` → `MyApp` for PascalCase identifiers)
+- [ ] ALL-CAPS form handles hyphens (`my-app` → `MY_APP`, not `MY-APP`)
+- [ ] Covers all file types: Go, TSX/TS, CSS, docs, Cursor rules, CI, infra, env files, entrypoints, .gcloudignore, benchmarks, openapi.yaml, scaffold, testutil, teardown.sh
+- [ ] ALL-CAPS replacement applied to env files, entrypoints, and config files
+- [ ] Validates project name format (lowercase alphanumeric + hyphens)
+- [ ] Protects domain (`golid.ai`) from corruption via `replaceInFileSafe`
+- [ ] `frontend/.env.example` gets lowercase + titled + ALL-CAPS passes
+
+## Tooling — Scaffold Tool
+
+- [ ] `singularize()` handles -us/-is/-as suffixes (prevents `status` → `statu`)
+- [ ] Template includes `rows.Err()` after `rows.Next()` loops
+- [ ] Template uses `toast` (not `snackbar`) for success/error notifications
+- [ ] Generated Pagination component props match the actual `PaginationProps` interface
+- [ ] Generated code compiles without modification (`go build`, `tsc --noEmit`)
+
+## Documentation
+
+- [ ] Zero broken internal links (check all `*.md` files in docs/)
+- [ ] README Quick Start works on fresh clone (including JWT_SECRET generation)
+- [ ] `docs/quick-start.md` Option B includes JWT_SECRET generation
+- [ ] `example-module.md` matches scaffold output: constructor signatures, interface pattern, ParsePagination, 5-arg List with search, rows.Err, Pagination props, toast, reactive page refetch
+- [ ] Cursor rules reference correct function names, arities, and store APIs — cross-check against actual source:
+  - `go-service.mdc` constructor and `NormalizePagination` signature
+  - `write-tests.mdc` constructor and pagination helper
+  - `frontend-lib.mdc` store method names
+  - `sse-realtime.mdc` `NewSSEHub` signature and notification store
+- [ ] CHANGELOG accurate (rule count, coverage thresholds, feature claims)
+- [ ] All test counts, coverage numbers, and version badges match actual values
+- [ ] Migration numbers in examples don't conflict with existing migrations
+
+## Integration Tests
+
+- [ ] All integration test files compile with current constructor signatures
+- [ ] Test assertions match current service behavior (e.g., error codes, return values)
+- [ ] Concurrency tests enforce correct outcomes (e.g., exactly 1 success for token refresh race)
+
+## Grading
+
+Score out of 100 with subgrades per category. List every finding with severity:
+- **Blocker**: security vulnerability, data loss risk, or generated code that won't compile
+- **Important**: incorrect behavior, stale references that mislead developers, or missing coverage
+- **Minor**: style inconsistency, cosmetic, or documentation clarity

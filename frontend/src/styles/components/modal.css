@@ -1,0 +1,60 @@
+/* ============================================================================
+   MODAL STYLES
+   ============================================================================ */
+
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	padding: 5vh 1rem;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	overflow-y: auto;
+	align-items: flex-start;
+	justify-content: center;
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
+	transform: translateZ(0);
+	-webkit-transform: translateZ(0);
+	touch-action: none;
+	outline: none;
+	animation: modal-backdrop-fade-in 200ms ease-out forwards;
+}
+
+.modal-backdrop-centered {
+	padding: 5vh 1rem;
+	align-items: center;
+}
+
+.modal-backdrop::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	z-index: -1;
+}
+
+@keyframes modal-backdrop-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes modal-content-fly-in {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.modal-content-enter {
+	animation: modal-content-fly-in 300ms ease-out forwards;
+}

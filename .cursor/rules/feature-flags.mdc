@@ -1,0 +1,54 @@
+---
+description: Feature flag patterns — use when working with feature toggles
+globs: ["**/feature*.go", "**/features.ts"]
+---
+
+# Feature Flag Patterns
+
+Follow the established patterns in `service/feature.go` and `handler/feature.go`.
+
+## Usage in Services
+
+```go
+if s.features.IsEnabled(ctx, "new_pricing") {
+    // new behavior
+} else {
+    // existing behavior
+}
+```
+
+`IsEnabled()` returns `false` for unknown keys (safe default). Never use it for auth decisions.
+
+## Cache Behavior
+
+- 30s TTL on the in-memory cache (configurable via constructor)
+- `Set()` invalidates the local cache immediately — the admin who toggles sees the change instantly
+- Other instances refresh within the TTL window
+- If two goroutines call `IsEnabled()` simultaneously when cache is expired, both may refresh (acceptable — queries are fast, result is identical)
+
+## Admin API
+
+- `GET /api/v1/admin/features` — list all flags with descriptions (admin-only)
+- `PUT /api/v1/admin/features/:key` — toggle a flag (admin-only)
+- `GET /api/v1/features` — public endpoint returning `{key: bool}` map (no descriptions)
+
+## Frontend
+
+Use `features.ts`:
+
+```typescript
+import { isEnabled } from "~/lib/features";
+
+if (isEnabled("new_dashboard")) {
+    // show new component
+}
+```
+
+Call `loadFeatures()` on app init. Uses `skipAuth: true` since the public endpoint doesn't require auth.
+
+## Adding a New Flag
+
+1. Add to `backend/seeds/dev_seed.sql` with `ON CONFLICT (key) DO NOTHING`
+2. Use `featureService.IsEnabled(ctx, "my_flag")` in backend code
+3. Use `isEnabled("my_flag")` in frontend code
+4. Toggle via admin API or direct DB update

@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+cd frontend && npx prettier --check src/
+cd ../backend && go vet ./...

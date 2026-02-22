@@ -1,0 +1,41 @@
+# Ignore everything not needed for build
+.git
+.gitignore
+.github
+.vscode
+.idea
+.devcontainer
+
+# Docs
+*.md
+README*
+LICENSE
+CHANGELOG
+
+# Dev configs
+.air.toml
+.env*
+.editorconfig
+.prettierrc
+Makefile
+
+# Test files
+*_test.go
+coverage/
+*.out
+
+# Temp/build artifacts
+tmp/
+bin/
+*.exe
+*.test
+vendor/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+
+# Unused api specs for runtime
+api/

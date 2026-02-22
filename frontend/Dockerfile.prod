@@ -1,0 +1,60 @@
+# ==============================================================================
+# Golid Frontend - Production Dockerfile
+# SolidStart SSR with Node.js runtime
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Stage 1: Build
+# ------------------------------------------------------------------------------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install dependencies (ci = clean install from lockfile, deterministic)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build for production
+ENV NODE_ENV=production
+RUN npm run build
+
+# ------------------------------------------------------------------------------
+# Stage 2: Runtime
+# ------------------------------------------------------------------------------
+FROM node:20-alpine AS runner
+
+# Create non-root user
+RUN addgroup -g 1001 -S golid && \
+    adduser -S golid -u 1001 -G golid
+
+WORKDIR /app
+
+# Copy built application and entrypoint
+COPY --from=builder --chown=golid:golid /app/.output ./.output
+COPY --from=builder --chown=golid:golid /app/package.json ./
+COPY --chown=golid:golid prod-entrypoint.sh ./
+
+# Make entrypoint executable
+RUN chmod +x prod-entrypoint.sh
+
+# Switch to non-root user
+USER golid
+
+# Cloud Run uses PORT env var, SolidStart reads HOST and PORT
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=8080
+
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
+
+# Start via entrypoint
+ENTRYPOINT ["./prod-entrypoint.sh"]

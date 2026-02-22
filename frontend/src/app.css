@@ -1,0 +1,417 @@
+/* ============================================ */
+/* GOLID STYLES                                */
+/* ============================================ */
+/* Fonts are loaded in entry-server.tsx using  */
+/* non-render-blocking <link> tags for better  */
+/* performance (no @import here).              */
+/* ============================================ */
+
+/* Import component-specific styles - MUST be before @tailwind for postcss-import */
+@import "./styles/components/index.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GLOBAL SCROLLBAR OVERRIDES (Outside Tailwind Layers) */
+::-webkit-scrollbar {
+	width: 16px;
+	height: 16px;
+}
+
+::-webkit-scrollbar-track {
+	background-color: hsl(var(--neutral)) !important;
+}
+
+::-webkit-scrollbar-thumb {
+	cursor: pointer !important;
+	background-color: hsl(var(--primary));
+	border-radius: 20px !important;
+	/* The trick to narrower thumbs: transparent borders + background-clip: padding-box */
+	border: 4px solid transparent !important;
+	background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: hsl(var(--primary)/80%) !important;
+}
+
+::-webkit-scrollbar-thumb:active {
+	background-color: hsl(var(--primary));
+}
+
+::-webkit-scrollbar-corner {
+	background-color: hsl(var(--neutral)) !important;
+}
+
+/* Firefox Support - Wrapped to prevent overriding Webkit in Chrome */
+@supports (-moz-appearance: none) {
+	* {
+		scrollbar-width: auto;
+		scrollbar-color: hsl(var(--primary)) hsl(var(--neutral));
+	}
+}
+
+@layer base {
+	:root {
+		/* Legacy Brand Channels */
+		--midnight-ch: 209 91% 4%;
+		--moonlight-ch: 208 45% 19%;
+		--twilight-ch: 220 29% 26%;
+		--dusk-ch: 215 22% 36%;
+		--granite-ch: 211 22% 45%;
+		--steel-ch: 208 22% 56%;
+		--dawn-ch: 205 32% 75%;
+		--bright-ch: 205 38% 83%;
+		--mist-ch: 205 48% 89%;
+		--white-ch: 0 0% 96%;
+
+		/* Core Accent Channels */
+		--green-ch: 163 71% 36%;
+		--active-green-ch: 164 72% 29%;
+		--teal-ch: 179 71% 36%;
+		--active-teal-ch: 179 71% 29%;
+		--blue-ch: 206 89% 51%;
+		--active-blue-ch: 206 88% 40%;
+		--indigo-ch: 235 75% 55%;
+		--active-indigo-ch: 235 75% 45%;
+		--violet-ch: 265 70% 60%;
+		--active-violet-ch: 265 70% 50%;
+		--pink-ch: 330 80% 60%;
+		--active-pink-ch: 330 80% 50%;
+		--red-ch: 358 87% 60%;
+		--active-red-ch: 358 75% 48%;
+		--orange-ch: 25 90% 55%;
+		--active-orange-ch: 25 90% 45%;
+		--gold-ch: 40 93% 58%;
+		--active-gold-ch: 39 71% 44%;
+		--lime-ch: 110 81% 50%;
+		--active-lime-ch: 110 81% 40%;
+
+		/* Neon Channels */
+		--neon-green-ch: 163 100% 50%;
+		--neon-green-active-ch: 163 100% 60%;
+		--neon-teal-ch: 179 100% 50%;
+		--neon-teal-active-ch: 179 100% 60%;
+		--neon-blue-ch: 206 100% 60%;
+		--neon-blue-active-ch: 206 100% 68%;
+		--neon-indigo-ch: 235 100% 68%;
+		--neon-indigo-active-ch: 235 100% 75%;
+		--neon-violet-ch: 265 100% 70%;
+		--neon-violet-active-ch: 265 100% 78%;
+		--neon-pink-ch: 330 100% 65%;
+		--neon-pink-active-ch: 330 100% 73%;
+		--neon-red-ch: 358 100% 62%;
+		--neon-red-active-ch: 358 100% 70%;
+		--neon-orange-ch: 25 100% 62%;
+		--neon-orange-active-ch: 25 100% 70%;
+		--neon-gold-ch: 40 100% 50%;
+		--neon-gold-active-ch: 40 100% 60%;
+		--neon-lime-ch: 110 100% 51%;
+		--neon-lime-active-ch: 110 100% 61%;
+
+		/* MODERN CLEAN PALETTE (Light Mode) */
+		--background: 214 40% 94%;    /* Atmospheric soft blue */
+		--foreground: var(--midnight-ch);
+
+		--card: 214 40% 98%;          /* Atmospheric off-white */
+		--card-foreground: var(--midnight-ch);
+
+		--popover: 0 0% 100%;
+		--popover-foreground: var(--midnight-ch);
+
+		/* DARK PRIMARY ON LIGHT THEME */
+		--primary: var(--midnight-ch);
+		--primary-foreground: var(--mist-ch);
+
+		--neutral: 214 40% 88%;     /* Deeper atmospheric blue */
+		--neutral-foreground: var(--moonlight-ch);
+
+		--muted: var(--dawn-ch);
+		--muted-foreground: var(--dusk-ch);
+
+		--accent: var(--mist-ch);
+		--accent-foreground: var(--blue-ch);
+
+		/* CTA Base Colors (Light Mode) */
+		--cta-green: var(--green-ch);
+		--cta-green-active: var(--active-green-ch);
+		--cta-teal: var(--teal-ch);
+		--cta-teal-active: var(--active-teal-ch);
+		--cta-blue: var(--blue-ch);
+		--cta-blue-active: var(--active-blue-ch);
+		--cta-indigo: var(--indigo-ch);
+		--cta-indigo-active: var(--active-indigo-ch);
+		--cta-violet: var(--violet-ch);
+		--cta-violet-active: var(--active-violet-ch);
+		--cta-pink: var(--pink-ch);
+		--cta-pink-active: var(--active-pink-ch);
+		--cta-red: var(--red-ch);
+		--cta-red-active: var(--active-red-ch);
+		--cta-orange: var(--orange-ch);
+		--cta-orange-active: var(--active-orange-ch);
+		--cta-gold: var(--gold-ch);
+		--cta-gold-active: var(--active-gold-ch);
+		--cta-lime: var(--lime-ch);
+		--cta-lime-active: var(--active-lime-ch);
+
+		--cta-green-foreground: var(--white-ch);
+		--cta-teal-foreground: var(--white-ch);
+		--cta-blue-foreground: var(--white-ch);
+		--cta-indigo-foreground: var(--white-ch);
+		--cta-violet-foreground: var(--white-ch);
+		--cta-pink-foreground: var(--white-ch);
+		--cta-red-foreground: var(--white-ch);
+		--cta-orange-foreground: var(--midnight-ch);
+		--cta-gold-foreground: var(--midnight-ch);
+		--cta-lime-foreground: var(--midnight-ch);
+
+		--danger: var(--red-ch);
+		--danger-active: var(--active-red-ch);
+		--danger-foreground: 0 0% 100%;
+
+		--success: var(--green-ch);
+		--success-foreground: 0 0% 100%;
+
+		--border: 209 91% 4% / 0.05;
+		--input: 209 91% 4% / 0.05;
+		--ring: var(--foreground);
+		--radius: 0.75rem;
+
+		/* Animated gradient background settings */
+		--gradient-opacity: 0.4;
+		--gradient-intensity: 0.1;
+
+		/* Brand Gradients */
+		--dark-grad: linear-gradient(135deg, #0A0A0A 0%, #010C16 100%);
+		--light-grad: linear-gradient(135deg, #E8F0F4 0%, #F5F5F5 100%);
+		--blue-grad: linear-gradient(135deg, #1491F0 0%, #0C72C0 100%);
+	}
+
+	.dark, [data-theme='dark'] {
+		/* LIGHT PRIMARY ON DARK THEME */
+		--background: 215 45% 8%;     /* Deep Space Blue */
+		--foreground: var(--mist-ch);
+
+		--card: 215 40% 12%;          /* Elevation Blue */
+		--card-foreground: var(--mist-ch);
+
+		--popover: 215 40% 12%;
+		--popover-foreground: var(--mist-ch);
+
+		--primary: var(--mist-ch);
+		--primary-foreground: var(--midnight-ch);
+
+		--secondary: 220 29% 20%;
+		--secondary-foreground: var(--mist-ch);
+
+		--neutral: 220 29% 20%;
+		--neutral-foreground: var(--mist-ch);
+
+		--muted: var(--twilight-ch);
+		--muted-foreground: var(--dawn-ch);
+
+		--accent: 184 100% 50% / 0.15;
+		--accent-foreground: 184 100% 50%;
+
+		/* NEON BRAND COLORS FOR DARK MODE */
+		--cta-green: var(--neon-green-ch);
+		--cta-green-active: var(--neon-green-active-ch);
+		--cta-green-foreground: var(--midnight-ch);
+
+		--cta-teal: var(--neon-teal-ch);
+		--cta-teal-active: var(--neon-teal-active-ch);
+		--cta-teal-foreground: var(--midnight-ch);
+
+		--cta-blue: var(--neon-blue-ch);
+		--cta-blue-active: var(--neon-blue-active-ch);
+		--cta-blue-foreground: var(--midnight-ch);
+
+		--cta-indigo: var(--neon-indigo-ch);
+		--cta-indigo-active: var(--neon-indigo-active-ch);
+		--cta-indigo-foreground: var(--midnight-ch);
+
+		--cta-violet: var(--neon-violet-ch);
+		--cta-violet-active: var(--neon-violet-active-ch);
+		--cta-violet-foreground: var(--midnight-ch);
+
+		--cta-pink: var(--neon-pink-ch);
+		--cta-pink-active: var(--neon-pink-active-ch);
+		--cta-pink-foreground: var(--midnight-ch);
+
+		--cta-red: var(--neon-red-ch);
+		--cta-red-active: var(--neon-red-active-ch);
+		--cta-red-foreground: var(--white-ch);
+
+		--cta-orange: var(--neon-orange-ch);
+		--cta-orange-active: var(--neon-orange-active-ch);
+		--cta-orange-foreground: var(--midnight-ch);
+
+		--cta-gold: var(--neon-gold-ch);
+		--cta-gold-active: var(--neon-gold-active-ch);
+		--cta-gold-foreground: var(--midnight-ch);
+
+		--cta-lime: var(--neon-lime-ch);
+		--cta-lime-active: var(--neon-lime-active-ch);
+		--cta-lime-foreground: var(--midnight-ch);
+
+		--danger: var(--neon-red-ch);
+		--danger-active: var(--neon-red-active-ch);
+		--danger-foreground: 0 0% 100%;
+
+		--success: var(--neon-green-ch);
+		--success-foreground: var(--midnight-ch);
+
+		--border: 205 48% 89% / 0.06;
+		--input: 205 48% 89% / 0.06;
+		--ring: var(--primary);
+
+		/* Animated gradient background settings - more subtle in dark mode */
+		--gradient-opacity: 0.3;
+		--gradient-intensity: 0.08;
+	}
+
+	.material-symbol {
+		font-family: 'Material Symbols Rounded';
+		font-weight: normal;
+		font-style: normal;
+		font-size: 24px;
+		line-height: 1;
+		letter-spacing: normal;
+		text-transform: none;
+		display: inline-block;
+		white-space: nowrap;
+		word-wrap: normal;
+		direction: ltr;
+		-webkit-font-feature-settings: 'liga';
+		-webkit-font-smoothing: antialiased;
+		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+	}
+}
+
+@layer utilities {
+	.fill-icon {
+		font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
+	}
+}
+
+/* Accessibility: Skip Link */
+.skip-link {
+	@apply fixed left-1/2 top-3 z-[1000] -translate-x-1/2 -translate-y-[150%] rounded-full bg-primary px-7 py-2 text-sm font-medium text-primary-foreground shadow-lg transition-all duration-300 no-underline focus:translate-y-0 focus:outline-none;
+}
+
+.skip-link:focus-visible {
+	@apply text-primary-foreground !important;
+}
+
+.skip-link:hover {
+	@apply bg-moonlight dark:bg-mist;
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+	html {
+		overflow-x: hidden;
+		overflow-y: auto;
+		max-width: 100vw;
+	}
+
+	body {
+		@apply bg-background text-foreground antialiased;
+		overflow-x: hidden;
+		max-width: 100vw;
+		position: relative;
+		font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+		touch-action: pan-y;
+	}
+
+	/* Subtle animated gradient background */
+	body::before {
+		content: '';
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: -1;
+		opacity: var(--gradient-opacity, 0.35);
+		background:
+			radial-gradient(ellipse 80% 50% at 20% 40%, hsl(var(--cta-teal) / var(--gradient-intensity, 0.08)), transparent),
+			radial-gradient(ellipse 60% 40% at 80% 60%, hsl(var(--cta-blue) / calc(var(--gradient-intensity, 0.08) * 0.75)), transparent),
+			radial-gradient(ellipse 50% 30% at 50% 80%, hsl(var(--cta-teal) / calc(var(--gradient-intensity, 0.08) * 0.5)), transparent);
+		background-size: 200% 200%, 200% 200%, 200% 200%;
+		animation: subtleGradientMove 25s ease-in-out infinite;
+		pointer-events: none;
+	}
+
+	@keyframes subtleGradientMove {
+		0%, 100% {
+			background-position: 0% 0%, 100% 100%, 50% 50%;
+		}
+		25% {
+			background-position: 100% 50%, 0% 50%, 100% 0%;
+		}
+		50% {
+			background-position: 50% 100%, 50% 0%, 0% 100%;
+		}
+		75% {
+			background-position: 0% 50%, 100% 50%, 50% 0%;
+		}
+	}
+
+	h1, h2, h3, h4, h5, h6 {
+		@apply font-montserrat tracking-tight text-foreground font-bold;
+	}
+
+	p {
+		@apply leading-relaxed text-muted-foreground;
+	}
+
+	a {
+		@apply transition-colors outline-none;
+	}
+
+	/* Link Focus Logic: Color Swapping (No chrome, no flash) */
+	a:focus-visible {
+		@apply text-blue;
+	}
+
+	a.text-blue:focus-visible {
+		@apply text-foreground;
+	}
+
+	button {
+		@apply ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2;
+	}
+}
+
+/* Modern Clean Utilities */
+.shadow-elevated {
+	box-shadow:
+		0 0 0 1px hsl(var(--foreground) / 0.03),
+		0 20px 25px -5px rgba(0, 0, 0, 0.05),
+		0 10px 10px -5px rgba(0, 0, 0, 0.02);
+}
+
+.dark .shadow-elevated {
+	@apply border border-white/[0.03];
+}
+
+.glass {
+	@apply bg-white/40 dark:bg-midnight/30 backdrop-blur-lg border border-foreground/5 dark:border-white/15 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none;
+}
+
+
+/* Accessibility: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

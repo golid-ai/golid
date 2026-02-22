@@ -1,0 +1,61 @@
+---
+description: SSE and real-time event patterns — hub, ticket auth, keepalive, reconnect
+globs: backend/internal/service/sse*.go,backend/internal/handler/sse*.go,frontend/src/lib/sse.ts
+alwaysApply: false
+---
+
+# SSE / Real-Time Patterns
+
+## Hub Architecture
+
+`SSEHub` is a singleton created in `main.go`. Per-user channel sets with buffered channels (16). Non-blocking sends — if a client's buffer is full, the event is dropped (logged as warning). Max 5 connections per user prevents resource exhaustion.
+
+```go
+sseHub := service.NewSSEHub(cfg.SSETicketTTL)
+// Pass to handler and any service that needs to push events
+```
+
+## Ticket Auth (not JWT in URL)
+
+`EventSource` can't set `Authorization` headers. Never put JWTs in URLs (they leak into logs). Use one-time tickets:
+
+1. Client calls `POST /api/v1/events/ticket` with JWT auth → gets a 30s single-use ticket
+2. Client opens `EventSource("/api/v1/events/stream?ticket=<ticket>")`
+3. Server validates and burns the ticket, begins streaming
+
+The stream endpoint is on the public API group (not behind JWT middleware) — it uses ticket auth directly.
+
+## Keepalive
+
+Send `: keepalive\n\n` every 30 seconds. Cloud Run closes idle connections at 15 minutes.
+
+## Frontend Reconnect
+
+On disconnect: refresh access token first (it may have expired), request a new ticket, reconnect with exponential backoff (1s → 2s → 4s → max 30s). Reset backoff on successful connect.
+
+## Scaling Limitation
+
+The hub is in-memory — all connected clients must be on the same instance. For multi-instance deployments, add a pub/sub layer (Redis, NATS). `Send()` and `Broadcast()` are the integration points.
+
+## Adding New Event Types
+
+Backend — publish from any service:
+
+```go
+sseHub.Send(userID, service.SSEEvent{
+    Event: "order_updated",
+    Data:  map[string]any{"order_id": orderID, "status": newStatus},
+})
+```
+
+Frontend — register a typed handler:
+
+```typescript
+onSSEEvent<OrderUpdate>("order_updated", (data) => {
+    toast.info(`Order ${data.order_id} is now ${data.status}`);
+});
+```
+
+## Middleware
+
+SSE endpoints must be excluded from gzip and timeout middleware (long-lived connections). Both are handled via path checks in `middleware/stack.go` for `/api/v1/events/stream`.

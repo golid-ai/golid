@@ -1,0 +1,42 @@
+---
+description: Use parallel subagents when auditing or editing 5+ files in a single task
+alwaysApply: true
+---
+
+# Parallel Subagents for Multi-File Operations
+
+When a task involves **auditing or editing 5+ independent files**, prefer parallel subagents over sequential tool calls. If changes have ordering dependencies, keep dependent steps sequential.
+
+## When to parallelize
+
+- **Audits**: searching for patterns, checking consistency, or reviewing code across 5+ files
+- **Edits**: renaming, fixing stale references, or applying the same pattern across 5+ files
+- **Mixed**: audit first (parallel), then edit (parallel) based on findings
+
+## How to split work
+
+Group files by **independence** — changes that don't depend on each other go in separate subagents. Max 4 concurrent subagents.
+
+Good splits:
+
+- By layer: Docker/infra files | source code | documentation | config
+- By concern: backend changes | frontend changes
+
+Bad splits:
+
+- Putting a TSX file and its CSS file in different subagents (coordinated rename)
+- Splitting a function definition from its callers
+
+## Subagent instructions
+
+Each subagent prompt must include:
+
+1. The exact files to read/edit
+2. The specific changes to make (before/after values, line numbers if known)
+3. "Read each file before editing to verify exact content"
+
+Use the fast model for mechanical renames; default model for changes requiring judgment.
+
+## After subagents complete
+
+Run verification searches (`rg`) to confirm all changes applied and no regressions introduced. If a subagent failed due to content mismatch, read the file and fix manually.

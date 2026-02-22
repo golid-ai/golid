@@ -1,0 +1,40 @@
+/* ============================================================================
+   SLIDER COMPONENT STYLES
+   ============================================================================ */
+
+/* Webkit Slider Thumb */
+.slider-input::-webkit-slider-thumb {
+	@apply h-7 w-7 cursor-pointer appearance-none rounded-full border-2 border-primary shadow-md pointer-events-auto;
+	@apply bg-foreground;
+	@apply ring-offset-background transition-all;
+}
+.slider-input::-webkit-slider-thumb:hover {
+	@apply border-primary ring-4 ring-primary/40;
+}
+
+/* Firefox Slider Thumb */
+.slider-input::-moz-range-thumb {
+	@apply h-7 w-7 cursor-pointer appearance-none rounded-full border-2 border-primary shadow-md pointer-events-auto;
+	@apply bg-foreground;
+	@apply ring-offset-background transition-all;
+	border: 2px solid hsl(var(--primary));
+}
+.slider-input::-moz-range-thumb:hover {
+	@apply ring-4 ring-primary/40;
+}
+
+/* Focus States */
+.slider-input:focus-visible::-webkit-slider-thumb {
+	@apply ring-2 ring-primary ring-offset-2;
+}
+.slider-input:focus-visible::-moz-range-thumb {
+	@apply ring-2 ring-primary ring-offset-2;
+}
+
+/* Active States */
+.slider-input:active::-webkit-slider-thumb {
+	@apply bg-primary border-transparent;
+}
+.slider-input:active::-moz-range-thumb {
+	@apply bg-primary border-transparent;
+}

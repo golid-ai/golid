@@ -1,0 +1,63 @@
+---
+description: Patterns for the project rename tool — file coverage, domain-safe replacement, name validation
+globs: backend/cmd/rename/*.go
+alwaysApply: false
+---
+
+# Rename Tool Patterns
+
+The rename tool (`make rename` / `go run ./cmd/rename`) rebrands the entire project. It's high-risk — a missed file means a downstream user ships with "Golid" in their app, and a naive replacement corrupts domain URLs.
+
+## Domain-Safe Replacement
+
+`replaceInFileSafe` uses a null-byte placeholder to protect the project domain (`golid.ai`) from corruption. Without it, `"golid"→"myapp"` turns `golid.ai` into `myapp.ai`.
+
+```go
+const placeholder = "\x00DOMAIN\x00"
+protected := strings.ReplaceAll(content, oldDomain, placeholder)
+updated := strings.ReplaceAll(protected, old, new)
+final := strings.ReplaceAll(updated, placeholder, oldDomain)
+```
+
+Use `replaceInFileSafe` for any file that might contain the project domain (docker-compose, deploy scripts, env files, infra templates, CI configs). Use `replaceInFile` for files that only contain module paths or titled names (Go imports, package.json scope).
+
+## File Coverage
+
+The tool must cover every file with hardcoded project names. Current categories:
+
+| # | Target | Function |
+|---|--------|----------|
+| 1 | `go.mod` | Module path |
+| 2 | All `.go` files | Import paths + titled name |
+| 3 | `docker-compose.yml` | Container/DB names |
+| 4 | `package.json` + lock | npm scope |
+| 5 | `README.md` | GitHub repo + titled name |
+| 6 | `.cursor/rules/*.mdc` | Module path + project name |
+| 7 | `docs/*.md` | Module path + project name |
+| 8 | `frontend/src/**/*.{ts,tsx}` | Titled branding + lowercase + all-caps |
+| 8b | `frontend/src/**/*.css` | Branded CSS class names |
+| 9 | Community files (SECURITY, CHANGELOG, CONTRIBUTING) | GitHub repo + titled name |
+| 10 | `codecov.yml` | Module path |
+| 11 | `config/.env.*` | APP_NAME + DB names |
+| 12 | `scripts/*.sh` + `scripts/README.md` | Project name + titled |
+| 13 | Swagger docs, DevContainer, Dockerfiles | Titled + project name |
+| 14 | `infra/*.yaml` + `.github/workflows/*.yml` | Project name |
+| 15 | Scaffold template + backend Makefile | Titled name |
+| 16 | `testutil/testutil.go` | Default DB name |
+| 17 | Entrypoint scripts | Project + titled name |
+| 18 | `openapi.yaml` | Titled + project name |
+| 19 | `.gitignore` | All-caps project name in comments |
+
+**When adding a new file with hardcoded project names**, add a corresponding replacement step here. Check both the lowercase name and the titled (capitalized) name.
+
+## Name Validation
+
+Project names must match `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` (2-50 chars). This is valid for Go module path components, npm package names, Docker image names, and GCP resource names.
+
+## Testing After Rename
+
+The tool prints a "Next steps" checklist. Always verify:
+1. `cd backend && go build ./...` (import paths updated)
+2. `cd frontend && npm run build` (scope + branding updated)
+3. `git diff` to review all changes
+4. Update `entry-server.tsx` og:url with the new domain

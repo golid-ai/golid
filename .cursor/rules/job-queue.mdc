@@ -1,0 +1,52 @@
+---
+description: Job queue patterns — use when editing queue package or adding background tasks
+globs: ["**/queue/*.go", "**/worker/**"]
+---
+
+# Job Queue Patterns
+
+Follow the established patterns in `queue/queue.go`, `queue/tasks.go`, and `queue/handlers.go`.
+
+## IsConfigured() Gate
+
+The queue is opt-in via `REDIS_URL`. Every callsite that enqueues must check `IsConfigured()` and fall back to goroutines:
+
+```go
+if h.queue.IsConfigured() {
+    task, err := queue.NewSendVerificationEmail(email, token)
+    if err != nil {
+        logger.Error("failed to create task", slog.String("error", err.Error()))
+    } else if err := h.queue.Enqueue(task); err != nil {
+        logger.Error("failed to enqueue", slog.String("error", err.Error()))
+    }
+} else {
+    go func() {
+        if err := service.Retry(3, time.Second, func() error {
+            return h.emailService.SendVerificationEmail(email, token)
+        }); err != nil {
+            logger.Error("failed to send email", slog.String("error", err.Error()))
+        }
+    }()
+}
+```
+
+**Critical:** Use `task, err :=` not `task, _ :=`. JSON marshal errors must be handled.
+
+## Adding a New Task Type
+
+1. Add a constant in `queue/tasks.go`: `TypeMyNewTask = "domain:action"`
+2. Add a payload struct and constructor: `NewMyNewTask(args) (*asynq.Task, error)`
+3. Add a handler method in `queue/handlers.go` with the same pattern
+4. Register in `cmd/worker/main.go`: `mux.HandleFunc(queue.TypeMyNewTask, handler.HandleMyNewTask)`
+5. Use the IsConfigured() gate pattern at the callsite
+
+## Worker
+
+The worker process (`cmd/worker/main.go`) requires `REDIS_URL`. It shares the backend image with a different entrypoint. In Docker Compose, it uses the `production` profile.
+
+## Testing
+
+- Test task payload serialization round-trip in `tasks_test.go`
+- Test handler with mock `EmailSender` interface in `handlers_test.go`
+- Test `IsConfigured()` returns false with empty URL in `queue_test.go`
+- Test the goroutine fallback path in handler tests with `mockQueue{configured: false}`

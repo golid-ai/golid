@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 152">
+  <defs>
+    <style>
+      .loading-arc-path { fill: none; stroke: #f5f5f5; stroke-linecap: round; stroke-miterlimit: 10; stroke-width: 4px; }
+    </style>
+  </defs>
+    <path class="loading-arc-path" d="M76,138c-34.24,0-62-27.76-62-62S41.76,14,76,14"/>
+</svg>

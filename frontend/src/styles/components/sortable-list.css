@@ -1,0 +1,9 @@
+/* ============================================================================
+   SORTABLE LIST - Global grabbing cursor during drag
+   Forces grabbing cursor across the entire document while dragging items.
+   ============================================================================ */
+
+body.is-grabbing,
+body.is-grabbing * {
+	cursor: grabbing !important;
+}

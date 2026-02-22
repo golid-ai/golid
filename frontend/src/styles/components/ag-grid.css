@@ -1,0 +1,47 @@
+/* ============================================================================
+   AG GRID - Industrial Theme Overrides
+   Maps AG Grid accent colors to design tokens per theme.
+   The grid reads CSS variables so theme switching is instant (no JS re-render).
+   ============================================================================ */
+
+/* Theme variables: light mode */
+:root {
+	--ag-check-color: #F5F5F5;
+	--ag-accent-color: #1B9D78;
+	--ag-accent-color-alpha: rgba(27, 157, 120, 0.1);
+}
+
+/* Theme variables: dark mode */
+.dark {
+	--ag-check-color: #010B13;
+	--ag-accent-color: #00FFB7;
+	--ag-accent-color-alpha: rgba(0, 255, 183, 0.15);
+}
+
+/* Uppercase headers for industrial look */
+.ag-header-cell-text {
+	text-transform: uppercase !important;
+	letter-spacing: 0.05em !important;
+}
+
+/* Opaque popup backgrounds (grid bg is transparent, popups must be solid) */
+.ag-popup-child,
+.ag-menu,
+.ag-filter-wrapper,
+.ag-picker-field-list,
+.ag-autocomplete-list-popup {
+	background-color: hsl(var(--card)) !important;
+}
+
+.ag-filter,
+.ag-filter-body-wrapper,
+.ag-set-filter,
+.ag-multi-filter {
+	background-color: hsl(var(--card)) !important;
+}
+
+/* Fix white corner where scrollbars meet */
+.ag-root-wrapper ::-webkit-scrollbar-corner,
+.ag-scroller-corner {
+	background-color: hsl(var(--neutral)) !important;
+}

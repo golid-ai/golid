@@ -1,0 +1,74 @@
+---
+description: Patterns for maintaining the OpenAPI specification
+globs: backend/openapi.yaml
+alwaysApply: false
+---
+
+# OpenAPI Spec Patterns
+
+The API is documented in `backend/openapi.yaml` (OpenAPI 3.1, hand-maintained).
+
+## When to Update
+
+Update the spec whenever you:
+- Add a new endpoint (handler + route in `main.go`)
+- Change request/response schemas
+- Add or modify query parameters
+- Change authentication requirements
+
+## Adding a New Endpoint
+
+Follow the existing pattern. Each endpoint needs:
+
+```yaml
+/your-resource:
+  get:
+    summary: Short description
+    tags: [YourTag]
+    security: [{ bearerAuth: [] }]  # omit for public endpoints
+    parameters: []                   # query params if any
+    responses:
+      "200":
+        description: Success description
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/YourSchema" }
+      "401": { $ref: "#/components/responses/Unauthorized" }
+```
+
+## Adding a New Schema
+
+Add to `components/schemas`. Match the Go `Detail` struct field names exactly:
+
+```yaml
+YourResource:
+  type: object
+  properties:
+    id: { type: string, format: uuid }
+    title: { type: string }
+    created_at: { type: string, format: date-time }
+```
+
+## Scaffold Integration
+
+`make new-module name=items` generates backend code but does NOT auto-update the spec. After scaffolding, manually add the CRUD endpoints following the pattern above.
+
+## Conventions
+
+- Endpoint paths must match routes registered in `cmd/server/main.go`
+- Use `$ref` for shared schemas and responses (DRY)
+- Tag names match handler file groupings (Auth, Users, Features, SSE)
+- Reuse `MessageResponse` for simple `{"message": "..."}` responses
+- Reuse `AppError` for all error responses
+
+## TypeScript Type Generation
+
+The frontend generates TypeScript types from this spec via `openapi-typescript`:
+
+```bash
+cd frontend && npm run generate:types
+```
+
+This reads `backend/openapi.yaml` and outputs `frontend/src/lib/api.generated.ts`. CI checks for staleness by running this command and `git diff --exit-code` (with `continue-on-error: true`).
+
+After updating the spec, always regenerate types before committing.

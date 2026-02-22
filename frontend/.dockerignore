@@ -1,0 +1,42 @@
+# Ignore everything not needed for build
+.git
+.gitignore
+.github
+.vscode
+.idea
+.devcontainer
+
+# Docs
+*.md
+README*
+LICENSE
+CHANGELOG
+
+# Dev configs
+.env*
+.editorconfig
+.prettierrc
+.eslintrc*
+
+# Build outputs (we build fresh)
+.output/
+.vinxi/
+dist/
+build/
+
+# Dependencies (will install fresh)
+node_modules/
+
+# Test files
+coverage/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+

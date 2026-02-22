@@ -1,0 +1,68 @@
+{
+  "name": "Golid Development",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.yml"],
+  "service": "backend",
+  "workspaceFolder": "/workspace",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",                    // Go language support + gopls
+        "bradlc.vscode-tailwindcss",    // Tailwind CSS IntelliSense
+        "esbenp.prettier-vscode",       // Prettier formatter (JS/TS/CSS/HTML)
+        "dbaeumer.vscode-eslint",       // ESLint integration
+        "ms-azuretools.vscode-docker",  // Docker file support
+        "usernamehw.errorlens",         // Inline lint/error highlights
+        "eamodio.gitlens",              // Git blame & history
+        "mtxr.sqltools",                // SQL editor & runner
+        "mtxr.sqltools-driver-pg"       // PostgreSQL driver for SQLTools
+      ],
+      "settings": {
+        // --- Go ---
+        "go.useLanguageServer": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintOnSave": "workspace",
+
+        // --- Editor ---
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[go]": {
+          "editor.defaultFormatter": "golang.go"
+        },
+        "terminal.integrated.defaultProfile.linux": "bash",
+        // Hide Vite's temporary config compilation artifacts
+        "files.exclude": {
+          "**/app.config.timestamp_*": true
+        },
+
+        // --- Port Forwarding ---
+        // Known service ports — controls label & notification behavior
+        "remote.portsAttributes": {
+          "3000": { "label": "Frontend", "onAutoForward": "silent" },
+          "8080": { "label": "Backend API", "onAutoForward": "notify" },
+          "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+        },
+        // Auto-forward any port a process listens on (e.g. vinxi's
+        // random HMR WebSocket port). Without this, HMR breaks because
+        // the browser can't reach the container's random port.
+        // See: https://github.com/nksaraf/vinxi/issues/394
+        "remote.autoForwardPorts": true,
+        "remote.autoForwardPortsSource": "process",
+        // Forward unknown ports silently (no toast notifications)
+        "remote.otherPortsAttributes": {
+          "onAutoForward": "silent"
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [3000],
+
+  // Runs on the HOST before docker compose — creates config/.env.local if missing
+  "initializeCommand": "test -f config/.env.local || make setup",
+
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspace/backend /workspace/frontend 2>/dev/null || true && cd /workspace/backend && go build -p 4 ./... && cd /workspace/frontend && rm -f .npm-ready && sudo rm -rf node_modules 2>/dev/null; npm install && touch .npm-ready",
+  "postStartCommand": "cd /workspace/backend && bash entrypoint.dev.sh",
+
+  "remoteUser": "vscode"
+}

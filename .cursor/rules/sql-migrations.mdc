@@ -1,0 +1,70 @@
+---
+description: Patterns for SQL migration files — schema changes, enums, indexes, triggers
+globs: backend/migrations/*.sql
+alwaysApply: false
+---
+
+# SQL Migration Patterns
+
+Follow the established patterns in `000001_init.up.sql`.
+
+## File Naming
+
+`000NNN_description.up.sql` and `000NNN_description.down.sql` — always create both.
+
+## Up Migration
+
+```sql
+-- Enums first
+CREATE TYPE item_status AS ENUM ('new', 'in_progress', 'complete', 'cancelled');
+
+-- Tables (with UUID PKs, timestamps, FKs with ON DELETE CASCADE)
+CREATE TABLE items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  status item_status DEFAULT 'new',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes on FKs and frequently filtered columns
+CREATE INDEX idx_items_user_id ON items(user_id);
+CREATE INDEX idx_items_status ON items(status);
+
+-- Reuse the existing updated_at trigger function
+CREATE TRIGGER items_updated_at BEFORE
+UPDATE ON items FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+```
+
+## Down Migration
+
+Drop in reverse dependency order: columns (ALTER), then tables, then enums.
+
+```sql
+DROP TABLE IF EXISTS item_history;
+DROP TABLE IF EXISTS items;
+DROP TYPE IF EXISTS item_status;
+```
+
+## Conventions
+
+- **UUIDs** for all primary keys (not serial/bigint).
+- **TIMESTAMPTZ** for all timestamps (not TIMESTAMP).
+- **TEXT** for strings (not VARCHAR) — PostgreSQL treats them identically.
+- **DECIMAL(x,2)** for money/hours (not FLOAT).
+- **JSONB** for structured metadata (audit trails, preferences).
+- **TEXT[]** for tag-like arrays (skills, industries).
+- **Enums** for finite status sets — add a `cancelled` state if the entity can be deactivated.
+- **ON DELETE CASCADE** on child table FKs.
+- **Index every FK** and every column used in WHERE filters.
+- **`updated_at` trigger** on every table that has the column.
+
+## Idempotent Status Transitions
+
+When writing status transitions in service code that references these enums:
+
+```sql
+-- GOOD — idempotent, no error on repeat
+UPDATE items SET status = 'in_progress' WHERE id = $1 AND status = 'new';
+```

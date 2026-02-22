@@ -1,0 +1,15 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'build'
+  - '--tag'
+  - '${_TAG}'
+  - '--file'
+  - 'Dockerfile.prod'
+  - '--platform'
+  - 'linux/amd64'
+  - '.'
+images:
+- '${_TAG}'
+substitutions:
+  _TAG: 'default-tag'

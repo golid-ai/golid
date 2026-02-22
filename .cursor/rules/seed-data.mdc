@@ -1,0 +1,55 @@
+---
+description: Patterns for development seed data — stable UUIDs, realistic data, cross-references
+globs: backend/seeds/*.sql
+alwaysApply: false
+---
+
+# Seed Data Patterns
+
+Follow the established pattern in `dev_seed.sql`.
+
+## UUID Convention
+
+Use stable, predictable UUIDs for cross-referencing:
+
+```sql
+-- Entity type encoded in the UUID for readability
+-- users:     a0000000-0000-0000-0000-00000000000N
+-- resources: a0000000-0000-0000-0000-0000000000N0
+-- items:     a0000000-0000-0000-0000-000000000N00
+```
+
+Document the UUID mapping at the top of the file so they're easy to find.
+
+## Idempotency
+
+Every INSERT must use `ON CONFLICT ... DO UPDATE` or `ON CONFLICT ... DO NOTHING` so the seed can be re-run safely:
+
+```sql
+INSERT INTO users (id, email, ...) VALUES (...)
+ON CONFLICT (email) DO UPDATE SET
+  registration_step = EXCLUDED.registration_step,
+  email_verified = EXCLUDED.email_verified;
+```
+
+## Data Quality
+
+- **Realistic content** — real-sounding names, descriptions, skills. Not "test123" or "Lorem ipsum".
+- **All profile fields populated** — except file-based fields (resume_url, microview_url, etc.) which require actual uploads.
+- **Varied statuses** — seed entities in different states (new, in_progress, complete, approved) to test all UI states.
+- **Realistic timestamps** — use `NOW() - INTERVAL 'N days'` for created/updated dates to simulate a timeline.
+
+## Cross-Entity Relationships
+
+When adding a new entity type, seed the full chain. For example, items require:
+
+1. Users (user, admin)
+2. Parent resources (if applicable)
+3. Items (varied statuses)
+4. Related records (comments, history, etc.)
+
+## When to Update
+
+- After creating a new migration that adds tables — seed sample data immediately.
+- When adding a new feature — add seed data that exercises all states visible in the UI.
+- Seed data enables manual testing during development. Don't skip it.

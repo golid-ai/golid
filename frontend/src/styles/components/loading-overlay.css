@@ -1,0 +1,183 @@
+/* ============================================================================
+   LOADING OVERLAY STYLES
+   Multi-arc loading overlay animation
+   ============================================================================ */
+
+.loading-overlay-container {
+	z-index: 99999; /* Ultra high to cover even modals */
+	position: fixed;
+	
+	/* THE "TOTAL ENVELOPE" FIX: 
+	   Using negative insets and hardware acceleration to ensure 
+	   total coverage. We decouple the background from the container 
+	   to prevent iOS from clipping it during layout shifts.
+	*/
+	top: -50%;
+	left: -50%;
+	right: -50%;
+	bottom: -50%;
+	width: 200%;
+	height: 200%;
+	
+	/* Apply blur to the main container */
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+	
+	transform: translateZ(0); /* Force GPU layer */
+	-webkit-transform: translateZ(0);
+	
+	cursor: wait;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: none; /* SURFACE LOCKDOWN */
+}
+
+/* Separate background element to prevent layout-shift clipping */
+.loading-overlay-container::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(1, 11, 19, 0.85);
+	z-index: -1;
+}
+
+.logo-centering-box {
+	/* Anchor the logo to the visual center regardless of text below */
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.loading-overlay {
+	width: 160px;
+	height: 160px;
+	background: #1B9D78; /* Brand Green (Light Mode) */
+	border: 2px solid rgba(21, 127, 99, 0.4);
+	border-radius: 12px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	position: relative;
+	box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+	transition: all 0.2s ease;
+}
+
+/* Dark mode background */
+:root.dark .loading-overlay {
+	background: hsl(var(--neon-green-ch)); /* Brand Neon Green */
+	border-color: hsla(var(--neon-green-ch) / 0.4);
+}
+
+.animate-jiggle {
+	animation: jiggle 0.5s ease-in-out;
+}
+
+@keyframes jiggle {
+	0%, 100% { transform: scale(1) rotate(0deg); }
+	25% { transform: scale(1.05) rotate(-3deg); }
+	50% { transform: scale(0.95) rotate(3deg); }
+	75% { transform: scale(1.02) rotate(-1deg); }
+}
+
+/* Logo Text */
+.loading-logo {
+	font-size: 68px;
+	font-family: 'Nunito', sans-serif;
+	font-weight: 700;
+	color: #F5F5F5; /* White (Light Mode) */
+	letter-spacing: -12px;
+	user-select: none;
+	padding: 0 16px 8px 0;
+	z-index: 2;
+	transition: all 0.2s ease;
+}
+
+:root.dark .loading-logo {
+	color: hsl(var(--midnight-ch)); /* Midnight Black (Dark Mode) */
+}
+
+/* Arc Images */
+.loading-arc {
+	position: absolute;
+	height: 148px;
+	animation: rotateBig 2.1s linear infinite;
+	user-select: none;
+	z-index: 1;
+	transition: all 0.2s ease;
+	pointer-events: none;
+}
+
+:root.dark .loading-arc {
+	filter: brightness(0); /* Black arcs in dark mode */
+	opacity: 0.8;
+}
+
+.med-arc { 
+	transform: rotate(46deg); 
+	animation: rotateMed 2s linear infinite; 
+}
+
+.small-arc { 
+	transform: rotate(106deg); 
+	animation: rotateSmall 3s linear infinite; 
+}
+
+/* VELOCITY-SHIFTED KEYFRAMES: Multiple rotations with organic momentum shifts */
+@keyframes rotateBig {
+	0% { transform: rotate(0deg); }
+	60% { transform: rotate(540deg); }  /* Fast 1.5 rotations */
+	85% { transform: rotate(640deg); }  /* Fluid drag */
+	100% { transform: rotate(720deg); } /* Complete 2nd rotation */
+}
+
+@keyframes rotateMed {
+	0% { transform: rotate(46deg); }
+	40% { transform: rotate(586deg); }  /* Whipping through 1.5 rotations */
+	75% { transform: rotate(886deg); }  /* Steady middle */
+	100% { transform: rotate(1126deg); } /* Complete 3rd rotation */
+}
+
+@keyframes rotateSmall {
+	0% { transform: rotate(106deg); }
+	30% { transform: rotate(906deg); }   /* Insane 2-rotation burst */
+	70% { transform: rotate(1506deg); }  /* 1.5 rotation glide */
+	100% { transform: rotate(1906deg); } /* Complete 5th rotation */
+}
+
+/* Loading Message */
+.loading-message {
+	color: #F5F5F5;
+	font-family: 'Montserrat', sans-serif;
+	font-weight: 700;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	font-size: 14px;
+	opacity: 0.9;
+	text-align: center;
+	user-select: none;
+	-webkit-user-select: none;
+	max-width: 100vw;
+	padding: 0 40px;
+	line-height: 1.6;
+	
+	/* Positioned absolutely relative to the center to prevent logo shifting */
+	position: absolute;
+	top: calc(50% + 112px); /* 80px (half-height) + 32px gap */
+	left: 50%;
+	transform: translateX(-50%);
+	width: 100%;
+}
+
+.animated-dots {
+	display: inline-block;
+	width: 14px; /* Fixed width for 3 dots */
+	text-align: left;
+}

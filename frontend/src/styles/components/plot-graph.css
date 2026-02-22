@@ -1,0 +1,111 @@
+/* ============================================================================
+   OBSERVABLE PLOT - Industrial theme overrides
+   Styles the SVG output from Observable Plot to match the design system.
+   ============================================================================ */
+
+.golid-plot-graph {
+	position: relative;
+	overflow: visible !important;
+}
+
+.golid-plot-graph svg {
+	max-width: 100%;
+	max-height: 100%;
+	display: block;
+	margin: 0 auto;
+}
+
+.golid-plot-graph figure {
+	margin: 0;
+	background: transparent !important;
+	width: 100% !important;
+	height: 100% !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	overflow: visible !important;
+	position: static !important;
+}
+
+/* Industrial Tooltip */
+.golid-plot-graph [aria-label="tip"] {
+	--plot-tip-fill: #020617 !important;
+	--plot-tip-stroke: rgba(255,255,255,0.15) !important;
+	filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+}
+
+.golid-plot-graph [aria-label="tip"] path {
+	fill: var(--plot-tip-fill);
+	stroke: var(--plot-tip-stroke);
+	stroke-width: 1px;
+}
+
+.golid-plot-graph [aria-label="tip"] text {
+	fill: #ffffff !important;
+	font-family: inherit;
+	font-weight: 600;
+	font-size: 11px;
+}
+
+/* Hide axis labels */
+.golid-plot-graph [aria-label="y-axis label"],
+.golid-plot-graph [aria-label="x-axis label"],
+.golid-plot-graph text[aria-label="y-axis label"],
+.golid-plot-graph text[aria-label="x-axis label"],
+.golid-plot-graph g[aria-label*="axis label"] text {
+	display: none !important;
+}
+
+/* Legend positioning */
+.golid-plot-graph [aria-label="legend"],
+.golid-plot-graph .plot-swatches,
+.golid-plot-graph .plot-legend,
+.golid-plot-graph .plot-ramp,
+.golid-plot-graph [aria-label="ramp"] {
+	position: absolute !important;
+	top: -40px !important;
+	right: 0 !important;
+	left: auto !important;
+	width: auto !important;
+	margin: 0 !important;
+	background: transparent !important;
+	font-family: 'JetBrains Mono', monospace !important;
+	font-size: 9px !important;
+	letter-spacing: 0.05em !important;
+	text-transform: uppercase !important;
+	color: rgba(255,255,255,0.5) !important;
+	display: flex !important;
+	flex-direction: row !important;
+	justify-content: flex-end !important;
+	align-items: center !important;
+	z-index: 30 !important;
+	pointer-events: auto !important;
+}
+
+.golid-plot-graph [aria-label="legend"] > div,
+.golid-plot-graph .plot-swatches > div,
+.golid-plot-graph .plot-legend > div,
+.golid-plot-graph .plot-swatches {
+	display: flex !important;
+	flex-direction: row !important;
+	justify-content: flex-end !important;
+	align-items: center !important;
+	gap: 12px !important;
+	flex-wrap: nowrap !important;
+	width: auto !important;
+}
+
+.golid-plot-graph .plot-swatches > div > span,
+.golid-plot-graph [aria-label="legend"] span {
+	display: flex !important;
+	align-items: center !important;
+	margin: 0 !important;
+	gap: 4px !important;
+}
+
+.golid-plot-graph .plot-ramp,
+.golid-plot-graph [aria-label="ramp"] {
+	height: 16px !important;
+	width: 100px !important;
+}

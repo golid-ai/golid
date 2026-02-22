@@ -1,0 +1,65 @@
+---
+description: Patterns for external API integrations
+globs: backend/internal/service/external_*.go
+alwaysApply: false
+---
+
+# External API Integration Patterns
+
+## Service Wrapper Structure
+
+```go
+type XService struct {
+    apiKey     string
+    configured bool
+    client     *http.Client
+}
+
+func NewXService(apiKey string) *XService {
+    if apiKey == "" {
+        slog.Warn("X not configured — feature will be disabled")
+        return &XService{configured: false}
+    }
+    return &XService{apiKey: apiKey, configured: true, client: &http.Client{Timeout: 30 * time.Second}}
+}
+
+func (s *XService) IsConfigured() bool { return s.configured }
+```
+
+Every method must check `IsConfigured()` first and return a clean error, not panic.
+
+## Config Flow
+
+API keys and secrets flow: **env var → Config struct → service constructor → main.go init**.
+
+```
+.env.local:       EXTERNAL_API_KEY=xxx
+config.go:        ExternalAPIKey string → os.Getenv("EXTERNAL_API_KEY")
+main.go:          externalService := service.NewExternalService(cfg.ExternalAPIKey)
+```
+
+Template IDs, webhook secrets, and other per-service config follow the same pattern. Never hardcode in service files.
+
+## Request Building
+
+- **Verify field names** against the actual API docs. JSON struct tags must match exactly (e.g., `roleIndex` not `role_index`).
+- **Query params vs body** — some APIs put IDs in the URL, not the body. Check the docs.
+- **URL-encode** all query parameter values with `url.QueryEscape()`.
+- **Set timeouts** on the HTTP client (30s default).
+- **Close response bodies** with `defer resp.Body.Close()`.
+
+## Webhook Handling
+
+- **Verify signatures** — HMAC-SHA256 with timing-safe `hmac.Equal`. Read raw body with `io.ReadAll` before parsing.
+- **Return 200 on parse errors** — prevents the external service from retrying malformed events indefinitely.
+- **Return 500 on handler errors** — signals the external service to retry.
+- **Register on public route group** — webhooks don't have JWT auth, they use their own signature verification.
+- **Exclude from gzip middleware** — webhook bodies need to be read raw for signature verification.
+
+## Mailgun Email (Reference Implementation)
+
+The codebase uses Mailgun for transactional email. Key patterns:
+
+- **`IsConfigured()`** — graceful degradation when `MAILGUN_API_KEY` is empty; feature is disabled, no panic.
+- **`Retry()`** — wrap outbound HTTP calls for resilience against transient failures.
+- Config flow: env → Config → service constructor. See `backend/internal/service/email.go`.

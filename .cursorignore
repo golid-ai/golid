@@ -1,0 +1,6 @@
+# Uncomment to allow cursor to read/edit environment variables
+
+# !**/.env
+# !**/.env.*
+# !**/*.env
+# !**/*.env.*

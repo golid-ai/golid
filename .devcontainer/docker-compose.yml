@@ -1,0 +1,32 @@
+# ==============================================================================
+# Dev Container Overrides
+# Extends ../docker-compose.yml for VS Code Dev Containers
+# ==============================================================================
+#
+# FRONTEND: Auto-starts as VS Code task with HMR on port 3000
+# BACKEND:  Runs in Docker at http://localhost:8080
+# DATABASE: PostgreSQL at localhost:5432
+#
+
+services:
+  # VS Code attaches to this container
+  backend:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - go-mod-cache:/go/pkg/mod
+    command: sleep infinity
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # Frontend runs as VS Code task, not as Docker container
+  frontend:
+    profiles:
+      - disabled
+
+volumes:
+  go-mod-cache:

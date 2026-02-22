@@ -1,0 +1,52 @@
+# ==============================================================================
+# Golid - gcloud ignore file
+# Files to exclude from gcloud builds submit
+# ==============================================================================
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dev containers
+.devcontainer/
+
+# Documentation (not needed in builds)
+docs/
+*.md
+
+# Dependencies (installed during build)
+node_modules/
+.pnpm-store/
+vendor/
+
+# Build outputs (rebuilt during build)
+.output/
+.vinxi/
+dist/
+bin/
+backend/tmp/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Test files
+coverage/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*_test.go
+
+# Local scripts
+scripts/
+
+# Config files (secrets)
+config/.env.*
+!config/*.template

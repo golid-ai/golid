@@ -1,0 +1,31 @@
+/* ============================================================================
+   BUTTON COMPONENT STYLES
+   ============================================================================ */
+
+/* Button Ripple Animation */
+@keyframes ripple-animation {
+	from {
+		transform: scale(0);
+		opacity: 0.25;
+	}
+	to {
+		transform: scale(1);
+		opacity: 0;
+	}
+}
+
+.animate-ripple {
+	animation: ripple-animation 250ms linear forwards;
+}
+
+/* Fill Material Symbols icons inside buttons on hover.
+   !important needed to override inline font-variation-settings from Icon component. */
+button:hover .material-symbols-rounded,
+button:hover .material-symbol {
+	font-variation-settings: 'FILL' 1, 'wght' 400, 'opsz' 24, 'GRAD' 0 !important;
+}
+
+/* Fill icons in icon grid cells on hover */
+*:hover > .icon-fill-on-hover {
+	font-variation-settings: 'FILL' 1, 'wght' 400, 'opsz' 24, 'GRAD' 0 !important;
+}

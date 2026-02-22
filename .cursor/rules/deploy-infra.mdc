@@ -1,0 +1,97 @@
+---
+description: Patterns for infrastructure changes — deploy scripts, Docker, Cloud Run, env vars, config
+globs: scripts/*,**/Dockerfile*,**/nginx.conf,infra/*.yaml,**/docker-compose*,backend/internal/config/config.go,.env*,config/.env*
+alwaysApply: false
+---
+
+# Infrastructure Change Patterns
+
+High-risk, low-frequency changes. Follow the full chain for every modification.
+
+## Adding a New Environment Variable
+
+Two chains depending on whether the value is a secret or plain config.
+
+### If it's a SECRET (API key, password, signing key):
+
+1. `backend/internal/config/config.go` — add field to `Config` struct + `os.Getenv()` in `Load()`
+2. `config/.env.local` — add with dev/sandbox value (local dev only)
+3. `config/.env.example` — add with placeholder
+4. Create in GCP Secret Manager: `echo -n "value" | gcloud secrets create golid-{name}-{env} --data-file=- --project=PROJECT`
+5. `scripts/deploy.sh` — add `secret_exists` guard + append to `secrets` string in `ship_api()`
+6. Service constructor in `cmd/server/main.go` — pass `cfg.NewField` to the service
+
+### If it's plain CONFIG (URL, domain, feature flag):
+
+1. `backend/internal/config/config.go` — add field to `Config` struct + `os.Getenv()` in `Load()`
+2. `config/.env.local` — add with dev/sandbox value
+3. `config/.env.example` — add with placeholder (backend vars only)
+4. `frontend/.env.example` — add with placeholder (for `VITE_*` browser-exposed vars only). Per-environment values (e.g. test vs live Stripe public key) go in `config/.env.{qa,prod}` and are passed as build args during frontend image build.
+5. `config/.env.qa` — add with QA value
+6. `config/.env.prod` — add with production value
+7. `scripts/deploy.sh` — add to the `env_vars` block in `ship_api()` (if backend needs it at runtime)
+8. Service constructor in `cmd/server/main.go` — pass `cfg.NewField` to the service
+
+```go
+// config.go
+type Config struct {
+    // ...
+    NewAPIKey string
+}
+
+// In Load():
+NewAPIKey: os.Getenv("NEW_API_KEY"),
+```
+
+## Docker Patterns
+
+- Multi-stage builds: build stage (Go compile) → runtime stage (minimal image)
+- Never copy `.env` files into images — env vars injected at runtime
+- Health check: `HEALTHCHECK CMD curl -f http://localhost:8080/health || exit 1`
+- Non-root user in production images
+
+## Cloud Run
+
+- `concurrency: 80` (default, adjust based on load testing)
+- `memory: 512Mi` (sufficient for Go + pgx pool)
+- `min-instances: 0` (scale to zero in QA, 1+ in prod)
+- Always set `--no-traffic` on first deploy, then migrate traffic
+
+## Secrets
+
+**Never hardcode secrets.** Hybrid approach:
+
+- **Development:** `config/.env.local` (gitignored), loaded by Docker Compose
+- **QA/Prod — simple secrets** (`JWT_SECRET`, `MAILGUN_API_KEY`, `STRIPE_*`): stored in GCP Secret Manager, injected via Cloud Run `--set-secrets`. Never visible in service config.
+- **QA/Prod — `DB_PASSWORD`**: fetched from Secret Manager at deploy time by `deploy.sh`, used to construct `DATABASE_URL` (which requires the dynamic Cloud SQL socket path), then passed as `--set-env-vars`.
+- **QA/Prod — plain config** (`FRONTEND_URL`, `MAILGUN_DOMAIN`, etc.): stays in `config/.env.{qa,prod}`, passed as `--set-env-vars`.
+
+Secret naming: `golid-{name}-{env}` (e.g. `golid-jwt-secret-qa`). Env suffix prevents collisions when environments share a GCP project.
+
+## Nginx (Frontend)
+
+- `proxy_pass` to backend with `resolver` for Cloud Run DNS
+- Security headers: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`
+- Gzip enabled for text/html, application/json, application/javascript
+
+## Long-Lived Connections (SSE, WebSockets)
+
+If you add SSE or WebSocket endpoints, exclude them from:
+- Gzip middleware (causes flush panic on connection close)
+- Timeout middleware (long-lived connections)
+- Add skipper functions in `middleware/stack.go`
+
+## Infrastructure Files (infra/)
+
+Cloud Build and Cloud Run configs live in `infra/`, not alongside app code:
+- `infra/backend-cloudbuild.yaml` — builds the backend Docker image
+- `infra/frontend-cloudbuild.yaml` — builds the frontend Docker image
+- `infra/backend-service.yaml` — Cloud Run service config for the API
+- `infra/frontend-service.yaml` — Cloud Run service config for the web frontend
+- `infra/scheduler.yaml` — Cloud Scheduler job configs
+
+`scripts/deploy.sh` references these via `$PROJECT_ROOT/infra/`. Follow the naming convention: `{target}-{type}.yaml`.
+
+## Frontend Config Files
+
+- `frontend/.env.example` — documents `VITE_*` browser-exposed env vars. Separate from `config/.env.example` (backend vars). Backend secrets must never use the `VITE_` prefix.

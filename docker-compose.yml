@@ -1,0 +1,135 @@
+# ==============================================================================
+# Golid - Docker Compose
+# Go + SolidJS Monorepo Development Environment
+# ==============================================================================
+
+name: golid
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database
+  # ==========================================================================
+  db:
+    container_name: golid-db
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - golid_postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER:-dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev}
+      POSTGRES_DB: ${DB_NAME:-golid}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dev} -d ${DB_NAME:-golid}"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # ==========================================================================
+  # Go Backend API
+  # ==========================================================================
+  backend:
+    container_name: golid-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    env_file:
+      - path: config/.env.local
+        required: false
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app:cached
+    environment:
+      DB_HOST: db
+      DATABASE_URL: postgres://${DB_USER:-dev}:${DB_PASSWORD:-dev}@db:5432/${DB_NAME:-golid}?sslmode=disable
+      AUTH_RATE_LIMIT: 100
+    command: >
+      sh -c '
+        if [ -z "$$JWT_SECRET" ]; then
+          export JWT_SECRET=$$(cat /dev/urandom | tr -dc a-f0-9 | head -c 64);
+          echo "⚡ No JWT_SECRET set — generated a dev-only secret (changes on restart)";
+        fi;
+        go mod download && air -c .air.toml
+      '
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ==========================================================================
+  # SolidJS Frontend (OPTIONAL - for CI/testing only)
+  # ==========================================================================
+  # Normal dev: Frontend auto-starts as VS Code task with HMR on port 3000
+  # Docker mode: docker compose --profile frontend-docker up
+  frontend:
+    container_name: golid-frontend
+    profiles:
+      - frontend-docker
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    shm_size: "2gb"
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+    depends_on:
+      - backend
+
+  # ==========================================================================
+  # Redis (OPTIONAL - enables job queue + persistent rate limiting)
+  # ==========================================================================
+  # docker compose --profile production up
+  redis:
+    container_name: golid-redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - production
+
+  # ==========================================================================
+  # Background Worker (OPTIONAL - processes job queue)
+  # ==========================================================================
+  # Requires Redis. Shares backend image with different entrypoint.
+  worker:
+    container_name: golid-worker
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    command: go run ./cmd/worker
+    env_file:
+      - path: config/.env.local
+        required: false
+    environment:
+      DB_HOST: db
+      DATABASE_URL: postgres://${DB_USER:-dev}:${DB_PASSWORD:-dev}@db:5432/${DB_NAME:-golid}?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app:cached
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - production
+
+volumes:
+  golid_postgres_data:

@@ -1,0 +1,53 @@
+---
+description: Observability patterns — use when adding metrics, traces, or monitoring
+globs: ["**/observability/*.go", "**/metrics*.go"]
+---
+
+# Observability Patterns
+
+Follow the established patterns in `observability/tracer.go` and `observability/metrics.go`.
+
+## Opt-In via Environment Variables
+
+- `OTEL_ENDPOINT` — set to enable distributed tracing (e.g., `localhost:4317` for local collector)
+- `METRICS_ENABLED=true` — enables Prometheus `/metrics` endpoint
+- Both are no-op when unset — zero overhead in development
+
+## Adding a New Metric
+
+Register in `observability/metrics.go` using `promauto`:
+
+```go
+var MyNewCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+    Name: "my_new_counter_total",
+    Help: "Description of what this counts.",
+}, []string{"label1", "label2"})
+```
+
+**Naming conventions:**
+- snake_case
+- Units in the name: `_seconds`, `_bytes`, `_total`
+- Counters end with `_total`
+
+**Label cardinality:**
+- Use `c.Path()` (route pattern like `/api/v1/me`) NOT `c.Request().URL.Path` (actual URL like `/api/v1/users/abc123`)
+- Never use user IDs, request IDs, or other high-cardinality values as labels
+- Keep label combinations under ~100 unique sets
+
+## Adding a Trace Span
+
+The OTel middleware automatically creates spans for every HTTP request. For sub-operations:
+
+```go
+import "go.opentelemetry.io/otel"
+
+tracer := otel.Tracer("service-name")
+ctx, span := tracer.Start(ctx, "operation-name")
+defer span.End()
+```
+
+## Current Metrics
+
+- `http_requests_total` — counter (method, path, status)
+- `http_request_duration_seconds` — histogram (method, path)
+- `active_sse_connections` — gauge (no labels)

@@ -1,0 +1,33 @@
+# =============================================================================
+# Cloud Scheduler Jobs
+# =============================================================================
+# These jobs trigger HTTP endpoints on a schedule.
+# Created via `gcloud scheduler jobs create http` in the deploy script.
+#
+# This file is a reference — not directly consumed by GCP.
+# The deploy script reads these values to create/update the jobs.
+#
+# To add a new scheduled job:
+#   1. Add the job definition below
+#   2. Add a handler endpoint in the backend (protected by X-Scheduler-Secret)
+#   3. Re-run the deploy script to provision the job
+# =============================================================================
+
+jobs:
+  # Template — copy this block and replace the placeholders for each new job.
+  # The handler endpoint must verify X-Scheduler-Secret before processing.
+  #
+  # - name: my-task
+  #   description: "What this job does"
+  #   schedule: "0 2 * * *"        # cron expression
+  #   timezone: "America/New_York"
+  #   target:
+  #     uri: "${BACKEND_URL}/api/v1/admin/my-task"
+  #     method: POST
+  #     headers:
+  #       X-Scheduler-Secret: "${SCHEDULER_SECRET}"
+  #       Content-Type: "application/json"
+  #   retryConfig:
+  #     retryCount: 3
+  #     minBackoff: 60s
+  #     maxBackoff: 300s

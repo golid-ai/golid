@@ -1,0 +1,86 @@
+---
+description: Guidance for splitting large route files into maintainable pieces
+globs: frontend/src/routes/**/*.tsx
+alwaysApply: false
+---
+
+# Refactoring Large Route Files
+
+## When to Split
+
+Any route file **over 600 lines** should be split. Signs it's time:
+- Multiple distinct UI sections (KPI bar, table, modal, form)
+- Multiple modal components with their own state
+- Helper functions / sub-components that don't need the page's signals
+
+## How to Split
+
+### Co-located Components
+
+Create a `_components/` directory next to the route file:
+
+```
+routes/(private)/items/
+├── index.tsx              ← Page (signals, data fetching, layout)
+├── _components/
+│   ├── ItemCard.tsx        ← Presentational (receives props)
+│   ├── CreateItemModal.tsx ← Modal with own form state
+│   └── ItemDetailModal.tsx ← Detail modal with tabs
+```
+
+The `_` prefix tells SolidStart this is NOT a route — it's a co-located module.
+
+### What Goes Where
+
+**Parent route file keeps:**
+- Data fetching (`onMount`, `createSignal`, `createEffect`)
+- Page-level signals (loading, error, data, filters, pagination)
+- `alive` guard and `onCleanup`
+- Layout structure (`Switch/Match` for content states)
+- Signal-driven modal open/close logic
+
+**Extracted components receive:**
+- Data via **props** (not by importing shared signals)
+- Callbacks via **props** (`onSave`, `onClose`, `onDelete`)
+- They are **presentational** — they render what they're given
+
+### Example Split
+
+Before (800-line `items/index.tsx`):
+```tsx
+export default function ItemsPage() {
+  // 50 lines of signals + fetching
+  // 100 lines of ItemCard component
+  // 200 lines of CreateItemModal
+  // 300 lines of ItemDetailModal
+  // 150 lines of page layout
+}
+```
+
+After:
+```tsx
+// items/index.tsx (200 lines)
+import { ItemCard } from "./_components/ItemCard";
+import { CreateItemModal } from "./_components/CreateItemModal";
+import { ItemDetailModal } from "./_components/ItemDetailModal";
+
+export default function ItemsPage() {
+  // signals + fetching + layout
+  // passes data to components via props
+}
+```
+
+```tsx
+// items/_components/ItemCard.tsx (100 lines)
+export function ItemCard(props: { item: Item; onClick: () => void }) {
+  // pure presentational
+}
+```
+
+## Rules
+
+1. **Props, not imports** — extracted components get data via props, never import the parent's signals
+2. **Callbacks, not mutations** — extracted components call `props.onSave()`, not `setData()` directly
+3. **Own state is OK** — modals can have their own form signals (`title`, `description`, `saving`)
+4. **Alive guards stay in parent** — the parent manages the component lifecycle
+5. **Don't over-split** — a 400-line file with one modal is fine. Split when there are 3+ distinct UI sections.
