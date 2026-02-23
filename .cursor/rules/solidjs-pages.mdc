@@ -146,23 +146,43 @@ const [deleteTarget, setDeleteTarget] = createSignal(false);
 />;
 ```
 
-## Page Titles
+## Page Titles (NEVER use reactive expressions)
 
-**Never put reactive expressions directly inside `<Title>`.** The `@solidjs/meta` `<Title>` component creates an internal computation to track children. During route transitions, this computation is re-evaluated outside the component's reactive root, causing "computations created outside createRoot" warnings.
+**NEVER put reactive expressions inside `<Title>`.** This includes `createMemo` — any reactive getter call inside `<Title>` children creates a computation that leaks during route transitions, causing "computations created outside createRoot" warnings.
 
 ```tsx
-// BAD — reactive ternary inside <Title> leaks during route transition
+// BAD — reactive ternary leaks during route transition
 <Title>{userType() === "admin" ? "Manage Items" : "Items"} | My App</Title>
 
-// GOOD — pre-compute as a memo, pass resolved string
-const pageTitle = createMemo(() =>
-  `${userType() === "admin" ? "Manage Items" : "Items"} | My App`
-);
-// ...
-<Title>{pageTitle()}</Title>
+// ALSO BAD — createMemo is still reactive, still leaks
+const pageTitle = createMemo(() => "Items");
+<Title>{pageTitle()} | My App</Title>
 
-// ALSO GOOD — static string (no reactive expression)
-<Title>Dashboard | My App</Title>
+// GOOD — static string, no reactive expression
+<Title>Items | My App</Title>
+```
+
+## SSR Safety (CRITICAL)
+
+SolidStart renders components on the server during SSR. Any access to browser APIs crashes the production build and serves blank pages.
+
+- **Guard browser APIs** with `if (typeof window !== "undefined")` or use them only inside `onMount`.
+- **Heavy browser-only components** (Three.js, WebRTC, charts, video) must be `lazy()` + `<Suspense>`.
+- **Never import browser-only libraries at module top level** — use dynamic `import()` inside `onMount`.
+- **`createEffect` runs on server** — don't access `window`/`document` in effects without a guard.
+
+```tsx
+// BAD — crashes SSR
+const width = window.innerWidth;
+
+// GOOD — only runs in browser
+onMount(() => {
+  const width = window.innerWidth;
+});
+
+// GOOD — lazy-loaded browser component
+const Chart = lazy(() => import("~/components/Chart"));
+<Suspense fallback={<Spinner />}><Chart /></Suspense>
 ```
 
 ## Auth & Routing

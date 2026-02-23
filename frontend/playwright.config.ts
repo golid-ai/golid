@@ -17,8 +17,14 @@ export default defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
   
-  // Reporter to use
-  reporter: process.env.CI ? "github" : "html",
+  // Per-test timeout (prevents tests from hanging forever)
+  timeout: 30_000,
+  
+  // Kill entire suite after 5 minutes in CI
+  globalTimeout: process.env.CI ? 5 * 60_000 : undefined,
+  
+  // Reporter to use — list for real-time progress in CI
+  reporter: process.env.CI ? [["list"], ["github"]] : "html",
   
   // Shared settings for all projects
   use: {
@@ -30,6 +36,9 @@ export default defineConfig({
     
     // Take screenshot on failure
     screenshot: "only-on-failure",
+    
+    actionTimeout: 10_000,
+    navigationTimeout: 15_000,
   },
 
   // Configure projects for major browsers
@@ -53,9 +62,13 @@ export default defineConfig({
   // In CI, Docker Compose provides backend + db. Playwright starts the frontend.
   // Locally, reuses an already-running dev server if available.
   webServer: {
-    command: "npm run dev",
+    command: process.env.CI
+      ? "node --require ./tests/e2e/keep-alive.cjs node_modules/.bin/vinxi dev --port 3000"
+      : "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 120_000,
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });

@@ -33,7 +33,7 @@ import { StepGraph } from "~/components/molecules/Charts/StepGraph";
 import { BoxGraph } from "~/components/molecules/Charts/BoxGraph";
 import { TreeGraph } from "~/components/molecules/Charts/TreeGraph";
 import { BarRace } from "~/components/molecules/Charts/BarRace";
-import { GeoPlot } from "~/components/molecules/GeoPlot/GeoPlot";
+const GeoPlot = lazy(() => import("~/components/molecules/GeoPlot/GeoPlot").then(m => ({ default: m.GeoPlot })));
 import { Link } from "~/components/atoms/Link";
 import { Select, SelectItem } from "~/components/molecules/Select/Select";
 
@@ -813,11 +813,13 @@ export function MiscSection() {
                 </div>
               </div>
               <div class="flex-1 w-full h-full">
-                <GeoPlot
-                  data={partnerLocations}
-                  mode="globe"
-                  class="w-full h-full"
-                />
+                <Suspense>
+                  <GeoPlot
+                    data={partnerLocations}
+                    mode="globe"
+                    class="w-full h-full"
+                  />
+                </Suspense>
               </div>
             </div>
 
@@ -834,11 +836,13 @@ export function MiscSection() {
                 </div>
               </div>
               <div class="flex-1 w-full h-full">
-                <GeoPlot
-                  data={partnerLocations}
-                  mode="map"
-                  class="w-full h-full"
-                />
+                <Suspense>
+                  <GeoPlot
+                    data={partnerLocations}
+                    mode="map"
+                    class="w-full h-full"
+                  />
+                </Suspense>
               </div>
             </div>
           </div>

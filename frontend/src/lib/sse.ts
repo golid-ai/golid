@@ -9,7 +9,11 @@
 
 import { post, tokens } from "./api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "";
+// SSE connects directly to the backend, bypassing the SolidStart/Vite proxy.
+// The proxy doesn't propagate client disconnects, causing zombie connections
+// that exhaust the per-user SSE limit. In production, the proxy route
+// handles this correctly via Cloud Run VPC.
+const SSE_BASE = import.meta.env.VITE_SSE_URL || import.meta.env.VITE_API_URL || "";
 const API_VERSION = "v1";
 import { toast } from "./stores";
 
@@ -32,6 +36,8 @@ let eventSource: EventSource | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let backoffMs = 1000;
 const MAX_BACKOFF_MS = 30000;
+const MAX_CONSECUTIVE_ERRORS = 5;
+let consecutiveErrors = 0;
 
 const handlers = new Map<string, Set<SSEEventHandler>>();
 
@@ -74,16 +80,21 @@ export async function connectSSE(): Promise<void> {
 
   try {
     const { ticket } = await post<{ ticket: string }>("/events/ticket");
-    const url = `${API_BASE}/api/${API_VERSION}/events/stream?ticket=${encodeURIComponent(ticket)}`;
+    const url = `${SSE_BASE}/api/${API_VERSION}/events/stream?ticket=${encodeURIComponent(ticket)}`;
 
     eventSource = new EventSource(url);
 
     eventSource.onopen = () => {
+      consecutiveErrors = 0;
       backoffMs = 1000;
     };
 
     eventSource.onerror = () => {
       cleanup();
+      consecutiveErrors++;
+      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        return;
+      }
       scheduleReconnect();
     };
 
@@ -106,6 +117,7 @@ export function disconnectSSE(): void {
   }
   cleanup();
   backoffMs = 1000;
+  consecutiveErrors = 0;
 }
 
 // ============================================================================
@@ -146,7 +158,7 @@ async function scheduleReconnect() {
     if (tokens.refresh) {
       try {
         const response = await fetch(
-          `${API_BASE}/api/${API_VERSION}/auth/refresh`,
+          `/api/${API_VERSION}/auth/refresh`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

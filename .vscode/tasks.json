@@ -4,7 +4,7 @@
     {
       "label": "Frontend Dev Server",
       "type": "shell",
-      "command": "echo 'Waiting for npm install to complete...' && while [ ! -f /workspace/frontend/.npm-ready ]; do sleep 2; done && cd /workspace/frontend && PORT=3000 npm run dev -- --host",
+      "command": "echo 'Waiting for npm install...' && while [ ! -f /workspace/frontend/.npm-ready ]; do sleep 2; done && echo 'Waiting for backend (port 8080)...' && while ! curl -sf http://localhost:8080/health > /dev/null 2>&1; do sleep 2; done && echo 'Backend ready, starting frontend...' && cd /workspace/frontend && PORT=3000 npm run dev -- --host",
       "isBackground": true,
       "problemMatcher": [],
       "presentation": {

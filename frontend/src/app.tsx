@@ -29,8 +29,10 @@ function RootLayout(props: { children: JSX.Element }) {
 
   createEffect(() => {
     location.pathname;
-    window.scrollTo(0, 0);
-    document.getElementById("main-content")?.focus();
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+      document.getElementById("main-content")?.focus();
+    }
   });
 
   onMount(() => {

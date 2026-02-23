@@ -86,6 +86,7 @@ services:
       - /app/node_modules
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+      VITE_SSE_URL: ${VITE_SSE_URL:-http://localhost:8080}
     depends_on:
       - backend
 

@@ -184,16 +184,25 @@ After writing tests, update `vitest.config.ts` thresholds to 5% below the new ac
 
 Current thresholds: `statements: 80, branches: 84, functions: 77, lines: 80`. CI fails if coverage drops below these.
 
-### Pre-Push Checklist
+### Pre-Commit Verification (MANDATORY — NEVER SKIP)
 
-Before pushing any test file changes, run both:
+**NEVER run `git commit` without passing ALL of these checks first.** If any check fails, fix the issue before committing.
 
 ```bash
-cd frontend && npx vitest run          # runtime tests
-cd frontend && npx tsc --noEmit        # type checking
+# Backend — type check, lint, tests
+cd backend && go vet ./... && golangci-lint run ./... && go test ./...
+
+# Frontend — type check
+cd frontend && npx tsc --noEmit
+
+# Frontend — lint (catches unused imports, innerHTML, empty catches)
+cd frontend && npm run lint
+
+# Frontend — tests + coverage thresholds
+cd frontend && npx vitest run --coverage
 ```
 
-TypeScript catches import errors (non-existent exports, using types as values) that JavaScript silently ignores at runtime. CI runs `npm run typecheck` and will reject type errors even when all tests pass.
+**If you skip these checks and CI fails, you are responsible for fixing it immediately.**
 
 ## E2E Tests (Playwright)
 
@@ -286,6 +295,35 @@ await page.click("text=Change Password");
 
 // GOOD — targets only the button
 await page.getByRole("button", { name: "Change Password" }).click();
+```
+
+### E2E Test Credentials (must match seed data)
+
+E2E tests use the seeded users from `backend/seeds/dev_seed.sql`. If you change seed data credentials, update ALL E2E test files in `frontend/tests/e2e/`. If you change E2E test credentials, update the seed data.
+
+### Prefer Client-Side Navigation in E2E
+
+For authenticated pages, use sidebar links instead of `page.goto()`. `page.goto()` triggers a full SSR request which can fail if the page has SSR-unsafe imports. Client-side navigation avoids SSR entirely.
+
+```typescript
+// BAD — triggers SSR, may show blank page if component uses window/document
+await page.goto("/settings");
+
+// GOOD — client-side navigation, no SSR
+await page.locator('a[href="/settings"]').first().click();
+await page.waitForURL("**/settings");
+```
+
+### Duplicate Elements (Desktop + Mobile)
+
+Responsive layouts often render the same link/button twice (desktop + mobile). Use `.first()`:
+
+```typescript
+// BAD — strict mode violation if element appears in both desktop and mobile nav
+await expect(page.getByRole("link", { name: "Sign Up" })).toBeVisible();
+
+// GOOD
+await expect(page.getByRole("link", { name: "Sign Up" }).first()).toBeVisible();
 ```
 
 ### Serial Execution (workers: 1)

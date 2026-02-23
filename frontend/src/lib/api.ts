@@ -34,8 +34,8 @@ export interface AuthResponse {
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const API_VERSION = "v1";
 
-const ACCESS_TOKEN_KEY = "app_access_token";
-const REFRESH_TOKEN_KEY = "app_refresh_token";
+const ACCESS_TOKEN_KEY = "golid_access_token";
+const REFRESH_TOKEN_KEY = "golid_refresh_token";
 
 export interface ApiError {
   message: string;

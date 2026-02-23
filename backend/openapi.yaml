@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Golid API
-  version: 1.0.0
+  version: 0.1.0
   description: Go + SolidJS framework API. All endpoints prefixed with /api/v1.
   license:
     name: MIT

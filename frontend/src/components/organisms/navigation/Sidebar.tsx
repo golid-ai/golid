@@ -27,7 +27,12 @@ const navItems: NavItem[] = [
 export function Sidebar(props: SidebarProps) {
   const location = useLocation();
 
-  const isActive = (href: string) => location.pathname.startsWith(href);
+  const isActive = (href: string) => {
+    const path = location.pathname;
+    if (path === href) return true;
+    if (!path.startsWith(href + "/")) return false;
+    return !navItems.some((item) => item.href !== href && item.href.startsWith(href + "/") && path.startsWith(item.href));
+  };
 
   const visibleItems = createMemo(() =>
     navItems.filter((item) => !item.adminOnly || auth.isAdmin)

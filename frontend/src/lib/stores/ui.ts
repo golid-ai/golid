@@ -11,6 +11,7 @@ export type Theme = "light" | "dark";
 // ============================================================================
 
 function updateFavicon(isDark: boolean) {
+  if (typeof document === "undefined") return;
   const favicon = document.getElementById("favicon") as HTMLLinkElement | null;
   if (favicon) {
     favicon.href = isDark

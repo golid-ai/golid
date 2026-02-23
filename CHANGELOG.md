@@ -56,7 +56,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - TypeScript types: added `vitest/globals` to tsconfig
 - ESLint: disabled crashing `solid/reactivity` rule (plugin 0.13 bug with TSAsExpression)
 
-## [1.0.0] - 2026-02-18
+## [0.1.0] - 2026-02-18
 
 ### Added
 
