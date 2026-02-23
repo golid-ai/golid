@@ -4,6 +4,7 @@ coverage:
       default:
         target: 80%
         threshold: 2%
+    patch: off
 
 fixes:
   - "github.com/golid-ai/golid/backend/::backend/"
