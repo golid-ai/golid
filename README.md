@@ -31,7 +31,7 @@ Most starter templates give you a folder structure and leave you to wire everyth
 - **Zero to deployed in minutes** — `docker compose up` starts everything. `./scripts/deploy.sh` provisions Cloud Run, Cloud SQL, and secrets in a single command. No 200-step setup guide.
 - **Go + SolidJS > Node + React** — Go compiles to a single binary, starts in <100ms, handles 10x the concurrent connections of Node.js. SolidJS benchmarks faster than React in every metric. No vendor lock-in to Vercel.
 - **Opt-in complexity** — Email, job queues, tracing, and metrics are off by default. Set one env var to enable each. `docker compose up` works with zero configuration.
-- **AI-native development** — 23 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
+- **AI-native development** — 27 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
 - **740+ tests across three layers** — Go unit + integration (real PostgreSQL), SolidJS component tests, and 22 Playwright E2E tests. 82%+ Codecov coverage. Not a scaffold — a framework that proves itself.
 - **No vendor lock-in** — Runs on Cloud Run, Fly.io, Railway, Render, or bare metal. PostgreSQL everywhere. No proprietary abstractions.
 
@@ -215,7 +215,7 @@ See [scripts/README.md](scripts/README.md) for full details and [docs/deployment
 
 ### Cursor AI Rules
 
-23 rules in `.cursor/rules/` auto-activate based on which file you're editing:
+27 rules in `.cursor/rules/` auto-activate based on which file you're editing:
 
 | Rule | Activates on | What it does |
 |------|-------------|-------------|
@@ -224,9 +224,13 @@ See [scripts/README.md](scripts/README.md) for full details and [docs/deployment
 | `sse-realtime.mdc` | `sse*.go`, `sse.ts` | SSE hub, ticket auth, keepalive, reconnect |
 | `write-tests.mdc` | `*_test.go`, `*.test.*` | Mock-based, integration, E2E, and component testing patterns |
 | `solidjs-pages.mdc` | `routes/**/*.tsx` | Data fetching, alive guards, modals, Switch/Match |
+| `frontend-forms.mdc` | Description-triggered | Form submission, toast vs Alert, batch() in try/catch |
 | `ci-workflow.mdc` | `.github/workflows/*` | CI patterns, Codecov, common mistakes |
 | `rename-tool.mdc` | `cmd/rename/*` | Domain-safe replacement, file coverage, name validation |
-| + 15 more | Various | Migrations, seeds, infrastructure, refactoring, planning |
+| `document-module.mdc` | Description-triggered | Template for documenting existing modules |
+| `common-commands.mdc` | Description-triggered | Quick reference for dev, deploy, and GCP CLI commands |
+| `write-rules.mdc` | Description-triggered | How to write, update, and maintain Cursor rules |
+| + 16 more | Various | Migrations, seeds, infrastructure, refactoring, planning |
 
 ## License
 

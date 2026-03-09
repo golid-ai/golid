@@ -1,0 +1,137 @@
+---
+description: Document an existing module — use when asked to spec, document, or map a module that's already built
+alwaysApply: false
+---
+
+# Document a Module
+
+> **Thesis:** Use this when documenting an existing module. `plan-feature.mdc`
+> plans forward. This documents backward — capturing what was built, why, and
+> how it behaves.
+
+## Order of Operations
+
+1. **Schema first** — read the migrations in `backend/migrations/` to understand tables, enums, relationships, indexes
+2. **Service logic** — read `backend/internal/service/*.go` for business rules, auth checks, transactions, status transitions
+3. **Handler surface** — read `backend/internal/handler/*.go` for request validation, response shapes, route registration in `cmd/server/main.go`
+4. **Frontend routes** — read `frontend/src/routes/(private)/*.tsx` for pages, modals, state management
+5. **Write the spec** — fill the template below
+
+## Evidence Standards
+
+- Every business rule must be marked:
+  - `[Verified: service/item.go:142]` — confirmed by reading the code
+  - `[NEEDS VERIFICATION]` — inferred from naming or partial evidence
+- Do NOT invent business rules. If you can't confirm it, mark it unverified.
+- Use concrete evidence: function names, line numbers, SQL column names, enum values
+
+## Spec Template
+
+```markdown
+# Module: [Name]
+
+> **Thesis:** [One sentence — what this module does and why it exists]
+
+| | |
+|---|---|
+| **Domain** | [e.g., Core, Billing, User Management] |
+| **Complexity** | Low / Medium / High / Critical |
+| **Status** | Complete / In Progress / Not Started |
+
+---
+
+## Scope
+
+**Includes:**
+- [entities, services, handlers this spec covers]
+
+**Excludes:**
+- [what belongs in other module specs]
+
+**Depends On:**
+- [other modules referenced by FK or service call]
+
+---
+
+## Entities
+
+Derived from `backend/migrations/*.sql`:
+
+| Table | Key Columns | Relationships | Notes |
+|-------|-------------|---------------|-------|
+| | | | |
+
+---
+
+## State Machine
+
+Derived from service status checks and enum definitions:
+
+| Status | Transitions To | Guard | Side Effects |
+|--------|---------------|-------|-------------|
+| | | | |
+
+---
+
+## Business Rules
+
+Derived from service methods. Mark each rule.
+
+### Validation
+- [Verified: service/x.go:line] Rule description
+
+### Auth / Permissions
+- Handler: `requireUserID` + `requireUserType` (authn)
+- Service: `verifyResourceAccess` or equivalent (authz)
+
+### Side Effects
+- Emails, webhooks, SSE events, cascading status changes
+- Fire-and-forget goroutines with `service.Retry()`
+
+---
+
+## API Surface
+
+Derived from handler route registration in `cmd/server/main.go`:
+
+| Method | Route | Handler | Auth | Description |
+|--------|-------|---------|------|-------------|
+| GET | /api/v1/x | List | JWT | List with pagination |
+| POST | /api/v1/x | Create | JWT | Create new |
+| GET | /api/v1/x/:id | GetByID | JWT | Get single |
+| PUT | /api/v1/x/:id | Update | JWT | Update |
+| DELETE | /api/v1/x/:id | Delete | JWT | Soft delete |
+
+---
+
+## Frontend
+
+| Route | Page | Key Components | Data Fetching |
+|-------|------|---------------|--------------|
+| /x | List page | Table, filters, modals | onMount + signals |
+
+---
+
+## Current Implementation
+
+| Layer | Files |
+|-------|-------|
+| Handler | `backend/internal/handler/x.go` |
+| Service | `backend/internal/service/x.go` |
+| Migration | `backend/migrations/000XXX_*.up.sql` |
+| Frontend | `frontend/src/routes/(private)/x/` |
+| Tests | `backend/internal/handler/x_test.go` |
+```
+
+## Complexity Ratings
+
+| Rating | Criteria |
+|--------|----------|
+| Low | < 500 lines, simple CRUD, no state machine |
+| Medium | 500-1,500 lines, has state machine or moderate rules |
+| High | 1,500-3,000 lines, complex state machines, financial calcs |
+| Critical | 3,000+ lines, polymorphic entities, cross-system deps |
+
+## Output
+
+Save to `docs/modules/[module-name].md`. Create the directory if it doesn't exist.

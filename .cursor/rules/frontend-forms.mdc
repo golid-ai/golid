@@ -1,0 +1,81 @@
+---
+description: Form submission and error display patterns — toast vs Alert, batch() in try/catch, field-level errors
+alwaysApply: false
+---
+
+# Frontend Forms & Error Display
+
+> **Thesis:** Display page-load errors in Switch/Match states, submission errors
+> via toast, and field-level errors inline. Never use try/catch/finally with signals.
+
+## Error Display Decision Tree
+
+- API call fails during **page load** → `Switch/Match` error state with `<Alert>` component
+- API call fails during **form submit** → `toast.error()` with message
+- **Field-level validation** errors from backend → inline error messages under each input
+- **Network/auth errors** → handled by `api.ts` automatically (401 refresh, etc.)
+
+## Form Submission Pattern
+
+Uses `batch()` in both `try` and `catch`, never `finally`.
+
+```tsx
+const [saving, setSaving] = createSignal(false);
+const [fieldErrors, setFieldErrors] = createSignal<Record<string, string>>({});
+
+const handleSubmit = async () => {
+  setSaving(true);
+  setFieldErrors({});
+  try {
+    await api.create(formData);
+    if (!alive) return;
+    batch(() => {
+      setSaving(false);
+      toast.success("Created successfully");
+    });
+    onClose(); // or refetch
+  } catch (err) {
+    if (!alive) return;
+    const apiErr = err as {
+      message?: string;
+      details?: Record<string, string>;
+    };
+    batch(() => {
+      setSaving(false);
+      if (apiErr.details) {
+        setFieldErrors(apiErr.details);
+      } else {
+        toast.error(getErrorMessage(err, "Failed to create"));
+      }
+    });
+  }
+  // NO finally — setSaving(false) is in both try and catch, wrapped in batch()
+};
+```
+
+## Why No `finally`
+
+```tsx
+// BAD — finally runs unbatched after catch, creating intermediate state
+try { ... }
+catch { batch(() => { setError(msg); setSaving(false); }); }
+finally { setSaving(false); } // runs AFTER catch, unbatched — error + saving both true briefly
+
+// GOOD — setSaving(false) inside both branches, always in batch()
+try {
+  if (!alive) return;
+  batch(() => { setSaving(false); toast.success("Done"); });
+} catch {
+  if (!alive) return;
+  batch(() => { setSaving(false); toast.error("Failed"); });
+}
+```
+
+## Rules
+
+- `toast.success()` for mutations, never for reads
+- `toast.error()` for submission failures, `<Alert>` for page-load failures
+- Field-level errors: set a `fieldErrors` signal from `apiErr.details`, clear on re-submit, render inline under each `<Input>`
+- Submit button: `<Button loading={saving()} disabled={saving()}>Save</Button>`
+- `setSaving(false)` goes inside both `try` and `catch`, wrapped in `batch()` — never in `finally`
+- Form reset after successful submit: either close modal or clear signals via `batch()`

@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Feature flags** — DB-backed toggles with 30s in-memory cache. Public `GET /features` endpoint, admin CRUD endpoints. Migration 000004
 - **API versioning** — `/api/v1` + `/api/v2` route groups with `X-API-Version` response header. Strategy doc at `docs/api-versioning.md`
 - **Docker Compose production profile** — `docker compose --profile production up` adds Redis + worker. Default `docker compose up` unchanged (db + backend)
-- 3 new Cursor AI rules: `job-queue.mdc`, `feature-flags.mdc`, `observability.mdc` (23 total)
+- 7 new Cursor AI rules: `job-queue.mdc`, `feature-flags.mdc`, `observability.mdc`, `frontend-forms.mdc`, `common-commands.mdc`, `document-module.mdc`, `write-rules.mdc` (27 total)
+- Per-directory `.gcloudignore` files for backend and frontend (smaller Cloud Build bundles)
 - Queue package with typed task payloads, `EmailSender` interface, 8 unit tests
 - Feature flag handler tests (5 tests: admin list, non-admin list, public listEnabled, admin set, non-admin set)
 - API versioning middleware tests (2 tests: v1 header, v2 header)
@@ -46,7 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pagination helper documented with intent comments
 - Go scaffold tool replaced bash script (portable, uses text/template)
 - **Rename tool** — `make rename` to rebrand the project (Go module paths, package.json, Docker files, CI configs, docs)
-- 23 Cursor AI rules (was 14): added sse-realtime.mdc, rename-tool.mdc + updated 6 existing rules
+- 27 Cursor AI rules (was 14): added sse-realtime.mdc, rename-tool.mdc, frontend-forms.mdc, common-commands.mdc, document-module.mdc, write-rules.mdc + updated 6 existing rules
 
 ### Fixed
 
