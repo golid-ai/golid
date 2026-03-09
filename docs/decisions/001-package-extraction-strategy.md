@@ -6,7 +6,7 @@
 
 ## Context
 
-Golid is a full-stack Go + SolidJS framework. Downstream projects fork it and diverge. When bugs are fixed or infrastructure is improved in Golid, there is no mechanism for downstream projects to pull those changes other than manual cherry-picking.
+Golid is a full-stack Go + SolidJS starter. Downstream projects fork it and diverge. When bugs are fixed or infrastructure is improved in Golid, there is no mechanism for downstream projects to pull those changes other than manual cherry-picking.
 
 The question: should we extract shared infrastructure into publishable packages (`golid-go` Go module + `@golid/ui` npm package) so downstream projects can upgrade via `go get -u` and `npm update`?
 
