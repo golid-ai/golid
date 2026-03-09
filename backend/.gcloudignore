@@ -1,0 +1,39 @@
+# Dependencies
+vendor/
+
+# Build outputs
+tmp/
+bin/
+
+# Test files
+*_test.go
+*_integration_test.go
+coverage/
+*.out
+
+# Dev configs
+.env
+.env.*
+.air.toml
+Makefile
+
+# Seeds (not needed in prod image)
+seeds/
+
+# IDE
+.vscode/
+.idea/
+
+# Docs
+*.md
+docs/
+api/
+
+# Docker
+Dockerfile.dev
+docker-compose*
+.dockerignore
+
+# Scaffold/rename tools (not needed in prod)
+cmd/scaffold/
+cmd/rename/

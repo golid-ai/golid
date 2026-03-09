@@ -342,6 +342,19 @@ page.locator('input[type="email"]');
 page.locator('[placeholder="you@example.com"]');
 ```
 
+### Keep Tests In Sync With Code
+
+Any commit that changes a component's **public interface** must include test updates in the same commit. Public interface means:
+
+- Placeholder text, labels, or rendered copy
+- Toast/snackbar message strings (title, subtitle)
+- Component swaps (checkbox → button, outline → neutral)
+- Props that tests assert on (variant, size, disabled state)
+- API mock shapes (new fields, changed signatures)
+- Route changes or navigation targets
+
+**Search for affected tests before committing.** Use `rg "the old text"` across `*.test.tsx`, `*.test.ts`, and `tests/e2e/*.spec.ts`. If a test references something you changed, fix it in the same commit.
+
 ## Running Tests
 
 ```bash

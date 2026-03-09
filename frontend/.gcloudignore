@@ -1,0 +1,35 @@
+# Dependencies (installed during build via npm ci)
+node_modules/
+.pnpm-store/
+
+# Build outputs (rebuilt during build)
+.output/
+.vinxi/
+dist/
+
+# Test files
+coverage/
+*.test.ts
+*.test.tsx
+*.spec.ts
+tests/
+src/test/
+
+# Dev configs
+.env
+.env.*
+!.env.example
+.prettierrc
+.eslintrc*
+
+# IDE
+.vscode/
+.idea/
+
+# Docs
+*.md
+
+# Docker
+Dockerfile.dev
+docker-compose*
+.dockerignore

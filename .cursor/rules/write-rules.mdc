@@ -1,0 +1,68 @@
+---
+description: "How to write, update, and maintain Cursor rules — use when creating a new rule or updating an existing one"
+alwaysApply: false
+---
+
+# Writing Cursor Rules
+
+> **Thesis:** Every rule opens with a thesis. The thesis is the contract —
+> everything below it is the implementation.
+
+## Structure
+
+1. **Thesis (required)** — one sentence after the heading. States what the rule
+   enforces and why. This is the most important line — a thesis enables the AI
+   to generalize to novel situations; a pointer only enables pattern-matching.
+
+2. **Reference files** — "Follow the established patterns in X" goes here,
+   not in the thesis. The thesis says _what_; references say _where_.
+
+3. **Sections** — BAD/GOOD examples for the highest-consequence patterns.
+   Keep examples minimal — one BAD, one GOOD, showing the exact mistake and fix.
+
+## When to Create a New Rule
+
+- A pattern has been explained 3+ times across conversations
+- A bug was caused by violating a convention that isn't written down
+- A new file category has no glob coverage
+
+## When to Extend an Existing Rule
+
+- The new guidance applies to the same file glob
+- It's a sub-pattern of an existing rule's thesis
+
+## Updating Rules During Execution
+
+When a code change invalidates or reveals a gap in an existing rule, update the
+rule in the same pass — not as a follow-up task. Stale rules are worse than
+missing rules because they actively mislead.
+
+Update triggers (only these — don't edit rules speculatively):
+
+- Bug fix exposed an unwritten convention → add to the relevant domain rule
+- Refactor moved/renamed files referenced by a rule → update the references
+- New pattern discovered (naming conflict, type safety convention) → add to
+  the rule covering that file category
+- Audit finding that should be enforced going forward → add to audit checklist
+  AND the relevant domain rule
+
+Keep rule edits minimal — update the specific line or section affected, don't
+rewrite the entire rule. The goal is accuracy, not polish.
+
+## Naming
+
+`{domain}-{concern}.mdc` — e.g., `go-service`, `frontend-forms`, `write-tests`.
+Workflow rules use verb phrases: `plan-feature`, `document-module`, `audit-bugs`.
+
+## Activation
+
+- **Glob-triggered** for domain rules (fires when editing matching files)
+- **Description-triggered** for workflow rules (fires when the task matches)
+- **alwaysApply** only for universal guardrails — every line costs context on
+  every interaction, so this is reserved for codebase-standards and
+  parallel-subagents
+
+## Size
+
+Aim for 40-80 lines of content (excluding frontmatter). Over 120 lines suggests
+the rule covers two concerns and should be split.
