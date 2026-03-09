@@ -8,19 +8,19 @@ export default createHandler(() => (
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta name="description" content="Golid — a production-ready Go + SolidJS framework with auth, 70+ components, and Cloud Run deployment." />
+          <meta name="description" content="Golid — a production-ready Go + SolidJS starter with auth, 70+ components, and Cloud Run deployment." />
 
           {/* Open Graph / Social Sharing
               NOTE: Update og:url and og:image when custom domain is configured. */}
           <meta property="og:type" content="website" />
           <meta property="og:site_name" content="Golid" />
-          <meta property="og:title" content="Golid — Go + SolidJS Production Framework" />
+          <meta property="og:title" content="Golid — Go + SolidJS Production Starter" />
           <meta property="og:description" content="Auth, 70+ UI components, SSR, real-time SSE, opt-in Redis/OTel/Prometheus, and one-command Cloud Run deployment." />
           <meta property="og:url" content={import.meta.env.VITE_OG_URL || "https://golid.ai"} />
 
           {/* Twitter Card */}
           <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content="Golid — Go + SolidJS Production Framework" />
+          <meta name="twitter:title" content="Golid — Go + SolidJS Production Starter" />
           <meta name="twitter:description" content="Auth, 70+ UI components, SSR, real-time SSE, and one-command Cloud Run deployment." />
 
           {/* Favicon - theme-aware (light/dark swap) */}
@@ -64,6 +64,14 @@ export default createHandler(() => (
                 link.href = href;
                 document.head.appendChild(link);
               });
+              // Reveal icons once Material Symbols font loads
+              if (document.fonts) {
+                document.fonts.ready.then(function() {
+                  document.documentElement.classList.add('icons-loaded');
+                });
+              } else {
+                document.documentElement.classList.add('icons-loaded');
+              }
             })();
           `}</script>
           {assets}

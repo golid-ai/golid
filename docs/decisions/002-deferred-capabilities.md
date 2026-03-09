@@ -6,11 +6,11 @@
 
 ## Context
 
-After completing the V1 framework (auth, 70+ components, CI/CD, 82%+ test coverage, deployment infra), we evaluated what additional engineering capabilities a "rebuild Notion at Google level" project would need. Twenty-one capabilities were identified as gaps between "production starter" and "scaled production service," or flagged during the pre-launch audit as improvements that aren't worth the cost right now.
+After completing the V1 starter (auth, 70+ components, CI/CD, 82%+ test coverage, deployment infra), we evaluated what additional engineering capabilities a "rebuild Notion at Google level" project would need. Twenty-one capabilities were identified as gaps between "production starter" and "scaled production service," or flagged during the pre-launch audit as improvements that aren't worth the cost right now.
 
 ## Decision
 
-**Defer all twenty-one. The framework is complete for V1. Each capability has a specific trigger condition for when to add it.**
+**Defer all twenty-one. The starter is complete for V1. Each capability has a specific trigger condition for when to add it.**
 
 ## Deferred Capabilities
 
@@ -18,7 +18,7 @@ After completing the V1 framework (auth, 70+ components, CI/CD, 82%+ test covera
 
 **What:** k6 or artillery scripts that benchmark auth endpoints, authenticated CRUD flows, and SSE connections under concurrent load.
 
-**Why defer:** No users yet. Benchmark numbers would be meaningless without a representative workload. The Go + pgxpool stack is inherently performant — the bottleneck will be application-specific queries, not the framework.
+**Why defer:** No users yet. Benchmark numbers would be meaningless without a representative workload. The Go + pgxpool stack is inherently performant — the bottleneck will be application-specific queries, not the starter.
 
 **Trigger:** Before public launch or when onboarding the first team that asks "what's the throughput?" Add a `benchmarks/` directory with a k6 script and publish req/s + p95 latency numbers in the README.
 
@@ -26,7 +26,7 @@ After completing the V1 framework (auth, 70+ components, CI/CD, 82%+ test covera
 
 **What:** Structured log of who performed sensitive operations (user deletion, role changes, feature flag toggles, password resets) with timestamp, actor ID, and before/after state.
 
-**Why defer:** Audit logging is a compliance requirement (SOC2, HIPAA, GDPR), not a framework requirement. Adding it before a compliance need exists means maintaining a schema and retention policy with zero consumers.
+**Why defer:** Audit logging is a compliance requirement (SOC2, HIPAA, GDPR), not a starter requirement. Adding it before a compliance need exists means maintaining a schema and retention policy with zero consumers.
 
 **Trigger:** First enterprise customer asks for SOC2 compliance, or the app handles data subject to regulatory audit. Implementation: append-only `audit_log` table with `actor_id`, `action`, `resource_type`, `resource_id`, `metadata JSONB`, `created_at`.
 
@@ -72,9 +72,9 @@ After completing the V1 framework (auth, 70+ components, CI/CD, 82%+ test covera
 
 ### 8. Lean Template Variant
 
-**What:** The framework ships Three.js, GSAP, Observable Plot, AG Grid, d3-geo, world-atlas, and us-atlas (~3MB+ of dependencies). These power the component showcase but most projects won't use them. A "minimal" template option — or moving showcase-only deps to devDependencies — would reduce the default footprint.
+**What:** The starter ships Three.js, GSAP, Observable Plot, AG Grid, d3-geo, world-atlas, and us-atlas (~3MB+ of dependencies). These power the component showcase but most projects won't use them. A "minimal" template option — or moving showcase-only deps to devDependencies — would reduce the default footprint.
 
-**Why defer:** The showcase components demonstrate framework capabilities and serve as reference implementations for dynamic imports, lazy loading, and third-party integration patterns. Splitting into template variants adds maintenance cost (two dependency trees to keep in sync) for a problem users haven't reported yet.
+**Why defer:** The showcase components demonstrate starter capabilities and serve as reference implementations for dynamic imports, lazy loading, and third-party integration patterns. Splitting into template variants adds maintenance cost (two dependency trees to keep in sync) for a problem users haven't reported yet.
 
 **Trigger:** Users report slow installs or bloated production bundles on projects that don't use the showcase components. Implementation: either move showcase deps to `devDependencies` and gate their imports, or offer `--template minimal` in the CLI (see item 9).
 
@@ -82,9 +82,9 @@ After completing the V1 framework (auth, 70+ components, CI/CD, 82%+ test covera
 
 **What:** A `create-golid` CLI (like `create-next-app` or `create-solid`) that initializes a new project with interactive prompts, replacing the current fork + rename tool workflow.
 
-**Why defer:** The rename tool handles the core use case (fork, rebrand, build) and is tested as part of the codebase. A publishable CLI requires npm package publishing, versioning independent of the framework, template hosting, and ongoing maintenance of the scaffolding logic outside the monorepo. ADR-001 covers the broader package extraction strategy.
+**Why defer:** The rename tool handles the core use case (fork, rebrand, build) and is tested as part of the codebase. A publishable CLI requires npm package publishing, versioning independent of the starter, template hosting, and ongoing maintenance of the scaffolding logic outside the monorepo. ADR-001 covers the broader package extraction strategy.
 
-**Trigger:** Community adoption demands smoother onboarding than fork + rename, or the framework needs template variants (minimal vs full) that a CLI can present as choices. Implementation: `create-golid` npm package using `prompts` + `degit` or similar, with the rename tool's logic embedded.
+**Trigger:** Community adoption demands smoother onboarding than fork + rename, or the starter needs template variants (minimal vs full) that a CLI can present as choices. Implementation: `create-golid` npm package using `prompts` + `degit` or similar, with the rename tool's logic embedded.
 
 ### 10. Cross-Browser E2E Testing
 
@@ -114,7 +114,7 @@ After completing the V1 framework (auth, 70+ components, CI/CD, 82%+ test covera
 
 **What:** Replace the default `unsafe-inline` CSP with a nonce-based policy that generates a per-request nonce for inline scripts and styles.
 
-**Why defer:** SolidJS and Tailwind both inject inline styles at runtime. A nonce-based CSP requires SolidStart build tooling changes (nonce injection into SSR-rendered script tags) that are deployment-specific and framework-version-dependent. The current CSP is configurable via `CSP_POLICY` env var — production deployments can override the default with a stricter policy. The default works correctly for development and staging.
+**Why defer:** SolidJS and Tailwind both inject inline styles at runtime. A nonce-based CSP requires SolidStart build tooling changes (nonce injection into SSR-rendered script tags) that are deployment-specific and starter-version-dependent. The current CSP is configurable via `CSP_POLICY` env var — production deployments can override the default with a stricter policy. The default works correctly for development and staging.
 
 **Trigger:** Security audit requires nonce-based CSP, or the app handles sensitive data that justifies the additional build complexity. Implementation: middleware generates a nonce per request, passes it to SolidStart's SSR context, and sets the CSP header with `script-src 'nonce-{value}'`.
 
@@ -184,7 +184,7 @@ After completing the V1 framework (auth, 70+ components, CI/CD, 82%+ test covera
 
 ## What This Means
 
-The framework provides every engineering discipline needed for production:
+The starter provides every engineering discipline needed for production:
 
 - **Auth:** Register through email verification, password reset, token refresh, session revocation
 - **Testing:** 82%+ coverage (unit + integration + component + E2E), CI-enforced thresholds

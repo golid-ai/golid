@@ -1,6 +1,6 @@
 # Live Demo Deployment
 
-Deploy a live demo instance for framework evaluation.
+Deploy a live demo instance for starter evaluation.
 
 ## Strategy
 

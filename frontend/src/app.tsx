@@ -66,7 +66,7 @@ function RootLayout(props: { children: JSX.Element }) {
     <MetaProvider>
       <Title>Golid</Title>
       <Meta property="og:title" content="Golid" />
-      <Meta property="og:description" content="Production-ready Go + SolidJS framework. Auth, 70+ components, SSR, real-time events, and one-command deployment." />
+      <Meta property="og:description" content="Production-ready Go + SolidJS starter. Auth, 70+ components, SSR, real-time events, and one-command deployment." />
       <Meta property="og:image" content="/images/golid-og.png" />
       <Meta property="og:type" content="website" />
       <Meta name="twitter:card" content="summary" />

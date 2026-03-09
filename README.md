@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
-A production-ready **Go + SolidJS** framework. Auth, 70+ UI components, SSR, real-time events, and one-command deployment — skip the boilerplate week and start building.
+A production-ready **Go + SolidJS** starter. Auth, 70+ UI components, SSR, real-time events, and one-command deployment — skip the boilerplate week and start building.
 
 <p align="center"><strong><a href="https://golid.ai">golid.ai</a></strong> — Live demo featuring the full component library</p>
 
@@ -32,7 +32,7 @@ Most starter templates give you a folder structure and leave you to wire everyth
 - **Go + SolidJS > Node + React** — Go compiles to a single binary, starts in <100ms, handles 10x the concurrent connections of Node.js. SolidJS benchmarks faster than React in every metric. No vendor lock-in to Vercel.
 - **Opt-in complexity** — Email, job queues, tracing, and metrics are off by default. Set one env var to enable each. `docker compose up` works with zero configuration.
 - **AI-native development** — 27 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
-- **740+ tests across three layers** — Go unit + integration (real PostgreSQL), SolidJS component tests, and 22 Playwright E2E tests. 82%+ Codecov coverage. Not a scaffold — a framework that proves itself.
+- **740+ tests across three layers** — Go unit + integration (real PostgreSQL), SolidJS component tests, and 22 Playwright E2E tests. 82%+ Codecov coverage. Not a scaffold — a starter that proves itself.
 - **No vendor lock-in** — Runs on Cloud Run, Fly.io, Railway, Render, or bare metal. PostgreSQL everywhere. No proprietary abstractions.
 
 | | Golid | Next.js + API | Go-only starters | Rails / Laravel |
