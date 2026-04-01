@@ -87,7 +87,7 @@ jobs:
 
       # When forking, add slug: your-org/your-repo to point Codecov at your repo
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           flags: backend
           files: backend/coverage.out
@@ -127,7 +127,7 @@ jobs:
 
       # When forking, add slug: your-org/your-repo to point Codecov at your repo
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           flags: frontend
           files: frontend/coverage/lcov.info
