@@ -39,7 +39,7 @@ only when it adds clarity.
 - No period at end of first line
 - Body separated from title by blank line
 - One logical change per commit — don't bundle unrelated changes
-- When `scripts/check_spec_drift.sh` exists (post-v0.3.0 Phase E), run it before commits touching module-owned files.
+- Run `scripts/check_spec_drift.sh` before commits touching module-owned handler/service files.
 - Use HEREDOC for multi-line: `git commit -m "$(cat <<'EOF' ... EOF)"`
 - Do NOT commit `.env`, credentials, or secret files
 - Do NOT amend commits that have been pushed

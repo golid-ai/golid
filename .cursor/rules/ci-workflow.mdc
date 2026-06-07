@@ -10,6 +10,7 @@ globs:
 | Job | Gate | Depends on |
 |-----|------|------------|
 | `changes` | always | — |
+| `spec-drift` | always | — |
 | `backend-unit` | `run_backend` | `changes` |
 | `backend-integration` | `run_backend` | `changes`, `backend-unit` |
 | `backend-coverage` | `run_backend` + unit + integration OK | `changes`, `backend-unit`, `backend-integration` |
@@ -17,7 +18,7 @@ globs:
 | `scaffold-verify` | `run_backend \|\| run_frontend` | `changes` |
 | `e2e` | `run_e2e` + integration + frontend OK | `changes`, `backend-integration`, `frontend` |
 
-`changes` uses `dorny/paths-filter@v4` to compute `run_backend`, `run_frontend`, `run_e2e`. Docs-only PRs (`docs/**` only) skip backend, frontend, scaffold, and E2E until spec-drift lands (Phase E).
+`changes` uses `dorny/paths-filter@v4` to compute `run_backend`, `run_frontend`, `run_e2e`. Docs-only PRs (`docs/**` only) run `changes` + `spec-drift` only — backend, frontend, scaffold, and E2E are skipped.
 
 Workflow needs `pull-requests: read` for paths-filter on PRs.
 

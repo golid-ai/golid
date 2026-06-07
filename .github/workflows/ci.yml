@@ -87,6 +87,20 @@ jobs:
             echo "run_e2e=false" >> "$GITHUB_OUTPUT"
           fi
 
+  spec-drift:
+    name: Spec Drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            scripts/check_spec_drift.sh origin/${{ github.base_ref }}
+          else
+            scripts/check_spec_drift.sh HEAD~1
+          fi
+
   backend-unit:
     name: Backend Unit
     runs-on: ubuntu-latest
