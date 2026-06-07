@@ -6,11 +6,11 @@
 
 ## Context
 
-After completing the V1 starter (auth, 70+ components, CI/CD, 993 tests; Codecov **82.98%** project per [coverage-and-eslint plan](../plans/archive/6-7-26/coverage-and-eslint.md), deployment infra), we evaluated what additional engineering capabilities a "rebuild Notion at Google level" project would need. Twenty-one capabilities were identified as gaps between "production starter" and "scaled production service," or flagged during the pre-launch audit as improvements that aren't worth the cost right now.
+After completing the V1 starter (auth, 70+ components, CI/CD, **995** headline tests; Codecov **~83%** project per [coverage-and-eslint plan](../plans/archive/6-7-26/coverage-and-eslint.md), deployment infra), we evaluated what additional engineering capabilities a "rebuild Notion at Google level" project would need. Twenty-one capabilities were identified as gaps between "production starter" and "scaled production service," or flagged during the pre-launch audit as improvements that aren't worth the cost right now.
 
 ## Decision
 
-**Defer all twenty-one. The starter is complete for V1. Each capability has a specific trigger condition for when to add it.**
+**Defer twenty capabilities (items 1–18, 20–21). Item 19 shipped in v0.3.1.** The starter is complete for V1. Each remaining capability has a specific trigger condition for when to add it.
 
 ## Deferred Capabilities
 
@@ -66,7 +66,7 @@ After completing the V1 starter (auth, 70+ components, CI/CD, 993 tests; Codecov
 
 **What:** IntegreSQL provides isolated, pre-provisioned PostgreSQL databases for each integration test, enabling parallel test execution without shared state conflicts.
 
-**Why defer:** Current integration tests run serially against a single test database with `CleanAllTables` between tests. This works at the current test suite size (~36 integration tests, ~10s total). IntegreSQL adds infrastructure complexity (another container, template DB management) for a speedup that only matters with 100+ integration tests.
+**Why defer:** Current integration tests run serially against per-package schemas (`it_<pkg>_<pid>`) with `CleanAllTables` between tests. This works at the current suite size (**42** integration tests, ~10s total). IntegreSQL adds infrastructure complexity (another container, template DB management) for a speedup that only matters with 100+ integration tests.
 
 **Trigger:** Integration test suite exceeds 60 seconds or tests start failing due to shared state race conditions. Inspired by [allaboutapps/go-starter](https://github.com/allaboutapps/go-starter).
 
@@ -142,11 +142,13 @@ After completing the V1 starter (auth, 70+ components, CI/CD, 993 tests; Codecov
 
 **Trigger:** Never, unless both conditions are met: (1) the team grows large enough that CI feedback delay causes repeated broken-main incidents, and (2) the typecheck + lint completes in under 10 seconds (e.g., via incremental type checking or project references). Even then, prefer a pre-push hook over pre-commit.
 
-### 17. ESLint 8 → 9 Migration
+### 17. ESLint 9 flat config migration
 
-**What:** Upgrade from ESLint 8 + `@typescript-eslint` v6 to ESLint 9 (flat config) + `@typescript-eslint` v8+.
+**What:** Migrate from `.eslintrc.cjs` (ESLint 8) to ESLint 9 `eslint.config.js` flat config.
 
-**Why defer:** ESLint 9 introduced a breaking config format change (`.eslintrc` → `eslint.config.js` flat config). The migration touches every config file, changes plugin resolution, and requires testing every rule. The current setup works correctly, passes CI, and catches real issues. This is a dedicated PR with its own QA cycle, not a pre-launch fix.
+**Partially shipped (v0.3.1):** `@typescript-eslint/*@8.60` and `eslint-plugin-solid@0.14.5` on ESLint 8 — audit highs cleared, lint/typecheck/test pass. Flat config is the remaining work.
+
+**Why defer (flat config only):** ESLint 9's config format change touches every config file, changes plugin resolution, and requires testing every rule. The current ESLint 8 + TS-eslint 8 setup passes CI and catches real issues. Full flat-config migration is a dedicated PR with its own QA cycle.
 
 **Trigger:** A plugin or rule we need only supports ESLint 9+, or ESLint 8 stops receiving security patches. Implementation: follow the [ESLint migration guide](https://eslint.org/docs/latest/use/migrate-to-9.0.0), convert to flat config, update all plugins.
 
@@ -158,13 +160,11 @@ After completing the V1 starter (auth, 70+ components, CI/CD, 993 tests; Codecov
 
 **Trigger:** The retry config grows to 5+ attempts with longer delays (making post-shutdown goroutines run for 30+ seconds), or the retry function is used for operations that touch the database pool. Implementation: add `ctx context.Context` as first parameter, replace `time.Sleep` with `select { case <-time.After(delay): case <-ctx.Done(): return ctx.Err() }`.
 
-### 19. golangci-lint v2 Migration
+### 19. golangci-lint v2 Migration — **Shipped (v0.3.1)**
 
-**What:** Migrate from golangci-lint v1 to v2. The v1 line (last release v1.62.2) was built with Go 1.23 and does not support Go 1.26 modules. The v2 line (v2.10.1+) supports Go 1.26 but uses an incompatible configuration format.
+**What:** Migrate from golangci-lint v1 to v2 for Go 1.26 compatibility.
 
-**Why defer:** The v2 migration requires converting any `.golangci.yml` config to the new format, auditing `nolint` directive syntax changes, and testing against the new default linter set. The lint step is currently set to `continue-on-error: true` in CI — linting still runs locally with v1.62.2 (installed in the devcontainer) and catches issues before push.
-
-**Trigger:** The devcontainer's Go version or toolchain upgrades make v1 unusable locally, or a new linter rule only available in v2 is needed. Implementation: follow the [golangci-lint migration guide](https://golangci-lint.run/docs/product/migration-guide), create a v2-compatible config, update CI action to `@v9` with a pinned v2 version, and remove `continue-on-error`.
+**Shipped:** `backend/.golangci.yml` uses `version: "2"` with five explicit linters. CI runs `golangci/golangci-lint-action@v9` pinned to **v2.10.1** (blocking — no `continue-on-error`).
 
 ### 20. API Proxy Fetch Timeout
 
@@ -187,10 +187,10 @@ After completing the V1 starter (auth, 70+ components, CI/CD, 993 tests; Codecov
 The starter provides every engineering discipline needed for production:
 
 - **Auth:** Register through email verification, password reset, token refresh, session revocation
-- **Testing:** 993 tests (351 Go + 622 Vitest + 20 Playwright E2E); Codecov **82.98%** project (`target: 80%` gate); Vitest floors 75/54/78/75 on included files; CI-enforced thresholds
+- **Testing:** **995** headline tests (**353** Go unit + **622** Vitest + **20** Playwright E2E; **42** integration tests run separately via `-tags integration`); Codecov **~83%** project (`target: 80%` gate); Vitest floors 75/54/78/75 on included files; CI-enforced thresholds
 - **Security:** 2-layer auth, rate limiting, CORS, parameterized queries, no leaked internals
 - **Observability:** Structured logging, optional OpenTelemetry + Prometheus
 - **Deployment:** Docker, Cloud Run infra, env-driven config
 - **Graceful degradation:** IsConfigured() pattern across all optional services
 
-The twenty-one deferred items are the gap between "starter framework" and "scaled SaaS" — each is a single session of work when the trigger condition is met. None are structural gaps that require rearchitecting.
+The twenty remaining deferred items are the gap between "starter framework" and "scaled SaaS" — each is a single session of work when the trigger condition is met. None are structural gaps that require rearchitecting.

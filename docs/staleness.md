@@ -11,7 +11,7 @@
 |----------|---------------|---------------|
 | `docs/architecture.md` | Auth flow, middleware stack, SSE hub, or data-fetching pattern changes | 2026-06-07 |
 | `docs/best-practices.md` | SolidJS fetching pattern, error handling, or testing conventions change | 2026-06-06 |
-| `docs/cli-reference.md` | Makefile targets, health/ready endpoints, or test DB setup change | 2026-06-06 |
+| `docs/cli-reference.md` | Makefile targets, health/ready endpoints, or test DB setup change | 2026-06-07 |
 | `docs/testing-checklist.md` | Module business rules or critical integration scenarios change | 2026-06-06 |
 | `docs/example-module.md` | Scaffold output layout, wire paths, or frontend page patterns change | 2026-06-07 |
 | `docs/flows.md` | Cross-module request chains or auth/SSE ticket flow changes | 2026-06-07 |

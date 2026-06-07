@@ -6,9 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-07
+
+Shelf-release doc sync and Codecov carryforward on docs-only pushes.
+
 ### Changed
 
 - **Codecov on docs-only pushes** — `carryforward: true` in `codecov.yml`; CHANGELOG-only commits run backend + frontend CI (no E2E) so release tags get a fresh coverage upload
+- **ADR-002 accuracy** — headline test counts (**995** / 353 Go unit + 622 Vitest + 20 E2E); mark golangci-lint v2 as shipped (v0.3.1); split ESLint 9 flat config (deferred) from TS-eslint 8 (shipped); integration harness count **42**
+- **Archived plans + staleness** — v0.3.0 follow-ups point to v0.3.1; coverage plan post-archive shelf note; `cli-reference.md` verified 2026-06-07
 
 ## [0.3.1] - 2026-06-07
 
