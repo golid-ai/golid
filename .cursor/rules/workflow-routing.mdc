@@ -1,0 +1,63 @@
+---
+description: Route agent workflow by risk tier before planning, implementing, or auditing
+alwaysApply: false
+---
+
+# Workflow Routing
+
+> **Thesis:** Match process weight to blast radius so small changes stay light
+> and high-risk work still gets full contract, audit, and rollback gates.
+
+Use this before choosing `plan-feature`, `slice-and-ship`, `/review`, or an
+audit checklist. Pick the highest tier matched by an explicit trigger.
+
+## Risk Tiers
+
+| Tier | Use when | Closeout |
+|---|---|---|
+| T0 trivial | Docs-only, comments, typos, formatting, copy with no API/state/permission change | `git diff --check`; lint only if relevant |
+| T1 local | Single-module behavior, small bug fix, local UI polish, or behavior-neutral refactor with tests and no public signature, SQL filter, status transition, or branch-coverage drift | Read relevant spec if code changed; focused test/lint; scoped audit only if behavior changed |
+| T2 contract | New/changed API, handler/service contract, migration, seed behavior, frontend API type, planned acceptance criterion | `slice-and-ship` loop, contract closeout, focused tests, spec/OpenAPI/frontend type sync as needed |
+| T3 critical | Money, payouts, auth tokens/model, role matrix, destructive/risky migration, background job, infra, 3+ modules, release readiness | Full plan extras, strict slice stops, drift check, multi-pass audit or release audit, manual QA matrix |
+
+## Escalation
+
+If work crosses tiers mid-task, stop the lower-tier path, name the new trigger,
+and finish under the higher-tier closeout. Example: a T1 validation fix that
+requires an OpenAPI or frontend API type change becomes T2.
+
+Do not say "when unsure, use T3." Inspect the diff and escalate only when a
+listed trigger is present.
+
+## Examples
+
+- T0: fix a docs typo; reword static copy; archive a completed plan.
+- T1: fix one local validation branch with a focused test; update one component
+  test assertion.
+- T2: add an endpoint; change response shape; add a reversible migration.
+- T3: change invoice fee math; touch password reset tokens; modify payout or
+  Stripe webhook behavior.
+
+Not T3:
+
+- a single frontend copy change;
+- one local validation branch unless it changes API contract or module behavior;
+- generated type-only sync caused by an already-classified T2 backend contract.
+
+## Rule Selection
+
+- T0: use only core guardrails and the smallest relevant verification.
+- T1: use the matching domain rule plus focused tests; audit only touched
+  behavior.
+- T2: use `planning-standards` or the existing plan, then `slice-and-ship`.
+- T3: use full `plan-feature`/`plan-infra` extras, strict `slice-and-ship`,
+  `audit-bugs` or `audit-codebase`, and drift checks.
+
+## Anti-Rationalization
+
+| Excuse | Counter |
+|---|---|
+| "Every change gets full feature process." | T0/T1 fast paths exist so the process does not become noise. |
+| "I picked T1 because T2 felt heavy." | Triggers decide the tier. Any T2 trigger makes the work T2. |
+| "T0 means I can skip review." | T0 skips heavyweight audit, not reading the diff for surprises. |
+| "I'll run release audit to be safe." | `audit-codebase` is for T3/release work; use scoped evidence otherwise. |

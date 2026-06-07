@@ -1,0 +1,143 @@
+---
+description: How to break a planned feature into shippable slices — use when starting implementation of a card or plan
+alwaysApply: false
+---
+
+# Slice and Ship
+
+> **Thesis:** Ship one acceptance criterion end-to-end before starting the
+> next. The slice — not the commit, not the feature — is the unit of audit
+> and review. Most "clean up audit follow-ups" rollups exist because we
+> audited the whole feature instead of each slice as it landed.
+>
+> **Refrain:** `Plan → Slice → Implement → Test → Sync → Closeout → Commit → Audit → Repeat`
+
+## What Is a Slice
+
+A slice is the smallest change that is independently:
+
+1. **Mergeable** — could ship to production without the next slice landing.
+2. **Verifiable** — has at least one test that exercises the new behavior.
+3. **Documented** — any contract change (spec, API, env var) is updated in the same set of commits.
+4. **Bounded** — typically one acceptance criterion from `docs/plans/*.md`. Rarely more than ~300 lines of diff total across its commits.
+
+A slice is **larger** than a commit (a slice may be 2–4 atomic commits) and **smaller** than a feature (a feature is usually 3–8 slices).
+
+For seed/demo work, mirror the user-facing walkthrough in the commit structure:
+accounts → core CRUD → settings/profile → optional secondary surfaces. Each
+layer should be usable and rollback-validated before the next layer lands.
+
+## The Loop
+
+Start from the relevant `docs/plans/*.md` file when one exists. If execution
+reveals that the plan's slices are wrong, update the plan before continuing.
+Use module specs for implemented current-state behavior; use the plan for
+future intended changes.
+
+Classify risk with `workflow-routing` first. T2/T3 work uses this full loop; T1
+may use a scoped local closeout unless a T2 trigger appears; T0 skips slice
+ceremony. If new facts reveal a higher tier, stop and complete that tier's
+closeout before commit.
+
+For each acceptance criterion in the plan:
+
+1. **Read the next criterion only.** Resist the urge to scan the whole plan and "implement related things." That's how slices grow into features.
+2. **Implement the criterion.** Backend + frontend + migration if needed — but only what this criterion requires.
+3. **Write the test before declaring the criterion done.** New branch needs new test. See `write-tests` rule, "Test Plan from Predicate."
+4. **Sync the spec/docs in the same set of commits.** State machine row, enum value, API surface, env var — see `document-module` rule, "Same-Commit Spec Sync."
+5. **Run contract closeout when the diff requires it.** See the checklist below before "ready to commit."
+6. **Commit atomically** — usually 2–3 commits per slice (`feat:`, `test:`, sometimes `docs:`). See `git-commits` rule, "Change Sizing."
+7. **Audit the slice.** Run the relevant section of `audit-bugs` against the files this slice touched. Cite evidence.
+8. **STOP.** Do not start the next slice until the current one is fully audited. This is the single hardest rule to follow and the highest-leverage one.
+
+## Iterative Release Harness
+
+For T2/T3 slices, especially public/privacy/security/contract work, use the
+parent-agent + subagent loop as a release harness:
+
+1. Parent agent owns the plan, scope, commit shape, and final tradeoff calls.
+2. Dispatch focused subagents against independent surfaces (backend invariants,
+   frontend behavior, docs/spec drift, tests/QA). Ask each for blockers first,
+   then medium-risk follow-ups.
+3. Parent fixes findings and updates the plan/spec in the same slice.
+4. Run a second focused audit when the first pass finds high-severity issues or
+   when the fix changes product behavior.
+5. Commit only after the slice diff, tests, docs, and audit findings agree.
+
+This costs more wall-clock time than a single-agent pass, so do not make it
+ceremony for small T0/T1 edits. Use it when independent critique is likely to
+catch contradictions the implementing agent is too close to see.
+
+## Contract Closeout
+
+Before declaring a slice done, run a contract closeout if the diff touched any
+backend service/handler, migration, API response, frontend API type, or module
+spec:
+
+1. `git diff --name-only` and classify changes:
+   backend behavior, API contract, frontend consumer, migration, seed/demo data,
+   docs/spec/rules.
+2. For every backend contract change, verify matching OpenAPI and frontend API
+   type changes are present or explicitly unnecessary.
+3. For every handler/service change, verify the relevant `docs/modules/*/spec.md`
+   changed in the same commit set or the commit message includes a valid
+   `[skip-spec(<module>): reason]` or `[skip-spec: reason]`.
+4. For every seed/demo behavior change, rollback-validate the seed or migration
+   in a transaction when a database is available.
+5. Run `scripts/check_spec_drift.sh <base-ref>` before final handoff when the
+   slice touches backend services/handlers.
+
+Single-agent slices should not defer contract sync. The only normal exception is
+the parallel-subagent shared-file sweep-up documented in `parallel-subagents`
+and `git-commits`; that exception is for additive edits to shared files only.
+
+Do this before "ready to commit." Focused tests passing means behavior works;
+contract closeout means the rest of the codebase can safely depend on it.
+
+## Why This Rule Exists
+
+Auditing an entire feature pile after landing 5–10 commits produces large
+follow-up rollups that should have been zero. Slice-by-slice audit catches
+cross-cut bugs as the first slice's findings, not as a third audit pass.
+
+Concretely: if a multi-step feature were sliced into "list resource", "create
+resource", "update resource", "delete with guards" — and each slice were
+audited before the next started — permission and status-guard bugs would surface
+on the first slice, not after the whole feature ships.
+
+## What a Slice Is Not
+
+- **Not "everything I can implement in one sitting"** — that's a session, not a slice.
+- **Not "one file"** — a slice may touch handler + service + migration + frontend + spec.
+- **Not "everything for one user story"** — a user story usually decomposes into multiple slices.
+- **Not "one PR"** — a PR may bundle 1–3 slices, each still atomically reviewable.
+
+## Anti-Rationalization
+
+| Excuse | Counter |
+|---|---|
+| "These two criteria are tightly coupled, I'll do them together" | Coupling is the symptom, not the justification. If they truly can't be sliced, the plan is wrong — re-slice the plan, then implement. |
+| "I'll batch the tests for all slices at the end" | Follow-up test commits cost more than writing the test inline. Test lands with the slice or the slice isn't done. |
+| "Auditing each slice is too slow" | The audit on a single-slice diff is 60–90 seconds (small surface area). The audit on a full-feature diff takes 10× longer and misses things. |
+| "The slice is implemented, just commit it" | If the audit produced 5+ findings, stop and reassess slice/commit shape before committing. Finding count is a stronger signal than line count that reviewer attention was spread too thin. |
+| "I'm in flow, I don't want to stop and audit" | Flow is the failure mode. The cost of an audit-discovered bug grows with every slice landed on top of it. Stop and audit. |
+| "The plan only has 3 criteria, no point slicing" | Then you have 3 slices. The loop still applies. |
+
+## Verification
+
+Before opening a PR, confirm for each slice:
+
+- [ ] One acceptance criterion → covered.
+- [ ] At least one test exercising the new branch → present in the commit set.
+- [ ] Any spec/contract change → in the same commit set (see `document-module` "What counts as documented contract").
+- [ ] `audit-bugs` relevant section run → evidence cited (file path + line, or `rg` count).
+
+If any box is unchecked, the slice isn't shippable yet — it's a draft.
+
+## Related Rules
+
+- `plan-feature` — produces the plan that gets sliced.
+- `git-commits` — Change Sizing covers commit-level granularity within a slice.
+- `audit-bugs` — pre-merge gate; runs against the slice diff, not the full feature diff.
+- `write-tests` — Test Plan from Predicate ensures step 3 of the loop is mechanical, not creative.
+- `document-module` — Same-Commit Spec Sync ensures step 4 actually happens.

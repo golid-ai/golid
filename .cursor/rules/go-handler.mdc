@@ -1,12 +1,20 @@
 ---
 description: Patterns for Go handler layer files — HTTP request handling, validation, routing
-globs: backend/internal/handler/*.go
+globs: backend/internal/handler/*.go,backend/internal/handler/**/*.go,backend/internal/middleware/*.go,backend/internal/middleware/**/*.go
 alwaysApply: false
 ---
 
 # Go Handler Layer Patterns
 
-Follow the established patterns in `auth.go` and `user.go`.
+> **Thesis:** Handlers are thin translators between HTTP and services. They validate input, extract auth, delegate to services, and return JSON — nothing more.
+>
+> **Refrain:** `Extract → Validate → Delegate → Return`
+
+**Reference files:** `auth.go`, `user.go`, `middleware/stack.go`
+
+**Before modifying a module's handler** (changes to validation, auth, or route
+registration), read `docs/modules/{module}/spec.md` for API surface and
+validation rules. For cross-module request chains, also check `docs/flows.md`.
 
 ## Structure
 
@@ -97,19 +105,27 @@ return apperror.Forbidden("not allowed")
 
 ## Route Registration
 
-In `cmd/server/main.go`:
-1. Create service in the services block
-2. Create handler in the handlers block
-3. Register routes on the `protected` group
+Wire new modules through `internal/wire/` — not `main.go`. `main.go` only calls `wire.BuildServices`, `wire.BuildHandlers`, and `wire.RegisterRoutes`.
+
+1. **`wire/services.go` (`BuildServices`)** — construct the service from its subpackage:
 
 ```go
-// in main():
-xService := service.NewXService(pool)
-xHandler := handler.NewXHandler(xService)
-// ...
-protected.POST("/x", xHandler.Create)
-protected.GET("/x", xHandler.List)
-protected.GET("/x/:id", xHandler.GetByID)
+xService := x.NewXService(pool, cfg.PaginationDefault, cfg.PaginationMax)
+// Add field to Services struct: X *x.XService
+```
+
+2. **`wire/handlers.go` (`BuildHandlers`)** — construct the handler (constructor takes concrete subpackage types):
+
+```go
+X: handler.NewXHandler(svcs.X, cfg.PaginationDefault, cfg.PaginationMax),
+```
+
+3. **`wire/routes.go`** — register routes on the appropriate group (`registerProtectedRoutes`, `registerAdminRoutes`, etc.):
+
+```go
+protected.POST("/x", h.X.Create)
+protected.GET("/x", h.X.List)
+protected.GET("/x/:id", h.X.GetByID)
 ```
 
 ## Query Parameter Parsing

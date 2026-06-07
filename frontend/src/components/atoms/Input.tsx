@@ -123,7 +123,7 @@ export const Input: Component<InputProps> = (props) => {
             {...inputProps}
             class={cn(
               // Base input styles (transparent, no border - wrapper handles it)
-              "peer w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/90 focus:outline-none disabled:cursor-not-allowed transition-all",
+              "peer w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/90 focus:outline-hidden disabled:cursor-not-allowed transition-all",
               isFloating() ? "h-auto pt-4 pb-0.5" : "h-full",
               isFloating() && "placeholder:opacity-0"
             )}

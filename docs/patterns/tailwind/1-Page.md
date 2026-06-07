@@ -6,6 +6,36 @@
 
 ---
 
+### This Project (Tailwind v4)
+
+Golid uses the Vite plugin — no `postcss.config.js` or `@tailwindcss/postcss`.
+
+```typescript
+// app.config.ts
+import tailwindcss from "@tailwindcss/vite";
+// plugins: [tailwindcss(), ...]
+```
+
+```css
+/* frontend/src/app.css */
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+@config '../tailwind.config.js';
+```
+
+| v3 → v4 | Notes |
+|---------|-------|
+| `@tailwind base/components/utilities` | `@import 'tailwindcss'` |
+| `withTV()` from tailwind-variants | `tv()` directly (v1) |
+| `shadow-sm` on cards | `shadow-xs` (v4 scale) |
+| `outline-none` for focus rings | `outline-hidden` |
+| Default border color | Preflight uses `currentColor`; we set `border-color: hsl(var(--border))` in `@layer base` |
+| `rounded-sm` | Kept for custom radius scale via `@config` — not the v4 default `rounded-xs` |
+
+Plugins like `@tailwindcss/forms` are not loaded in v4; form styling uses design-system components.
+
+---
+
 ### Mental Model
 
 ```
@@ -69,7 +99,7 @@ Layout → Position → Box Model → Typography → Visual → Effects → Stat
   flex items-center justify-center gap-2      /* Layout */
   h-10 px-6                                    /* Box Model */
   text-sm font-medium text-white               /* Typography */
-  bg-blue-600 rounded-lg shadow-sm             /* Visual */
+  bg-blue-600 rounded-lg shadow-xs             /* Visual */
   transition-colors                            /* Effects */
   hover:bg-blue-700 focus:ring-2               /* States */
 ">
@@ -134,7 +164,7 @@ button({ variant: 'outline', size: 'lg' })
 <input class="h-10 w-full px-3 rounded-md border border-input bg-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring" />
 
 <!-- Card -->
-<div class="rounded-lg border bg-card p-6 shadow-sm">
+<div class="rounded-lg border bg-card p-6 shadow-xs">
 
 <!-- Badge -->
 <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary text-primary-foreground">
@@ -180,10 +210,12 @@ button({ variant: 'outline', size: 'lg' })
 
 ### Essential Config
 
+Theme tokens and radius scale live in `tailwind.config.js`, loaded via `@config` in `app.css`. Typography plugin is registered in CSS (`@plugin '@tailwindcss/typography'`). Content paths are auto-detected by the Vite plugin.
+
 ```javascript
+// tailwind.config.js (excerpt)
 module.exports = {
   darkMode: 'class',
-  content: ['./src/**/*.{html,js,ts,jsx,tsx,svelte}'],
   theme: {
     extend: {
       colors: {
@@ -196,10 +228,6 @@ module.exports = {
       }
     }
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-  ]
 }
 ```
 

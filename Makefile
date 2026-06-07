@@ -9,6 +9,7 @@ setup: ## Copy .env.example, generate JWT secret, install frontend deps
 	@JWT=$$(openssl rand -hex 32) && \
 		perl -pi -e "s/CHANGE_ME_64_CHAR_HEX_STRING_AT_LEAST_32_CHARS/$$JWT/" config/.env.local
 	@echo "✓ config/.env.local created with secure JWT secret"
+	@scripts/init-test-db.sh
 	@cd frontend && npm install
 	@echo "✓ frontend dependencies installed"
 
@@ -55,10 +56,12 @@ verify-scaffold: ## Verify scaffold-generated code compiles (used by CI)
 	@cd backend && go build ./...
 	@echo "=== Cleaning up generated files..."
 	@rm -f backend/migrations/*_scaffoldtests.up.sql backend/migrations/*_scaffoldtests.down.sql
-	@rm -f backend/internal/service/scaffoldtest.go
+	@rm -rf backend/internal/service/scaffoldtest
 	@rm -f backend/internal/handler/scaffoldtest.go backend/internal/handler/scaffoldtest_test.go
 	@rm -rf "frontend/src/routes/(private)/scaffoldtests"
 	@git checkout -- backend/internal/handler/interfaces.go
+	@echo "=== Typechecking frontend..."
+	@cd frontend && npm run typecheck
 	@echo "✓ Scaffold output compiles"
 
 rename: ## Rename the project (usage: make rename name=myapp module=github.com/user/myapp/backend)

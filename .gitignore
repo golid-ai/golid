@@ -87,6 +87,7 @@ secrets/
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/tasks.json
+!.vscode/start-frontend-dev.sh
 
 # ------------------------------------------------------------------------------
 # OS Files

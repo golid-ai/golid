@@ -45,19 +45,27 @@ The middleware stack is configured in `middleware/stack.go`:
 
 Auth middleware runs only on the `protected` route group. Public routes (login, register, etc.) use `StrictRateLimiter()` instead.
 
-### Services (`internal/service/`)
+### Services (`internal/service/<pkg>/`)
 
-Business logic lives here. Services:
+Business logic lives in domain subpackages. Each service:
 
-- Receive validated input from handlers
-- Execute database queries (via pgxpool directly or sqlc-generated code)
-- Return domain types or `apperror` errors
-- Never import `echo` or any HTTP types
+- Receives validated input from handlers
+- Executes database queries (via pgxpool directly or sqlc-generated code)
+- Returns domain types or `apperror` errors
+- Never imports `echo` or any HTTP types
 
-Current services:
-- **AuthService** — registration, login, JWT generation, password reset, email verification, change password
-- **UserService** — profile lookup, profile updates
-- **EmailService** — Mailgun integration with `IsConfigured()` graceful degradation
+Current subpackages:
+- **`auth/`** — registration, login, JWT generation, password reset, email verification, change password
+- **`user/`** — profile lookup, profile updates
+- **`feature/`** — DB-backed feature flags with TTL cache
+- **`sse/`** — per-user SSE hub, one-time ticket auth
+- **`email/`** — Mailgun integration with `IsConfigured()` graceful degradation
+
+Stateless helpers live outside `service/`: **`internal/pagination/`** (query normalization) and **`internal/retry/`** (exponential backoff for fire-and-forget calls).
+
+### Wiring (`internal/wire/`)
+
+`wire.BuildServices`, `wire.BuildHandlers`, and `wire.RegisterRoutes` construct dependencies and mount routes. `cmd/server/main.go` owns process lifecycle only (config, DB, observability, shutdown order).
 
 ### Database (`internal/db/`)
 
@@ -251,7 +259,7 @@ The backend uses two query approaches side by side:
 
 **sqlc** (`internal/db/`, `queries/*.sql`) — type-safe generated code for standard CRUD queries. The `queries/users.sql` and `queries/refresh_tokens.sql` files define SQL with sqlc annotations, and `sqlc generate` produces Go code with typed parameters and results. Use sqlc for straightforward single-table queries where the SQL is static.
 
-**Raw SQL in services** (`internal/service/*.go`) — for complex queries with dynamic WHERE clauses, multi-table joins, subqueries, and computed fields. Services use `pool.QueryRow` / `pool.Query` / `pool.Exec` directly with parameterized `$N` placeholders. Use raw SQL when sqlc's static analysis would require multiple query variants for what's logically one operation.
+**Raw SQL in services** (`internal/service/<pkg>/*.go`) — for complex queries with dynamic WHERE clauses, multi-table joins, subqueries, and computed fields. Services use `pool.QueryRow` / `pool.Query` / `pool.Exec` directly with parameterized `$N` placeholders. Use raw SQL when sqlc's static analysis would require multiple query variants for what's logically one operation.
 
 **When to use which:** If your query is a static single-table CRUD operation, add it to `queries/*.sql` and run `sqlc generate`. If it has dynamic WHERE clauses, joins, or complex aggregations, write raw SQL in the service with `$N` placeholders. Golid uses both — this is intentional, not inconsistent. Never `fmt.Sprintf` with user values into SQL.
 

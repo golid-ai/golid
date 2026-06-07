@@ -5,46 +5,77 @@ globs:
 ---
 # CI Workflow Patterns
 
+> **Thesis:** CI catches what developers forget: type errors, test regressions, stale generated types, and vulnerable dependencies. Jobs must not have cross-job dependencies.
+
 ## Job structure
 
-Three jobs: `backend`, `frontend`, `e2e`. Backend and frontend run in parallel. E2E depends on both.
+| Job | Gate | Depends on |
+|-----|------|------------|
+| `changes` | always | — |
+| `spec-drift` | always | — |
+| `backend-unit` | `run_backend` | `changes` |
+| `backend-integration` | `run_backend` | `changes`, `backend-unit` |
+| `backend-coverage` | `run_backend` + unit + integration OK | `changes`, `backend-unit`, `backend-integration` |
+| `frontend` | `run_frontend` | `changes` |
+| `scaffold-verify` | `run_backend \|\| run_frontend` | `changes` |
+| `e2e` | `run_e2e` + integration + frontend OK | `changes`, `backend-integration`, `frontend` |
 
-## Backend job checklist
+`changes` uses `dorny/paths-filter@v4` to compute `run_backend`, `run_frontend`, `run_e2e`. Docs-only PRs (`docs/**` only) run `changes` + `spec-drift` only — backend, frontend, scaffold, and E2E are skipped.
 
-- PostgreSQL service container with health check (required for integration tests)
+Workflow needs `pull-requests: read` for paths-filter on PRs.
+
+## Backend unit job checklist
+
+- No PostgreSQL — unit tests only
 - `go build` + `go vet` before tests
-- Unit tests: `go test ./... -race -count=1 -coverprofile=coverage-unit.out`
-- Install `migrate` CLI before integration tests
-- Run migrations before integration tests
-- Integration tests: `go test -tags integration ./... -race -count=1 -coverprofile=coverage-integration.out`. Set both `DATABASE_URL` and `TEST_DATABASE_URL` env vars.
-- Merge coverage profiles: concatenate both files (strip duplicate header) into `coverage.out`. This ensures Codecov gets combined coverage from both unit and integration runs.
-- golangci-lint: pin to a version compatible with the Go version in `go.mod`. If no compatible version exists yet (new Go release), use `continue-on-error: true` with a comment linking to the tracking issue.
-- govulncheck: always run, fails CI on vulnerabilities. Fix by upgrading the affected dependency.
-- Codecov: use `codecov/codecov-action@v5` to upload `backend/coverage.out` with `-F backend` flag, only on push (not PR).
+- golangci-lint: pin to a version compatible with the Go version in `go.mod`
+- Unit tests split: pure packages without `-race` (apperror, config, pagination, retry, validate), then handler/middleware/observability/queue/service/testutil/wire with `-race`
+- Both unit runs use shared `COVERPKG` env and merge into `coverage-unit.out`
+- govulncheck: always run, fails CI on vulnerabilities
+- Upload `coverage-unit.out` as artifact (not Codecov yet)
+
+## Backend integration job checklist
+
+- PostgreSQL service container with health check (`golid_test` database)
+- Matrix shard: `handler` | `service` — each shard runs on a separate runner
+- `go test -tags integration ./internal/${{ matrix.shard }}/... -race -count=1`
+- Handler shard exits 0 with no packages when no handler integration tests exist — do not add skip hacks
+- Set `TEST_DATABASE_URL` only — `testutil.SetupTestDB()` panics if unset (no `DATABASE_URL` fallback)
+- `TEST_MIGRATIONS_PATH: ${{ github.workspace }}/backend/migrations` — per-package schemas via testutil, no global migrate step
+- Upload per-shard `coverage-integration-{shard}.out` as artifacts
+
+## Backend coverage job checklist
+
+- Downloads all `backend-coverage-*` artifacts and merges into `coverage.out`
+- Codecov: `codecov/codecov-action@v6` with `skip_validation: true`, `slug: golid-ai/golid`, `-F backend` flag
+- Runs only when unit and integration jobs both succeed
 
 ## Frontend job checklist
 
+- Node 24 via `.nvmrc` (`node-version-file: ".nvmrc"`)
 - `npm ci` (not `npm install`) for reproducible installs
+- OpenAPI: duplicate path key grep, then `swagger-cli validate`, then `npm run generate:types` + typecheck (no committed-types diff gate)
 - `npm run lint` before build
-- `npm run typecheck` before build
 - `npm run build`
 - `npm run test:coverage` (not `npm test` — the `test` script runs vitest in watch mode)
-- Codecov: upload `frontend/coverage/lcov.info` with `-F frontend` flag from repo root, only on push
+- Codecov: `codecov/codecov-action@v6` with `skip_validation: true`, upload `frontend/coverage/lcov.info` with `-F frontend` flag
 - `npm audit --audit-level=high` with `continue-on-error: true` (transitive dep vulns shouldn't block PRs)
-- Check Generated Types: `npm run generate:types && git diff --exit-code` with `continue-on-error: true` — catches stale TypeScript types when the OpenAPI spec changes
 
 ## E2E job checklist
 
+- Gated on `run_e2e` — skipped for docs-only PRs
 - `cp config/.env.example config/.env.local` — create env file before docker compose
-- `docker compose up -d --build` starts backend + db
+- Pre-build backend image with `docker/build-push-action` + GHA cache (`scope=golid-e2e-backend`)
+- Start stack via `docker compose -f docker-compose.yml -f docker-compose.ci-e2e.yml` (no `--build`)
 - Wait for DB: poll `pg_isready` on the db container (not just backend `/ready`)
 - Install `migrate` CLI + run migrations against the docker compose DB
 - Seed data: `psql < backend/seeds/dev_seed.sql` via docker compose exec
 - Wait for backend: poll `/ready` endpoint (not `/health` — readiness means DB is connected)
-- `npm ci` in frontend (Playwright needs `@playwright/test` from node_modules)
-- `npx playwright install --with-deps chromium`
+- Node 24 via `.nvmrc`; `npm ci` in frontend (Playwright needs `@playwright/test` from node_modules)
+- Cache `~/.cache/ms-playwright`; on cache hit install deps + chromium only
 - Playwright's `webServer` config starts the frontend dev server automatically — do NOT set `E2E_SKIP_SERVER`
 - `config/.env.example` must be committed (check `.gitignore` exceptions) — CI copies it to `.env.local`
+- Needs `actions: write` permission for BuildKit GHA cache
 
 ## Common mistakes
 
@@ -52,6 +83,6 @@ Three jobs: `backend`, `frontend`, `e2e`. Backend and frontend run in parallel. 
 - **golangci-lint + new Go versions** — golangci-lint must be built with a Go version >= the one in `go.mod`. After a Go upgrade, check if a compatible golangci-lint version exists. If not, `continue-on-error: true` until one is released.
 - **Gitignored env files** — `config/.env.example` is needed by the E2E job. The `.gitignore` pattern `config/.env.*` catches it — add `!config/.env.example` exception.
 - **Database name** — CI uses a separate test database. Keep the name consistent with the project (`golid_test`). Update if the project is renamed.
-- **Stale generated types** — `npm run generate:types` produces `frontend/src/lib/api.generated.ts` from `backend/openapi.yaml`. If you update the spec but forget to regenerate, the CI step catches it. Run `cd frontend && npm run generate:types` after any spec change.
+- **Stale generated types** — `npm run generate:types` produces `frontend/src/lib/api.generated.ts` from `backend/openapi.yaml`. Regenerate locally after any spec change; CI validates via typecheck after fresh generation.
 - **Tests pass but typecheck fails** — `vitest run` executes JavaScript at runtime and does not check TypeScript types. Always run `npm run typecheck` locally before pushing frontend test files. Bad imports (non-existent exports, type-only imports used as values) pass at runtime but fail `tsc`.
-- **testutil default DB URL** — `testutil.SetupTestDB()` defaults to `postgres://dev:dev@localhost:5432/golid?sslmode=disable`, matching docker-compose. CI overrides via `TEST_DATABASE_URL`. If you rename the project or change docker-compose credentials, update both.
+- **testutil requires TEST_DATABASE_URL** — `testutil.SetupTestDB()` panics if `TEST_DATABASE_URL` is unset (refuses `DATABASE_URL` fallback because `CleanAllTables` would wipe the dev DB). CI sets `TEST_DATABASE_URL=postgres://test:test@localhost:5432/golid_test?sslmode=disable`. Local integration tests need the same env var pointing at a safe-to-wipe DB (e.g. `golid_test`).

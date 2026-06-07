@@ -1,0 +1,79 @@
+---
+description: SolidStart route groups, layout boundaries, and auth chrome for (private) and (public) routes
+globs: frontend/src/app.tsx,frontend/src/routes/**/*.tsx,frontend/src/lib/constants.ts,frontend/src/components/organisms/navigation/**/*.tsx
+alwaysApply: false
+---
+
+# SolidStart Routing and Layout Boundaries
+
+> **Thesis:** Route groups `(private)` and `(public)` organize auth boundaries
+> without adding URL segments. Layout files and `PRIVATE_ROUTES` must stay in
+> sync so SSR and SPA navigation agree.
+
+**Reference files:** `frontend/src/routes/(private).tsx`,
+`frontend/src/routes/(public).tsx`, `frontend/src/lib/constants.ts`,
+`frontend/src/app.tsx`, navigation components under `frontend/src/components/organisms/navigation/`.
+
+## Route Groups Do Not Change URLs
+
+SolidStart groups like `(private)` and `(public)` are path-transparent.
+Files under `frontend/src/routes/(private)/dashboard/index.tsx` serve `/dashboard`,
+not `/(private)/dashboard`.
+
+```tsx
+// Layout boundary — auth required
+frontend/src/routes/(private).tsx
+
+// Page — URL is /dashboard
+frontend/src/routes/(private)/dashboard/index.tsx
+
+// Public auth pages — URL is /login
+frontend/src/routes/(public)/login/index.tsx
+```
+
+Do not duplicate the same URL under both groups. One route file owns each path.
+
+## Private vs Public Layouts
+
+- **`(public).tsx`** — no auth required. Landing (`/`) is full-bleed; auth pages
+  use constrained width.
+- **`(private).tsx`** — auth required. SSR middleware redirects unauthenticated
+  users; client-side effect in the layout is a safety net for SPA navigation.
+
+When adding a protected page:
+
+1. Place it under `frontend/src/routes/(private)/`.
+2. Add the path to `PRIVATE_ROUTES` in `frontend/src/lib/constants.ts` — SSR auth
+   redirects won't work without this.
+3. Use `redirectTo` (not `return`, `next`, or `redirect`) for login redirects.
+
+## Audit The Whole Shell
+
+`app.tsx` root layout wraps every route. When changing auth or navigation:
+
+- Navbar links and active states
+- Sidebar visibility (private routes only)
+- Footer variants
+- Root layout spacing tied to private-route detection
+
+A page can render correctly while global chrome still shows wrong links or
+sidebar state for the route group.
+
+## Auth Guards in Layout vs Page
+
+- **Layout-level:** `(private).tsx` blocks unauthenticated access to all child routes.
+- **Page-level:** role or resource checks (e.g., admin-only) belong in the page
+  component. Prefer `<Show when={...} fallback={...}>` over early returns before
+  reactive setup — early returns skip signal creation and break re-renders when
+  async guards later pass.
+
+## Verify In A Browser
+
+After routing or chrome changes, reproduce in a real browser. Architecture tests
+can assert imports and source shape, but Solid Router interception, layout
+persistence, and global shell behavior are runtime facts.
+
+## Related rules
+
+- `solidjs-pages` — page data fetching and content-state patterns inside routes.
+- `codebase-standards` — `PRIVATE_ROUTES`, `redirectTo`, `Switch/Match` guardrails.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 )
@@ -16,10 +17,12 @@ const (
 	userIDKey    contextKey = "user_id"
 )
 
-var defaultLogger *slog.Logger
+var (
+	defaultLogger *slog.Logger
+	loggerOnce    sync.Once
+)
 
-// Init initializes the global logger based on environment.
-func Init(env string) {
+func initLogger(env string) {
 	var handler slog.Handler
 
 	opts := &slog.HandlerOptions{
@@ -39,11 +42,18 @@ func Init(env string) {
 	slog.SetDefault(defaultLogger)
 }
 
+// Init initializes the global logger based on environment.
+func Init(env string) {
+	loggerOnce.Do(func() {
+		initLogger(env)
+	})
+}
+
 // Logger returns the default logger.
 func Logger() *slog.Logger {
-	if defaultLogger == nil {
-		Init("development")
-	}
+	loggerOnce.Do(func() {
+		initLogger("development")
+	})
 	return defaultLogger
 }
 

@@ -73,6 +73,23 @@ Cloud SQL and GCS buckets are **never** deleted by the script (data loss risk). 
 
 ---
 
+## Hygiene Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `check_spec_drift.sh` | Fail if handler/service changes lack matching module spec updates |
+| `check_citation_freshness.sh` | Validate line-number Verified citations in specs |
+| `check_rule_health.sh` | Validate Cursor rules (thesis lines, globs) — runs in CI |
+| `init-test-db.sh` | Create `golid_test` database and run migrations for local integration tests |
+
+```bash
+./scripts/init-test-db.sh
+./scripts/check_spec_drift.sh
+./scripts/check_rule_health.sh
+```
+
+---
+
 ## What Gets Created
 
 | Resource | QA Name | Prod Name |
@@ -148,6 +165,19 @@ PROJECT_NAME="your-project"
 ```
 
 All resource names, service accounts, and bucket names derive from this value. Then create your env files in `config/` and deploy.
+
+---
+
+## CI environment variables
+
+Integration tests and E2E use these overrides (set in `.github/workflows/ci.yml`):
+
+| Variable | Default | CI value |
+|----------|---------|----------|
+| `TEST_DATABASE_URL` | `postgres://dev:dev@localhost:5432/golid_test?sslmode=disable` | `postgres://test:test@localhost:5432/golid_test?sslmode=disable` |
+| `TEST_MIGRATIONS_PATH` | auto-detect `backend/migrations` | `${{ github.workspace }}/backend/migrations` |
+
+After `make rename`, update docker-compose DB names and the CI workflow if they still reference the old project name.
 
 ---
 

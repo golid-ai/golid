@@ -354,7 +354,7 @@ export function MenuItem(props: MenuItemProps) {
     <div
       ref={el}
       class={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors",
+        "relative flex w-full cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm font-medium outline-hidden transition-colors",
         "hover:bg-foreground/[0.05]",
         active() && "bg-foreground/[0.08]",
         props.disabled && "pointer-events-none opacity-50",
@@ -566,7 +566,7 @@ export function SubmenuTrigger(props: SubmenuTriggerProps) {
     <div
       ref={el}
       class={cn(
-        "relative flex w-full cursor-pointer select-none items-center justify-between rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors",
+        "relative flex w-full cursor-pointer select-none items-center justify-between rounded-lg px-3 py-2 text-sm font-medium outline-hidden transition-colors",
         "hover:bg-foreground/[0.05]",
         (active() || submenu.open()) && "bg-foreground/[0.08]",
         props.class

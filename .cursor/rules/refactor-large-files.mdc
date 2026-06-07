@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Refactoring Large Route Files
 
+> **Thesis:** Split route files at 600+ lines. Extracted components receive data via props and callbacks — they never import the parent's signals.
+
 ## When to Split
 
 Any route file **over 600 lines** should be split. Signs it's time:

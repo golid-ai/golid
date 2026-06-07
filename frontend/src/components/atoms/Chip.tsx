@@ -104,7 +104,7 @@ export const Chip: Component<ChipProps> = (props) => {
       "inline-flex items-center justify-center select-none rounded-[4px] border uppercase tracking-widest font-bold transition-all whitespace-nowrap leading-none",
       variantStyles[variant()],
       sizeStyles[size()],
-      "hover:brightness-110 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "hover:brightness-110 ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       local.class
     );
 

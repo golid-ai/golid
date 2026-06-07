@@ -6,12 +6,14 @@ alwaysApply: false
 
 # OpenAPI Spec Patterns
 
+> **Thesis:** The OpenAPI spec is hand-maintained and drives frontend type generation. Update it whenever endpoints change, then regenerate types.
+
 The API is documented in `backend/openapi.yaml` (OpenAPI 3.1, hand-maintained).
 
 ## When to Update
 
 Update the spec whenever you:
-- Add a new endpoint (handler + route in `main.go`)
+- Add a new endpoint (handler + route in `internal/wire/routes.go`)
 - Change request/response schemas
 - Add or modify query parameters
 - Change authentication requirements
@@ -55,7 +57,7 @@ YourResource:
 
 ## Conventions
 
-- Endpoint paths must match routes registered in `cmd/server/main.go`
+- Endpoint paths must match routes registered in `backend/internal/wire/routes.go`
 - Use `$ref` for shared schemas and responses (DRY)
 - Tag names match handler file groupings (Auth, Users, Features, SSE)
 - Reuse `MessageResponse` for simple `{"message": "..."}` responses

@@ -1,0 +1,40 @@
+---
+description: "Universal quality bar for repo plans — applies to docs/plans markdown and routes to specialized planning rules"
+globs: docs/plans/**/*.md, docs/plans/*.md
+alwaysApply: false
+---
+
+# Planning Standards
+
+> **Thesis:** Plans should be short enough to execute and specific enough to prevent predictable mistakes.
+
+Use this rule for every `docs/plans/**/*.md` edit. First identify the plan type:
+
+- **Feature/module:** use `plan-feature`.
+- **Deploy/env/ops:** use `plan-infra`.
+- **Docs/audit/refactor/experiment:** use the closest workflow rule, or this rule alone.
+
+## Universal Checklist
+
+- State `Risk tier:` using `workflow-routing` when the plan will drive
+  implementation; keep T0/T1 plans lightweight.
+- State the goal, non-goals, and default decisions.
+- Verify current-state claims with file references for nontrivial plans.
+- Verify schema claims (tables, columns, enum values, status strings) against current migrations and cite migration:line. Schema names you remember are often wrong; the cost of catching that during SQL authoring is hours, the cost of catching it during plan review is minutes.
+- Organize work into slices with acceptance criteria.
+- Name risks with concrete mitigations, not just warnings.
+- Include a verification path and rollback/reset posture where relevant.
+- Keep the plan proportional. Prefer 250-350 lines for infra/feature plans unless the scope truly needs more.
+
+## Avoid
+
+- Forcing a feature template onto infra or docs work.
+- Over-documenting obvious implementation details to hide unresolved decisions.
+- Safety mechanisms that cost more than the failure mode they prevent.
+- Placeholder follow-ups like "seed/test/docs later".
+- Mismatched numbering between plan phases and execution slices.
+- Asserting schema from memory. Grep the migrations for every table/column/enum the plan names; the wrong table name is a 30-minute discovery in execution that costs 30 seconds in planning.
+
+## Retro Hook
+
+After executing a plan, capture one lesson that should change the next plan's shape. If every plan keeps the same structure regardless of execution feedback, the template is calcifying.

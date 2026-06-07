@@ -1,13 +1,15 @@
 ---
-description: Patterns for writing tests — integration tests with TestDB, unit tests for pure logic, test data seeding
-globs:
-  - backend/**/*_test.go
-  - frontend/**/*.test.{ts,tsx}
-  - frontend/tests/e2e/*.spec.ts
+description: Patterns for writing backend tests — integration tests with TestDB, unit tests for pure logic, test data seeding
+globs: backend/**/*_test.go
 alwaysApply: false
 ---
 
-# Writing Tests
+# Writing Backend Tests
+
+> **Thesis:** Test the contract, not the implementation. Integration tests hit real PostgreSQL; unit tests are table-driven; every service method has error path coverage.
+
+**Before writing tests for a module,** read `docs/modules/{module}/spec.md`
+for the Critical Test Scenarios section — it's a verified test plan.
 
 ## Integration Tests (Service Layer)
 
@@ -16,26 +18,28 @@ Test real SQL against a real PostgreSQL instance using `testutil.WithTestDB`.
 ```go
 //go:build integration
 
-package service_test
+package note
 
 import (
     "testing"
-    "github.com/golid-ai/golid/backend/internal/service"
+
+    "github.com/jackc/pgx/v5/pgxpool"
+
     "github.com/golid-ai/golid/backend/internal/testutil"
 )
 
-func TestItemService_Create(t *testing.T) {
+func TestNoteService_Create(t *testing.T) {
     testutil.WithTestDB(t, func(pool *pgxpool.Pool) {
-        svc := service.NewItemService(pool, 20, 100)
+        svc := NewNoteService(pool, 20, 100)
 
         // Seed prerequisite data with raw SQL
         _, err := pool.Exec(ctx, `INSERT INTO users (...) VALUES (...)`)
         // ...
 
         // Test the service method
-        result, err := svc.Create(ctx, &service.CreateItemInput{...})
+        result, err := svc.Create(ctx, &CreateNoteInput{...})
         if err != nil { t.Fatalf("expected no error, got %v", err) }
-        if result.Title != "Test Item" { t.Errorf("expected title 'Test Item', got %s", result.Title) }
+        if result.Title != "Test Note" { t.Errorf("expected title 'Test Note', got %s", result.Title) }
     })
 }
 ```
@@ -57,14 +61,14 @@ func TestItemService_Create(t *testing.T) {
 - **Conflict**: Duplicate entries. Expect `CONFLICT`.
 - **Edge cases**: Empty arrays, null optional fields, boundary values.
 
-Reference: existing `_integration_test.go` files in `backend/internal/service/`
+Reference: existing `*_integration_test.go` files in `backend/internal/service/<pkg>/`
 
 ## Unit Tests (Pure Logic)
 
 For validation helpers, parsing functions, and other pure logic — no build tag needed.
 
 ```go
-package service
+package pagination
 
 import "testing"
 
@@ -94,7 +98,7 @@ func TestNormalizePagination(t *testing.T) {
 - **Table-driven tests** — use `[]struct` pattern for multiple cases.
 - **File naming**: `x_test.go` in the same directory as the code.
 
-Reference: existing `_test.go` files in `backend/internal/service/`
+Reference: existing `_test.go` files in `backend/internal/pagination/`, `backend/internal/service/<pkg>/`, and other pure-logic packages
 
 ## Mock-based Handler Tests
 
@@ -110,6 +114,29 @@ Create a mock struct implementing the service interface. Set function fields for
 
 After scaffolding, fill in test bodies for your specific validation rules, error paths, and edge cases. The generated tests follow the same pattern as `auth_test.go`.
 
+## Discriminator-Column Test Matrix
+
+When a column branches behavior at runtime, every write path that touches the table needs a test for **each value of the discriminator**, not just the value the implementer happened to remember.
+
+Common discriminators: `status`, `tier`, `role`, `category`, `type`.
+
+The rule:
+
+> If column `X` changes which branch executes, then for every function `F` that writes to the table, there must be a test for each value of `X` that `F` can encounter.
+
+When to apply:
+
+- Any column with a CHECK constraint that varies behavior
+- Any column the service `switch`es on (`status` controls which transitions are legal)
+- Any column the handler reads to pick a code path (`tier` controls feature access)
+
+When NOT to apply:
+
+- Columns that only affect display (no behavior fork)
+- Columns with one-way transitions where prior states are tested by inheritance
+
+Catch this in code review: when a PR adds or modifies a discriminator column, scan every service method that writes to the table. If a branch isn't covered by a test, the PR isn't done.
+
 ## Always Test Error Paths
 
 Don't just test happy paths. Every service method should have tests for:
@@ -121,239 +148,35 @@ Don't just test happy paths. Every service method should have tests for:
 
 These are the bugs that slip through manual testing and break in production.
 
-## Component Unit Tests (SolidJS)
+## Test Plan from Predicate
 
-Use `@solidjs/testing-library` for component-level tests. Test the public API: renders, accepts props, fires events.
+When you write a predicate with multiple terms, the test plan derives mechanically from it. Don't invent the plan — read it off the code.
 
-```tsx
-import { render, screen, fireEvent } from "@solidjs/testing-library";
-import { Button } from "./Button";
+| Predicate shape | Required tests |
+|---|---|
+| `WHERE x IN ('a', 'b', 'c')` | One test per value. |
+| `WHERE x = 'a' AND status = 'active'` | x match + active, x match + inactive, x miss. |
+| `if a \|\| b \|\| c { ... }` | One test per disjunct hitting the branch. |
+| `switch v { case A: ... case B: ... default: ... }` | One per case + default. |
+| `errors.As(err, &x) && x.Code == "23505"` | Bare 23505, wrapped 23505 (`fmt.Errorf("...: %w", ...)`), other pg code, non-pg error. |
 
-test("calls onClick", async () => {
-  const handler = vi.fn();
-  render(() => <Button onClick={handler}>Click</Button>);
-  await fireEvent.click(screen.getByText("Click"));
-  expect(handler).toHaveBeenCalledTimes(1);
-});
-```
+If you can't enumerate one test per branch from the predicate, you don't understand the predicate well enough to ship it.
 
-Place test files next to the component: `Button.test.tsx` alongside `Button.tsx`. Vitest discovers `src/**/*.test.{ts,tsx}` automatically.
+## When Integration Tests Can't Reach a Branch
 
-**Important:** `vitest.config.ts` must have `resolve.conditions: ["development", "browser"]` to prevent Solid from resolving server-side bundles in jsdom.
+Some branches are only reachable under conditions the test infrastructure can't deterministically reproduce — TOCTOU races, third-party API failures, time-dependent expiry. Don't skip the test; **extract the branch into a pure helper and unit-test the helper**.
 
-### Test Quality Bar
+Concrete pattern: inline `errors.As + 23505 → Conflict` blocks in create/update paths. The race between a SELECT and INSERT is non-deterministic from a service test. Solution: extract `translateSlugConflict(err, op)` and unit-test it with synthetic `*pgconn.PgError` values.
 
-Every component test must assert at least one **behavioral property**, not just existence. "Renders without crashing" is not a test.
+## Anti-Rationalization
 
-```tsx
-// BAD — tests nothing meaningful
-test("renders", () => {
-  const { container } = render(() => <Alert variant="success" message="Done" />);
-  expect(container).toBeTruthy();
-});
-
-// GOOD — tests actual behavior: correct variant class, message rendered, dismiss works
-test("renders success variant with message", () => {
-  render(() => <Alert variant="success" message="Done" />);
-  expect(screen.getByText("Done")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveClass("bg-green");
-});
-
-test("calls onDismiss when close button clicked", async () => {
-  const onDismiss = vi.fn();
-  render(() => <Alert message="Done" onDismiss={onDismiss} />);
-  await fireEvent.click(screen.getByRole("button"));
-  expect(onDismiss).toHaveBeenCalledTimes(1);
-});
-```
-
-**Minimum assertions per component test file:**
-- Renders with required props and shows expected content
-- Variant/size/state props produce correct visual output (classes, attributes)
-- Callbacks fire when expected (onClick, onDismiss, onChange, etc.)
-- Accessibility: `axe(container)` passes with no violations (where feasible in jsdom)
-
-**jsdom limitations** — skip or mark as smoke-test-only:
-- SVG measurement APIs (`getBBox`, `getScreenCTM`) return zeros — Observable Plot/D3 chart tests can only verify render-without-crash
-- `getUserMedia`, `MediaRecorder`, WebGL — not available in jsdom, need E2E
-- Drag-and-drop (`pointermove` sequences) — unreliable in jsdom, need E2E
-
-### Coverage Thresholds
-
-After writing tests, update `vitest.config.ts` thresholds to 5% below the new actual coverage. This prevents regression without blocking future work. Ratchet up as coverage grows.
-
-Current thresholds: `statements: 80, branches: 84, functions: 77, lines: 80`. CI fails if coverage drops below these.
-
-### Pre-Commit Verification (MANDATORY — NEVER SKIP)
-
-**NEVER run `git commit` without passing ALL of these checks first.** If any check fails, fix the issue before committing.
-
-```bash
-# Backend — type check, lint, tests
-cd backend && go vet ./... && golangci-lint run ./... && go test ./...
-
-# Frontend — type check
-cd frontend && npx tsc --noEmit
-
-# Frontend — lint (catches unused imports, innerHTML, empty catches)
-cd frontend && npm run lint
-
-# Frontend — tests + coverage thresholds
-cd frontend && npx vitest run --coverage
-```
-
-**If you skip these checks and CI fails, you are responsible for fixing it immediately.**
-
-## E2E Tests (Playwright)
-
-E2E tests live in `frontend/tests/e2e/`. They require the full stack running (backend + DB + frontend).
-
-### SPA Navigation — Wait for Page Content, Not URLs
-
-SolidJS uses client-side routing (`pushState`). Playwright's `waitForURL` waits for a browser `load` event that never fires during SPA navigation. **Always wait for page content instead.**
-
-```typescript
-// BAD — hangs forever on SPA navigation
-await page.click('button[type="submit"]');
-await page.waitForURL("**/dashboard", { timeout: 15000 });
-
-// GOOD — waits for actual rendered content
-await page.click('button[type="submit"]');
-await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
-  timeout: 15000,
-});
-```
-
-### Login Verification — Use Dashboard-Specific Content
-
-The login page shows "Welcome back" as its heading. **Never use `/welcome/i` to verify login succeeded** — it matches the login page text immediately, before login actually completes.
-
-```typescript
-// BAD — matches "Welcome back" on the login page itself
-await expect(page.getByText(/welcome/i)).toBeVisible();
-
-// GOOD — "Dashboard" h1 only exists on the dashboard page
-await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
-  timeout: 15000,
-});
-```
-
-### Strict Mode Violations
-
-When text appears in multiple elements (navbar, heading, footer), use role-based selectors:
-
-```typescript
-// BAD — "Golid" appears in navbar, h1, and footer
-await expect(page.getByText("Golid")).toBeVisible();
-
-// GOOD — targets the specific heading
-await expect(page.getByRole("heading", { name: "Golid" })).toBeVisible();
-```
-
-### Form Validation
-
-SolidJS signals may not settle instantly after `fill()`. Wait for the submit button to be enabled before clicking:
-
-```typescript
-await page.fill('[placeholder="Create a password"]', "password123");
-await page.fill('[placeholder="Confirm your password"]', "password123");
-await expect(page.locator('button[type="submit"]')).toBeEnabled({
-  timeout: 5000,
-});
-await page.click('button[type="submit"]');
-```
-
-When testing client-side validation that disables submit, assert `toBeDisabled()` — don't try to click:
-
-```typescript
-// BAD — click waits forever for a disabled button to enable
-await page.click('button[type="submit"]');
-
-// GOOD — asserts the validation state directly
-await expect(page.locator('button[type="submit"]')).toBeDisabled();
-```
-
-### Input Values
-
-Playwright has no `getByDisplayValue`. Use `locator` + `toHaveValue`:
-
-```typescript
-// BAD — this method doesn't exist in Playwright
-await expect(page.getByDisplayValue("user@example.com")).toBeVisible();
-
-// GOOD
-await expect(page.locator("#email")).toHaveValue("user@example.com");
-```
-
-### Buttons vs Headings with Same Text
-
-When a heading and button share the same text (e.g., "Change Password" as both h2 and button), `page.click("text=Change Password")` may click the heading (no-op). Use role selectors:
-
-```typescript
-// BAD — may click the h2 heading instead of the button
-await page.click("text=Change Password");
-
-// GOOD — targets only the button
-await page.getByRole("button", { name: "Change Password" }).click();
-```
-
-### E2E Test Credentials (must match seed data)
-
-E2E tests use the seeded users from `backend/seeds/dev_seed.sql`. If you change seed data credentials, update ALL E2E test files in `frontend/tests/e2e/`. If you change E2E test credentials, update the seed data.
-
-### Prefer Client-Side Navigation in E2E
-
-For authenticated pages, use sidebar links instead of `page.goto()`. `page.goto()` triggers a full SSR request which can fail if the page has SSR-unsafe imports. Client-side navigation avoids SSR entirely.
-
-```typescript
-// BAD — triggers SSR, may show blank page if component uses window/document
-await page.goto("/settings");
-
-// GOOD — client-side navigation, no SSR
-await page.locator('a[href="/settings"]').first().click();
-await page.waitForURL("**/settings");
-```
-
-### Duplicate Elements (Desktop + Mobile)
-
-Responsive layouts often render the same link/button twice (desktop + mobile). Use `.first()`:
-
-```typescript
-// BAD — strict mode violation if element appears in both desktop and mobile nav
-await expect(page.getByRole("link", { name: "Sign Up" })).toBeVisible();
-
-// GOOD
-await expect(page.getByRole("link", { name: "Sign Up" }).first()).toBeVisible();
-```
-
-### Serial Execution (workers: 1)
-
-E2E tests run with `workers: 1` and `fullyParallel: false`. Auth endpoints use strict rate limiting (`AUTH_RATE_LIMIT`, default 5 req/min). Parallel workers exhaust the limit instantly. The dev `docker-compose.yml` sets `AUTH_RATE_LIMIT: 100` but serial execution remains the safest default for tests sharing a mutable database.
-
-### Signup Input Types
-
-The signup form uses `type="text"` with `inputmode="email"` (not `type="email"`). Use placeholder selectors:
-
-```typescript
-// BAD — won't match signup email input
-page.locator('input[type="email"]');
-
-// GOOD — works on both login (type=email) and signup (type=text)
-page.locator('[placeholder="you@example.com"]');
-```
-
-### Keep Tests In Sync With Code
-
-Any commit that changes a component's **public interface** must include test updates in the same commit. Public interface means:
-
-- Placeholder text, labels, or rendered copy
-- Toast/snackbar message strings (title, subtitle)
-- Component swaps (checkbox → button, outline → neutral)
-- Props that tests assert on (variant, size, disabled state)
-- API mock shapes (new fields, changed signatures)
-- Route changes or navigation targets
-
-**Search for affected tests before committing.** Use `rg "the old text"` across `*.test.tsx`, `*.test.ts`, and `tests/e2e/*.spec.ts`. If a test references something you changed, fix it in the same commit.
+| Excuse | Counter |
+|---|---|
+| "I'll add the test in a follow-up" | Follow-up tests for shipped features cost more than writing the test inline. |
+| "The branch is too hard to trigger from a test" | Extract a helper. See "When Integration Tests Can't Reach a Branch" above. |
+| "Tests pass" | Existing tests pass means existing behavior unchanged. New branches need new tests. Read the predicate, derive the matrix. |
+| "It's just a small refactor, no test needed" | Refactors with no behavior change should have no test changes either. If the refactor needs new tests, it's not behavior-neutral. |
+| "I'll just run the code manually" | Manual verification doesn't survive the next PR. Tests do. |
 
 ## Running Tests
 
@@ -363,14 +186,29 @@ cd backend && go test ./...
 
 # Backend integration tests (requires running PostgreSQL)
 cd backend && go test -tags=integration ./...
-
-# Frontend unit + component tests
-cd frontend && npm test
-
-# Frontend type check (run before pushing — catches import errors tests miss)
-cd frontend && npx tsc --noEmit
-
-# E2E tests (requires full stack running)
-cd frontend && npx playwright install chromium  # first time only
-cd frontend && npx playwright test
 ```
+
+### Integration tests wipe the database they connect to
+
+`testutil.SetupTestDB()` **requires** `TEST_DATABASE_URL` and panics if it is unset — there is no fallback to `DATABASE_URL`. In the devcontainer, `DATABASE_URL` points at the same Postgres the running app uses; every integration test calls `CleanAllTables` (directly or via `WithTestDB`), so running `-tags=integration` against the dev DB **truncates seeded users and everything** — restart the container to reseed.
+
+Before running any `-tags=integration` command, verify `TEST_DATABASE_URL` is set to a database that is safe to wipe:
+
+```bash
+echo "$TEST_DATABASE_URL"   # must point at a non-dev DB (e.g. golid_test)
+```
+
+If it's empty or points at the dev DB:
+
+- **Don't run integration tests.** Use `go build ./...`, `go vet ./...`, and untagged unit tests for verification.
+- Or set `TEST_DATABASE_URL` to a separate DB for the duration of the command:
+  ```bash
+  TEST_DATABASE_URL=postgres://dev:dev@db:5432/golid_test go test -tags=integration ./...
+  ```
+  (CI sets only `TEST_DATABASE_URL` — see `ci-workflow` rule.)
+
+The failure mode is silent: tests pass, dev data is gone, and nothing in the test output explains why the user can't log in next time they refresh.
+
+## Related Rules
+
+For frontend component test patterns, see `write-tests-frontend`. For browser/E2E test patterns, see `write-tests-e2e`.

@@ -8,11 +8,37 @@
 
 | Doc | Description |
 |-----|-------------|
+| [Start Here](start-here.md) | Orientation: app flow, common directories, API contract, devcontainer, rules |
 | [Quick Start](quick-start.md) | Docker Compose / DevContainer setup in 5 minutes, test accounts, common commands |
-| [Architecture](architecture.md) | Backend/frontend layers, middleware stack, auth flow, data fetching pattern |
+| [Architecture](architecture.md) | Backend/frontend layers, web/API split, middleware stack, auth flow |
 | [Example Module](example-module.md) | Step-by-step guide to building a "notes" CRUD feature across the full stack |
 | [Best Practices](best-practices.md) | Codebase-specific rules with real bad/good examples |
 | [Components](components.md) | Design system reference (70+ components) |
+
+---
+
+## Cross-Cutting Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [Organism Pattern](organism-pattern.md) | How rules, specs, plans, and drift checks wire together |
+| [Domain Glossary](glossary.md) | Terms with codebase-specific meanings |
+| [Dependency Graph](dependency-graph.md) | Module dependency map for auth, users, and feature |
+| [Cross-Module Flows](flows.md) | Request chains across modules |
+| [Permission Matrix](permissions.md) | Who can do what — compiled from module specs |
+| [Error Contracts](error-contracts.md) | apperror → HTTP status → response shape → frontend handling |
+| [Schema ERD](schema.md) | Database tables, enums, and migration index |
+| [CLI Reference](cli-reference.md) | Make targets, health endpoints, `TEST_DATABASE_URL`, test DB init |
+| [Git Reference](git-reference.md) | Commit prefixes, branch naming, sweep-up exception |
+| [Testing Checklist](testing-checklist.md) | Auth, users, feature scenarios + infra smoke |
+| [Golden Slices](golden-slices.md) | Example slice definitions for common change types |
+| [Staleness Tracker](staleness.md) | When each doc needs review — verification triggers and dates |
+| [Architecture Decisions](decisions/) | ADRs — selector/verifier, SSE, onMount+signals, bcrypt, IsConfigured |
+| [Plans](plans/README.md) | Feature planning tiers, iterations, archive |
+| [Manual QA](manual-qa/README.md) | Pre-release smoke checklists |
+| [Runbooks](runbooks/README.md) | Operational procedures (CSRF rollout, devcontainer) |
+| [Rules Health](rules-health.md) | Quarterly rule audit checklist |
+| [Cursor Rules](cursor-rules.md) | Full rule index with thesis lines and globs |
 
 ---
 
@@ -24,50 +50,44 @@
 | [Accessibility](accessibility.md) | Accessibility guidelines and patterns |
 | [Demo Deployment](demo-deployment.md) | Demo deployment guide |
 | [Deployment Options](deployment-options.md) | Cloud Run, Docker, and local deployment |
+| [Routing Eval](routing-eval.md) | Workflow-routing tier calibration examples |
+| [Rule Effectiveness](rule-effectiveness.md) | Measuring whether description-triggered rules fire |
+
+---
+
+## API Reference
+
+| Doc | Description |
+|-----|-------------|
+| [OpenAPI Spec](../backend/openapi.yaml) | Full REST API definition (OpenAPI 3.1) |
+
+Paste the spec into [Swagger Editor](https://editor.swagger.io/) to browse endpoints interactively.
+
+---
+
+## Module Specs
+
+Starter modules. Specs are the source of truth for implemented behavior; optional business context and 1-page docs use `_templates/`.
+
+| Module | Spec | Templates |
+|--------|------|-----------|
+| [Auth](modules/auth/) | [spec](modules/auth/spec.md) | [business](modules/_templates/business-context.md) · [1-page](modules/_templates/1-page.md) |
+| [Users](modules/users/) | [spec](modules/users/spec.md) | [business](modules/_templates/business-context.md) · [1-page](modules/_templates/1-page.md) |
+| [Feature](modules/feature/) | [spec](modules/feature/spec.md) | [business](modules/_templates/business-context.md) · [1-page](modules/_templates/1-page.md) |
 
 ---
 
 ## Cursor Rules
 
-Rules in `.cursor/rules/` that give the AI agent context automatically.
+37 rules in `.cursor/rules/` that give the AI agent context about this codebase. Every rule opens with a thesis statement — one sentence stating what it enforces and why.
 
-### Always Active
+| Type | Count | Examples |
+|------|-------|---------|
+| Always active | 3 | `codebase-standards`, `git-commits`, `parallel-subagents` |
+| File-scoped (auto-activate via glob) | 24 | `go-service`, `go-handler`, `solidjs-pages`, `write-tests` |
+| Description-triggered (on-demand) | 10 | `plan-feature`, `slice-and-ship`, `audit-bugs`, `write-rules` |
 
-| Rule | What it does |
-|------|-------------|
-| `codebase-standards.mdc` | Core standards: parameterized SQL, transactions, apperror, alive guards, nullable timestamps, external API patterns, testing conventions |
-| `parallel-subagents.mdc` | Use parallel subagents when auditing or editing 5+ independent files |
-
-### File-Scoped (auto-activate when editing matching files)
-
-| Rule | Fires on | What it does |
-|------|----------|-------------|
-| `go-service.mdc` | `service/*.go` | Service layer: auth helpers, SQL, transactions, error handling, pagination, TIMESTAMPTZ pattern |
-| `go-handler.mdc` | `handler/*.go` | Handler layer: thin handlers, auth extraction, validation, route registration |
-| `solidjs-pages.mdc` | `routes/**/*.tsx` | Pages: data fetching, alive guards, modals, DestructiveModal, container widths |
-| `frontend-components.mdc` | `components/**/*.tsx` | Component patterns: atoms vs molecules, props, cn(), accessibility |
-| `frontend-lib.mdc` | `lib/*.ts` | API client: typed endpoints, error handling, PRIVATE_ROUTES |
-| `sql-migrations.mdc` | `migrations/*.sql` | Migrations: up/down, UUIDs, indexes, triggers, enums |
-| `seed-data.mdc` | `seeds/*.sql` | Seed data: stable UUIDs, idempotent inserts, realistic data |
-| `write-tests.mdc` | `*_test.go` | Tests: integration with WithTestDB, unit table-driven |
-| `ci-workflow.mdc` | `.github/workflows/*` | CI pipeline patterns |
-| `deploy-infra.mdc` | `scripts/deploy.sh`, `infra/*` | Infrastructure: env var chain, Docker, Cloud Run, secrets |
-| `openapi.mdc` | `api/*.yaml` | OpenAPI spec conventions |
-| `refactor-large-files.mdc` | Large route files | When and how to split 600+ line route files |
-| `external-api.mdc` | External API integrations | External service wrappers, IsConfigured() pattern |
-| `sse-realtime.mdc` | SSE endpoints | SSE patterns, middleware exclusions |
-| `observability.mdc` | Tracing/metrics | OpenTelemetry integration, opt-in pattern |
-| `job-queue.mdc` | Queue/worker code | Redis queue, dual-path pattern, retry |
-| `feature-flags.mdc` | Feature flag code | Feature flag service patterns |
-| `rename-tool.mdc` | `cmd/rename/*` | Domain-safe replacement, file coverage, name validation |
-
-### On-Demand
-
-| Rule | When to use |
-|------|-------------|
-| `plan-feature.mdc` | Planning a new module (`@plan-feature`) |
-| `audit-bugs.mdc` | Bug/security audit (`@audit-bugs`) |
-| `audit-codebase.mdc` | Release readiness audit (`@audit-codebase`) |
+**Full reference with thesis lines, globs, and design principles:** [Cursor Rules](cursor-rules.md)
 
 ---
 

@@ -65,7 +65,7 @@ export const Checkbox: Component<CheckboxProps> = (props) => {
         // Base styles
         "peer flex items-center justify-center",
         "border border-muted-foreground/30",
-        "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        "ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "hover:border-primary transition-colors",
         // Size

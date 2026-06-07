@@ -11,7 +11,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/user"
 )
 
 // =============================================================================
@@ -19,23 +19,23 @@ import (
 // =============================================================================
 
 type mockUserService struct {
-	getByIDFn       func(ctx context.Context, userID string) (*service.UserProfile, error)
-	updateProfileFn func(ctx context.Context, userID string, update *service.ProfileUpdate) (*service.UserProfile, error)
+	getByIDFn       func(ctx context.Context, userID string) (*user.UserProfile, error)
+	updateProfileFn func(ctx context.Context, userID string, update *user.ProfileUpdate) (*user.UserProfile, error)
 }
 
-func (m *mockUserService) GetByID(ctx context.Context, userID string) (*service.UserProfile, error) {
+func (m *mockUserService) GetByID(ctx context.Context, userID string) (*user.UserProfile, error) {
 	return m.getByIDFn(ctx, userID)
 }
-func (m *mockUserService) UpdateProfile(ctx context.Context, userID string, update *service.ProfileUpdate) (*service.UserProfile, error) {
+func (m *mockUserService) UpdateProfile(ctx context.Context, userID string, update *user.ProfileUpdate) (*user.UserProfile, error) {
 	if m.updateProfileFn != nil {
 		return m.updateProfileFn(ctx, userID, update)
 	}
 	panic("unexpected UpdateProfile")
 }
 
-func testUserProfile(name string) *service.UserProfile {
+func testUserProfile(name string) *user.UserProfile {
 	lastName := "Doe"
-	return &service.UserProfile{
+	return &user.UserProfile{
 		ID:            "user-123",
 		Email:         "test@example.com",
 		Type:          "user",
@@ -192,7 +192,7 @@ func TestUpdateProfileRequest_NullAvatar(t *testing.T) {
 
 func TestMe_ETagNotModified(t *testing.T) {
 	mock := &mockUserService{
-		getByIDFn: func(ctx context.Context, userID string) (*service.UserProfile, error) {
+		getByIDFn: func(ctx context.Context, userID string) (*user.UserProfile, error) {
 			return testUserProfile("John"), nil
 		},
 	}
@@ -235,7 +235,7 @@ func TestMe_ETagNotModified(t *testing.T) {
 func TestMe_ETagChanged(t *testing.T) {
 	callCount := 0
 	mock := &mockUserService{
-		getByIDFn: func(ctx context.Context, userID string) (*service.UserProfile, error) {
+		getByIDFn: func(ctx context.Context, userID string) (*user.UserProfile, error) {
 			callCount++
 			if callCount == 1 {
 				return testUserProfile("John"), nil

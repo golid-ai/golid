@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Rename Tool Patterns
 
+> **Thesis:** A missed file means a downstream user ships with the wrong brand. A naive replacement corrupts domain URLs. Every rename must be domain-safe and total.
+
 The rename tool (`make rename` / `go run ./cmd/rename`) rebrands the entire project. It's high-risk — a missed file means a downstream user ships with "Golid" in their app, and a naive replacement corrupts domain URLs.
 
 ## Domain-Safe Replacement
@@ -47,6 +49,10 @@ The tool must cover every file with hardcoded project names. Current categories:
 | 17 | Entrypoint scripts | Project + titled name |
 | 18 | `openapi.yaml` | Titled + project name |
 | 19 | `.gitignore` | All-caps project name in comments |
+| 20 | `docker-compose.ci-e2e.yml` | Docker image names |
+| 20 | `.nvmrc`, `frontend/dev-watch.mjs`, `.vscode/start-frontend-dev.sh` | Dev tooling (if branded) |
+| 20 | `scripts/check_spec_drift.sh`, `scripts/check_citation_freshness.sh` | CI guard scripts (if branded) |
+| 2 | `internal/wire/*.go` | Module path (via backend `.go` walk) |
 
 **When adding a new file with hardcoded project names**, add a corresponding replacement step here. Check both the lowercase name and the titled (capitalized) name.
 

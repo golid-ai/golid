@@ -1,0 +1,157 @@
+---
+description: Patterns for frontend component tests — SolidJS Testing Library, mocking, jsdom limits, coverage thresholds
+globs: frontend/**/*.test.ts,frontend/**/*.test.tsx
+alwaysApply: false
+---
+
+# Writing Frontend Component Tests
+
+> **Thesis:** Frontend tests verify behavior through props, callbacks, and
+> rendered content — not rendering existence alone. Know jsdom's limits.
+
+**Before writing tests for a module,** read `docs/modules/{module}/spec.md`
+for the Critical Test Scenarios section — it's a verified test plan.
+
+## Always Test Error Paths
+
+Don't just test happy paths. Every service method should have tests for:
+
+- **Permission denied** — wrong user type, non-owner, non-member → expect `FORBIDDEN`
+- **Invalid status** — operation on wrong-status entity → expect `BAD_REQUEST`
+- **Not found** — non-existent ID → expect `NOT_FOUND`
+- **Duplicate/conflict** — re-creating existing entity → expect `CONFLICT`
+
+These are the bugs that slip through manual testing and break in production.
+
+> This section is intentionally duplicated in `write-tests.mdc` and `write-tests-frontend.mdc`. If updated, change both.
+
+## Component Unit Tests (SolidJS)
+
+Use `@solidjs/testing-library` for component-level tests. Test the public API: renders, accepts props, fires events.
+
+```tsx
+import { afterEach } from "vitest";
+import { cleanup, render, screen, fireEvent } from "@solidjs/testing-library";
+import { Button } from "./Button";
+
+afterEach(cleanup);
+
+test("calls onClick", async () => {
+  const handler = vi.fn();
+  render(() => <Button onClick={handler}>Click</Button>);
+  await fireEvent.click(screen.getByText("Click"));
+  expect(handler).toHaveBeenCalledTimes(1);
+});
+```
+
+Place test files next to the component: `Button.test.tsx` alongside `Button.tsx`. Vitest discovers `src/**/*.test.{ts,tsx}` automatically.
+
+**Important:** `vitest.config.ts` must have `resolve.conditions: ["development", "browser"]` to prevent Solid from resolving server-side bundles in jsdom.
+
+Always call `afterEach(cleanup)` in `*.test.tsx` files that use
+`@solidjs/testing-library`. Without cleanup, previous renders can leak Solid
+computations into the next test and emit "computations created outside a root"
+warnings.
+
+### Mocking Route Dependencies
+
+For route/component tests that mock `~/lib/api` or other modules imported at
+component module scope, use `vi.hoisted` and import the route after `vi.mock`.
+
+```tsx
+const { mockListItems } = vi.hoisted(() => ({
+  mockListItems: vi.fn(),
+}));
+
+vi.mock("~/lib/api", () => ({
+  itemsApi: { list: (...args: unknown[]) => mockListItems(...args) },
+  getErrorMessage: (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback,
+}));
+
+import ItemsPage from "./index";
+```
+
+### Test Quality Bar
+
+Every component test must assert at least one **behavioral property**, not just existence. "Renders without crashing" is not a test.
+
+```tsx
+// BAD — tests nothing meaningful
+test("renders", () => {
+  const { container } = render(() => <Alert variant="success" message="Done" />);
+  expect(container).toBeTruthy();
+});
+
+// GOOD — tests actual behavior: correct variant class, message rendered, dismiss works
+test("renders success variant with message", () => {
+  render(() => <Alert variant="success" message="Done" />);
+  expect(screen.getByText("Done")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveClass("bg-green");
+});
+
+test("calls onDismiss when close button clicked", async () => {
+  const onDismiss = vi.fn();
+  render(() => <Alert message="Done" onDismiss={onDismiss} />);
+  await fireEvent.click(screen.getByRole("button"));
+  expect(onDismiss).toHaveBeenCalledTimes(1);
+});
+```
+
+**Minimum assertions per component test file:**
+- Renders with required props and shows expected content
+- Variant/size/state props produce correct visual output (classes, attributes)
+- Callbacks fire when expected (onClick, onDismiss, onChange, etc.)
+- Accessibility: `axe(container)` passes with no violations (where feasible in jsdom)
+
+**jsdom limitations** — skip or mark as smoke-test-only:
+- SVG measurement APIs (`getBBox`, `getScreenCTM`) return zeros — Observable Plot/D3 chart tests can only verify render-without-crash
+- `getUserMedia`, `MediaRecorder`, WebGL — not available in jsdom, need E2E
+- Drag-and-drop (`pointermove` sequences) — unreliable in jsdom, need E2E
+
+### Coverage Thresholds
+
+After writing tests, update `vitest.config.ts` thresholds to 5% below the new actual coverage. This prevents regression without blocking future work. Ratchet up as coverage grows.
+
+Current thresholds: `statements: 68, branches: 47, functions: 73, lines: 68`. CI fails if coverage drops below these.
+
+### Keep Tests In Sync With Code
+
+Any commit that changes a component's **public interface** must include test updates in the same commit. Public interface means:
+
+- Placeholder text, labels, or rendered copy
+- Toast/snackbar message strings (title, subtitle)
+- Component swaps (checkbox → button, outline → neutral)
+- Props that tests assert on (variant, size, disabled state)
+- API mock shapes (new fields, changed signatures)
+- Route changes or navigation targets
+
+**Search for affected tests before committing.** Use `rg "the old text"` across `*.test.tsx`, `*.test.ts`, and `tests/e2e/*.spec.ts`. If a test references something you changed, fix it in the same commit.
+
+E2E tests (`tests/e2e/`) use browser selectors that match rendered HTML — placeholder changes, button text changes, and form restructuring all break them silently until CI runs. See `write-tests-e2e` for browser-test patterns.
+
+### Pre-Push Checklist
+
+Before pushing any test file changes, run both:
+
+```bash
+cd frontend && npx vitest run          # runtime tests
+cd frontend && npx tsc --noEmit        # type checking
+```
+
+TypeScript catches import errors (non-existent exports, using types as values) that JavaScript silently ignores at runtime. CI runs `npm run typecheck` and will reject type errors even when all tests pass.
+
+## Running Tests
+
+```bash
+# Frontend unit + component tests
+cd frontend && npm test
+
+# Frontend type check (run before pushing — catches import errors tests miss)
+cd frontend && npx tsc --noEmit
+```
+
+## Related Rules
+
+For backend test patterns (integration with TestDB, unit table-driven, handler mocks), see `write-tests` rule.
+For browser/E2E tests, see `write-tests-e2e` rule.

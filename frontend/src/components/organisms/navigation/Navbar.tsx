@@ -63,7 +63,7 @@ export function Navbar(props: NavbarProps) {
         <div class="flex items-center gap-6">
           <A
             href="/"
-            class="flex items-center space-x-2 group text-foreground outline-none"
+            class="flex items-center space-x-2 group text-foreground outline-hidden"
             aria-label="Home"
           >
             <div class="px-1 py-1.5 rounded-lg transition-colors duration-300">

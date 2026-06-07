@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Tailwind CSS 4** — `@tailwindcss/vite` only (no PostCSS plugin), CSS `@import 'tailwindcss'` entry in `app.css`, `tailwind-variants` v1 (removed `withTV`), design-system border preflight, button cursor restore, v4 utility renames (`shadow-xs`, `outline-hidden`; custom radius scale keeps `rounded-sm`)
+
+## [0.3.0] - 2026-06-07
+
+Production hardening backport from uflex dogfood — wire/subpackages, parallel CI, integration harness, and toolchain upgrades.
+
+### Breaking
+
+- **Import paths** — flat `internal/service/*.go` moved to domain subpackages (`internal/service/auth/`, `user/`, `sse/`, etc.). Update imports after upgrading; run `go run ./cmd/rename` when forking.
+- **`internal/wire/`** — application wiring extracted from monolithic `main.go`. Entrypoints now compose dependencies via `wire.BuildServices`, `wire.BuildHandlers`, and `wire.RegisterRoutes`.
+- **`pagination` / `retry` paths** — helpers moved from `internal/service/` to top-level `internal/pagination/` and `internal/retry/`.
+- **Node 24 + Vitest 4** — frontend toolchain requires Node 24 (see `.nvmrc`) and Vitest 4.x. CI and devcontainer pin Node 24.
+- **`TEST_DATABASE_URL` required for integration tests** — integration tests no longer use the shared `public` schema or implicit defaults. Set `TEST_DATABASE_URL` (e.g. `postgres://dev:dev@localhost:5432/golid_test?sslmode=disable`) and run with `-tags integration`.
+- **Devcontainer HMR port pins** — frontend dev server binds to port 3000 with explicit HMR websocket config; reconnect without manual process kills.
+- **Per-package integration schemas** — testutil creates isolated `it_<pkg>_<pid>` schemas per package instead of migrating global `public`.
+- **CI sharding + path filters + spec-drift** — monolithic backend/frontend/E2E jobs replaced by path-filtered pipeline (change detection, spec-drift gate, sharded unit/integration/coverage, scaffold-verify). Docs-only PRs skip backend, frontend, and E2E.
+
+### Added
+
+- 10 operational Cursor rules from uflex backport (`workflow-routing`, `planning-standards`, `slice-and-ship`, `write-tests-frontend`, `write-tests-e2e`, and others) — **37 rules total**
+- Module spec stubs (`docs/modules/auth`, `users`, `feature`) with spec-drift and citation CI gates
+- `docs/organism-pattern.md`, `docs/cli-reference.md`, `docs/testing-checklist.md`, `docs/staleness.md`
+- ADRs 003–005 (selector/verifier, SSE, onMount+signals)
+- Cross-cutting docs: `permissions.md`, `golden-slices.md`, `routing-eval.md`, `rule-effectiveness.md`, `docs/plans/` (with archive example), `docs/runbooks/`
+- Starter cross-cutting docs: `flows.md`, `glossary.md`, `schema.md`, `docs/manual-qa/` checklists
+- Handler HTTP integration tests (`auth_integration_test.go`) for register/login/me through Echo
+- Devcontainer Node 24 fail-fast gate in `postCreateCommand`
+- `> **Thesis:**` lines on all Cursor rules; `check_rule_health.sh` in CI spec-drift job
+
+### Changed
+
+- README test counts (752 total: 277 Go + 455 Vitest + 20 E2E)
+- Production env template sets `CSRF_ENFORCE=true` with rollout runbook
+
+## [0.2.0] - 2026-06-01
+
 ### Added
 
 - **Opt-in job queue** — asynq + Redis with `IsConfigured()` gate. `REDIS_URL` set = persistent queue with retries. Unset = goroutine fallback. Worker process via `cmd/worker/main.go`
@@ -14,7 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Feature flags** — DB-backed toggles with 30s in-memory cache. Public `GET /features` endpoint, admin CRUD endpoints. Migration 000004
 - **API versioning** — `/api/v1` + `/api/v2` route groups with `X-API-Version` response header. Strategy doc at `docs/api-versioning.md`
 - **Docker Compose production profile** — `docker compose --profile production up` adds Redis + worker. Default `docker compose up` unchanged (db + backend)
-- 7 new Cursor AI rules: `job-queue.mdc`, `feature-flags.mdc`, `observability.mdc`, `frontend-forms.mdc`, `common-commands.mdc`, `document-module.mdc`, `write-rules.mdc` (27 total)
+- 7 new Cursor AI rules: `job-queue.mdc`, `feature-flags.mdc`, `observability.mdc`, `frontend-forms.mdc`, `common-commands.mdc`, `document-module.mdc`, `write-rules.mdc` (21 total)
 - Per-directory `.gcloudignore` files for backend and frontend (smaller Cloud Build bundles)
 - Queue package with typed task payloads, `EmailSender` interface, 8 unit tests
 - Feature flag handler tests (5 tests: admin list, non-admin list, public listEnabled, admin set, non-admin set)
@@ -25,7 +63,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - golangci-lint config (`.golangci.yml`) with 6 explicit linters
 - CI: lint + typecheck for frontend, golangci-lint-action for backend, govulncheck + npm audit security scanning
 - CI: Playwright E2E job with Docker Compose (blocking gate)
-- CI: stale generated types check
 - Pre-commit hooks (husky) with prettier check + go vet
 - Root Makefile with `make test`, `make lint`, `make dev`, `make build`
 - Settings page tests (5 tests: render, form data, buttons, save, error state)
@@ -42,12 +79,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings page: `snackbar` -> `toast` for TypeScript compatibility
 - Auth handler email sends: queue when Redis available, goroutine fallback when not
 - Rate limiter: Redis-backed when `REDIS_URL` set, in-memory when not
-- Coverage thresholds set to production gates (80/84/77/80 statements/branches/functions/lines)
+- Coverage thresholds set to production gates (later recalibrated to 68/47/73/68 in 0.3.0 for Vitest 4 — see `frontend/vitest.config.ts`)
 - CSRF cookie documented with SameSite=Lax intent comment
 - Pagination helper documented with intent comments
 - Go scaffold tool replaced bash script (portable, uses text/template)
 - **Rename tool** — `make rename` to rebrand the project (Go module paths, package.json, Docker files, CI configs, docs)
-- 27 Cursor AI rules (was 14): added sse-realtime.mdc, rename-tool.mdc, frontend-forms.mdc, common-commands.mdc, document-module.mdc, write-rules.mdc + updated 6 existing rules
+- 21 Cursor AI rules (was 14): added sse-realtime.mdc, rename-tool.mdc, frontend-forms.mdc, common-commands.mdc, document-module.mdc, write-rules.mdc + updated 6 existing rules
 
 ### Fixed
 

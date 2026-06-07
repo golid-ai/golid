@@ -12,15 +12,16 @@ alwaysApply: false
 ## Order of Operations
 
 1. **Schema first** — read the migrations in `backend/migrations/` to understand tables, enums, relationships, indexes
-2. **Service logic** — read `backend/internal/service/*.go` for business rules, auth checks, transactions, status transitions
-3. **Handler surface** — read `backend/internal/handler/*.go` for request validation, response shapes, route registration in `cmd/server/main.go`
+2. **Service logic** — read `backend/internal/service/<module>/*.go` for business rules, auth checks, transactions, status transitions
+3. **Handler surface** — read `backend/internal/handler/*.go` for request validation, response shapes, route registration in `backend/internal/wire/routes.go`
 4. **Frontend routes** — read `frontend/src/routes/(private)/*.tsx` for pages, modals, state management
 5. **Write the spec** — fill the template below
 
 ## Evidence Standards
 
 - Every business rule must be marked:
-  - `[Verified: service/item.go:142]` — confirmed by reading the code
+  - `[Verified: service/item/item.go, Create()]` — symbol citation (preferred in module specs)
+  - `[Verified: service/item/item.go:142]` — line citation (checked by `check_citation_freshness.sh`)
   - `[NEEDS VERIFICATION]` — inferred from naming or partial evidence
 - Do NOT invent business rules. If you can't confirm it, mark it unverified.
 - Use concrete evidence: function names, line numbers, SQL column names, enum values
@@ -92,7 +93,7 @@ Derived from service methods. Mark each rule.
 
 ## API Surface
 
-Derived from handler route registration in `cmd/server/main.go`:
+Derived from handler route registration in `backend/internal/wire/routes.go`:
 
 | Method | Route | Handler | Auth | Description |
 |--------|-------|---------|------|-------------|
@@ -117,7 +118,7 @@ Derived from handler route registration in `cmd/server/main.go`:
 | Layer | Files |
 |-------|-------|
 | Handler | `backend/internal/handler/x.go` |
-| Service | `backend/internal/service/x.go` |
+| Service | `backend/internal/service/x/x.go` |
 | Migration | `backend/migrations/000XXX_*.up.sql` |
 | Frontend | `frontend/src/routes/(private)/x/` |
 | Tests | `backend/internal/handler/x_test.go` |

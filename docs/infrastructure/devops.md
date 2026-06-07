@@ -130,7 +130,7 @@ For project-specific secrets (e.g. BoldSign, future integrations), follow the sa
 
 1. Create the secret: `echo -n "value" | gcloud secrets create golid-{name}-{env} --data-file=- --project=PROJECT`
 2. Add a `secret_exists` guard + append to the `secrets` string in `ship_api()` in `deploy.sh`
-3. Add the field to `config.go` + pass from `cfg` in `main.go`
+3. Add the field to `config.go` + pass from `cfg` in `internal/wire/services.go` (`BuildServices`)
 
 ### View Existing Secrets
 

@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Seed Data Patterns
 
+> **Thesis:** Seed data uses stable UUIDs, idempotent upserts, and realistic content. Every new migration gets seed data immediately.
+
 Follow the established pattern in `dev_seed.sql`.
 
 ## UUID Convention

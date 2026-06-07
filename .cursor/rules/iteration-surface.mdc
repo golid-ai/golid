@@ -1,0 +1,109 @@
+---
+description: When iteration cost is high, build the iteration surface BEFORE iterating on the artifact — use when planning visual/aesthetic work, slow-deploy contexts, or any feature where the feedback loop exceeds 30 seconds
+alwaysApply: false
+---
+
+# Iteration Surface
+
+> **Thesis:** When the natural feedback loop on a feature exceeds 30 seconds
+> (deploy required, external service cache, browser screenshot, CDN purge),
+> the highest-leverage move is to BUILD the iteration surface first. The 30
+> minutes building an admin preview, a side-by-side comparison, or a
+> hot-reloadable render harness pays back 5-10x in iteration speed during
+> the actual work.
+>
+> **Refrain:** `Loop cost > 30s → build the surface → THEN iterate`
+
+## When this applies
+
+- **Dynamic image rendering** (OG/social previews, PDF exports, badge
+  generators). External unfurler caches mean shipping → seeing the result
+  is a multi-minute round trip.
+- **Email template work.** Send-to-yourself loops are slow and inboxes
+  cache. An admin preview that renders the same template to HTML pays
+  back fast.
+- **Marketing/landing copy iteration.** Production deploy is the usual
+  feedback loop; an admin preview surface using real data lets a
+  non-engineer iterate.
+- **AI prompt engineering surfaces.** Running prompts against real
+  data through a debug panel beats waiting for the next user
+  conversation.
+- **PDF / receipt / invoice rendering** where downstream caches or
+  external mail providers make iteration slow.
+- **Any third-party API integration** where the response shape needs
+  visual inspection but the integration itself caches aggressively.
+
+## When this does NOT apply
+
+- T0 edits where the feedback loop is already fast (`vinxi dev` HMR
+  is the iteration surface).
+- One-off changes that won't be iterated on.
+- Features where the iteration cost is genuinely 30s or under via
+  existing tooling.
+
+## The leverage calculation
+
+| Loop cost | Iterations to break even on a 30-min surface build |
+|---|---|
+| 30s | 60 (probably not worth it) |
+| 2 min | 15 (borderline) |
+| 5 min | 6 (worth it) |
+| 30 min (chat-app unfurl cache) | ~1 (always worth it) |
+
+If the answer is "we'll iterate more than 5 times" AND "each iteration
+costs more than 2 min," build the surface.
+
+## What an iteration surface looks like
+
+The surface must be:
+
+1. **Hot-reloadable** — frontend changes via HMR, backend changes via
+   Air or similar. No restart-to-see-change loops.
+2. **Cache-bustable** — explicit refresh button or query-string version
+   so the user can force re-fetch on demand.
+3. **Side-by-side with the reference** — when iterating to match a
+   target aesthetic, show both the iteration AND the target in the
+   same view. Tab-switching breaks the loop.
+4. **Bound to real data** — works against seeded users, real
+   profiles, or production-shaped fixtures. Not lorem-ipsum.
+5. **Admin-gated** — surfaces that show real customer data must
+   require admin access.
+
+## BAD: Iterating without the surface
+
+```
+# Cycle: 5-10 min per iteration
+1. Edit renderer code
+2. Deploy to dev / staging
+3. Paste URL in Slack
+4. Wait for Slack unfurl cache
+5. Realize the cache has the old version
+6. Use /unfurl debug command
+7. Iterate
+```
+
+## GOOD: Build the surface first
+
+```
+# Cycle: 5-30 sec per iteration
+1. Spend 30 minutes building /admin/experiments/og-preview (or similar)
+2. Edit renderer code
+3. Air rebuilds (~5s)
+4. Click "Refresh preview" in the experiment
+5. See result against multiple aspect-ratio frames simultaneously
+6. Iterate
+
+# 8 iterations later, the surface paid for itself 5x over.
+```
+
+## Examples in this codebase
+
+- `frontend/src/routes/(private)/components/` — component showcase for
+  visual iteration with HMR; use for UI polish before wiring into product pages.
+- Admin or dev-only routes under `frontend/src/routes/(private)/` — gate with
+  auth and build preview harnesses before shipping slow-feedback artifacts
+  (OG images, PDFs, email HTML).
+
+## Reference docs
+
+- `docs/organism-pattern.md` — the meta-pattern this rule operationalizes (when present).

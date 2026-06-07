@@ -17,7 +17,7 @@ export interface LinkProps extends ParentProps<JSX.AnchorHTMLAttributes<HTMLAnch
 // ============================================================================
 
 const baseStyles =
-  "transition-colors underline underline-offset-4 decoration-foreground/20 hover:decoration-current focus-visible:outline-none";
+  "transition-colors underline underline-offset-4 decoration-foreground/20 hover:decoration-current focus-visible:outline-hidden";
 
 const variantStyles: Record<LinkVariant, string> = {
   default: "text-blue hover:text-active-blue",

@@ -444,7 +444,7 @@ export const Calendar: Component<CalendarProps> = (props) => {
       {/* Calendar grid */}
       <div 
         ref={gridRef}
-        class="grid grid-cols-7 gap-y-1 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        class="grid grid-cols-7 gap-y-1 rounded-sm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         tabindex="0"
         role="grid"
         aria-label="Calendar"

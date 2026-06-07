@@ -256,7 +256,7 @@ export function Select<T extends string | number = string | number>(props: Selec
           onKeyDown={handleKeydown}
           class={cn(
             "flex w-full items-center justify-between rounded-sm border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all",
-            "hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "hover:border-foreground/30 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             props.size === "sm" && "h-9 px-3",
             props.size === "lg" && "h-11 px-4",
@@ -350,7 +350,7 @@ export const SelectItem: Component<SelectItemProps> = (props) => {
       ref={itemRef}
       id={id}
       class={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-10 pr-2 text-sm font-medium outline-none",
+        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-10 pr-2 text-sm font-medium outline-hidden",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         "hover:bg-foreground/[0.05] transition-colors",
         isActive() && "bg-foreground/[0.08]",

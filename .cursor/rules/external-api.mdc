@@ -1,10 +1,12 @@
 ---
 description: Patterns for external API integrations
-globs: backend/internal/service/external_*.go
+globs: backend/internal/service/email/**/*.go
 alwaysApply: false
 ---
 
 # External API Integration Patterns
+
+> **Thesis:** External services are wrapped with IsConfigured(), env-sourced credentials, and graceful degradation when unconfigured.
 
 ## Service Wrapper Structure
 
@@ -30,12 +32,12 @@ Every method must check `IsConfigured()` first and return a clean error, not pan
 
 ## Config Flow
 
-API keys and secrets flow: **env var → Config struct → service constructor → main.go init**.
+API keys and secrets flow: **env var → Config struct → service constructor → wire.BuildServices**.
 
 ```
 .env.local:       EXTERNAL_API_KEY=xxx
 config.go:        ExternalAPIKey string → os.Getenv("EXTERNAL_API_KEY")
-main.go:          externalService := service.NewExternalService(cfg.ExternalAPIKey)
+wire/services.go: externalService := external.NewExternalService(cfg.ExternalAPIKey)
 ```
 
 Template IDs, webhook secrets, and other per-service config follow the same pattern. Never hardcode in service files.
@@ -62,4 +64,4 @@ The codebase uses Mailgun for transactional email. Key patterns:
 
 - **`IsConfigured()`** — graceful degradation when `MAILGUN_API_KEY` is empty; feature is disabled, no panic.
 - **`Retry()`** — wrap outbound HTTP calls for resilience against transient failures.
-- Config flow: env → Config → service constructor. See `backend/internal/service/email.go`.
+- Config flow: env → Config → service constructor. See `backend/internal/service/email/email.go`.

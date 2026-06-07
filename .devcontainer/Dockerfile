@@ -1,5 +1,5 @@
 # ==============================================================================
-# Golid Development Container — Go 1.26 + Node 20 + all dev tools baked in
+# Golid Development Container — Go 1.26 + Node 24 + all dev tools baked in
 # ==============================================================================
 
 FROM golang:1.26-bookworm
@@ -22,30 +22,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update && apt-get install -y google-cloud-sdk \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 20
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+# Install Node.js 24 (Active LTS)
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs
 
 # Playwright browser dependencies (Chromium)
 RUN npx playwright install-deps chromium 2>/dev/null || true
 
-# Install Go development tools
+# Create the non-root user and hand it ownership of the (still-empty) Go dirs
+# BEFORE populating them. Chowning an empty /go is instant; chowning it after a
+# full `go install` + `go mod download` previously cost ~150s on every build.
+RUN useradd -ms /bin/bash vscode \
+    && echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && mkdir -p /go/pkg/mod /home/vscode/.cache/go-build \
+    && chown -R vscode:vscode /go /home/vscode
+
+# Set Go environment for vscode user
+ENV GOPATH=/go
+ENV PATH=$PATH:/go/bin
+ENV GOGC=50
+
+USER vscode
+
+# Install Go development tools as vscode (binaries land in /go/bin, used at runtime)
 RUN go install github.com/air-verse/air@v1.61.0 \
     && go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0 \
     && go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.18.1 \
     && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.10.1
 
-# Create non-root user for VS Code
-RUN useradd -ms /bin/bash vscode \
-    && echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
-    && mkdir -p /go/pkg/mod \
-    && chown -R vscode:vscode /go
-
-# Set Go environment for vscode user
-ENV GOPATH=/go
-ENV PATH=$PATH:/go/bin
-
-USER vscode
+# Pre-download Go dependencies as vscode (no post-hoc chown needed). Shadowed by
+# the go-mod-cache volume at runtime, but keeps a volume-less `docker run` fast.
+COPY --chown=vscode:vscode backend/go.mod backend/go.sum /tmp/backend-deps/
+RUN cd /tmp/backend-deps && go mod download && rm -rf /tmp/backend-deps
 
 # Keep container running
 CMD ["sleep", "infinity"]

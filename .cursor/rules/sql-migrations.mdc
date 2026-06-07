@@ -6,6 +6,8 @@ alwaysApply: false
 
 # SQL Migration Patterns
 
+> **Thesis:** Migrations are the source of truth for the data model. Every table gets UUIDs, TIMESTAMPTZ, FK indexes, and an updated_at trigger.
+
 Follow the established patterns in `000001_init.up.sql`.
 
 ## File Naming

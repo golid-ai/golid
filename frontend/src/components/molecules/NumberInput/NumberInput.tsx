@@ -150,7 +150,7 @@ export const NumberInput: Component<NumberInputProps> = (props) => {
           aria-describedby={local.errorMessage ? errorId : undefined}
           aria-required={local.required || undefined}
           class={cn(
-            "flex-1 min-w-0 bg-transparent px-3 focus:outline-none text-foreground placeholder:text-muted-foreground/90",
+            "flex-1 min-w-0 bg-transparent px-3 focus:outline-hidden text-foreground placeholder:text-muted-foreground/90",
             local.prefix && "pl-1",
             local.suffix && "pr-1",
             styles().text,

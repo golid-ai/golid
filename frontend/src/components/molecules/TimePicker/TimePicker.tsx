@@ -230,7 +230,7 @@ export const TimePicker: Component<TimePickerProps> = (props) => {
             disabled={props.disabled}
             class={cn(
               "flex w-full items-center justify-between rounded-sm border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all tracking-tight",
-              "hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              "hover:border-foreground/30 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
               sizeClasses[props.size || "default"],
               open() && "ring-2 ring-ring ring-offset-2 border-foreground/30",
@@ -278,7 +278,7 @@ export const TimePicker: Component<TimePickerProps> = (props) => {
               <input
                 type="text"
                 aria-label="Hours"
-                class="w-full h-full bg-transparent text-center text-3xl font-bold text-foreground leading-none outline-none"
+                class="w-full h-full bg-transparent text-center text-3xl font-bold text-foreground leading-none outline-hidden"
                 value={typedHours()}
                 onInput={handleHoursInput}
                 onBlur={handleBlur}
@@ -302,7 +302,7 @@ export const TimePicker: Component<TimePickerProps> = (props) => {
               <input
                 type="text"
                 aria-label="Minutes"
-                class="w-full h-full bg-transparent text-center text-3xl font-bold text-foreground leading-none outline-none"
+                class="w-full h-full bg-transparent text-center text-3xl font-bold text-foreground leading-none outline-hidden"
                 value={typedMinutes()}
                 onInput={handleMinutesInput}
                 onBlur={handleBlur}

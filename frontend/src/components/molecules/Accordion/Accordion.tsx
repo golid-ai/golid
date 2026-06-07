@@ -150,7 +150,7 @@ export const Accordion: Component<AccordionProps> = (props) => {
     <AccordionContext.Provider value={ctx}>
       <div
         class={cn(
-          "divide-y divide-foreground/5 border border-foreground/10 bg-foreground/[0.005] dark:bg-foreground/[0.02] rounded-2xl overflow-hidden shadow-sm",
+          "divide-y divide-foreground/5 border border-foreground/10 bg-foreground/[0.005] dark:bg-foreground/[0.02] rounded-2xl overflow-hidden shadow-xs",
           local.class
         )}
       >
@@ -229,7 +229,7 @@ export const AccordionTrigger: Component<AccordionTriggerProps> = (props) => {
       class={cn(
         "flex w-full items-center justify-between px-6 py-4 text-left transition-all",
         "hover:bg-foreground/[0.02]",
-        "focus-visible:outline-none focus-visible:bg-foreground/[0.05] z-10",
+        "focus-visible:outline-hidden focus-visible:bg-foreground/[0.05] z-10",
         open() && "bg-foreground/[0.01]",
         item.disabled && "cursor-not-allowed opacity-50",
         isNonCollapsibleActive() && "cursor-default",

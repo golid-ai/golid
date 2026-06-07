@@ -12,7 +12,7 @@ import (
 	"unicode"
 )
 
-const oldModule = "github.com/testuser/testapp/backend"
+const oldModule = "github.com/golid-ai/golid/backend"
 const oldProjectName = "golid"
 const oldGitHubRepo = "golid-ai/golid"
 const oldNPMScope = "@golid"
@@ -47,6 +47,7 @@ func main() {
 	changed += replaceInFile(root+"backend/go.mod", oldModule, newModule)
 
 	// 2. Update all Go imports and string literals (config defaults, error messages)
+	//    Covers internal/wire/, internal/service/* subpackages, and all other backend Go code.
 	goFiles := findFiles(root+"backend/", ".go")
 	for _, f := range goFiles {
 		changed += replaceInFile(f, oldModule, newModule)
@@ -176,6 +177,20 @@ func main() {
 
 	// 19. Update .gitignore (all-caps project name in comments)
 	changed += replaceInFile(root+".gitignore", oldUpper, newUpper)
+
+	// 20. v0.3.0 paths — docker-compose overlay, dev tooling, CI scripts.
+	//     internal/wire/ is covered by step 2 (all backend .go files).
+	changed += replaceInFileSafe(root+"docker-compose.ci-e2e.yml", oldProjectName, newName)
+	for _, f := range []string{
+		".nvmrc",
+		"frontend/dev-watch.mjs",
+		".vscode/start-frontend-dev.sh",
+		"scripts/check_spec_drift.sh",
+		"scripts/check_citation_freshness.sh",
+	} {
+		changed += replaceInFileSafe(root+f, oldProjectName, newName)
+		changed += replaceInFile(root+f, oldTitled, newTitled)
+	}
 
 	fmt.Printf("\n=== Rename complete: %d files updated ===\n", changed)
 	fmt.Printf("  Module:  %s -> %s\n", oldModule, newModule)

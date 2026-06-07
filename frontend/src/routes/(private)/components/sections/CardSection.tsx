@@ -161,11 +161,11 @@ function MemberCard(props: MemberCardData) {
 
       <CardFooter class="p-0 border-t border-foreground/5 overflow-hidden bg-foreground/[0.01]">
         <div class="grid grid-cols-2 w-full h-12">
-          <button class="flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors text-[10px] font-black uppercase tracking-widest border-r border-foreground/5 group/item outline-none">
+          <button class="flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors text-[10px] font-black uppercase tracking-widest border-r border-foreground/5 group/item outline-hidden">
             <Icon name="visibility" class="text-lg opacity-40 group-hover/item:opacity-100 group-hover/item:text-primary transition-all" />
             Full Profile
           </button>
-          <button class="flex items-center justify-center gap-2 hover:bg-green/5 transition-colors text-[10px] font-black uppercase tracking-widest text-primary group/item outline-none">
+          <button class="flex items-center justify-center gap-2 hover:bg-green/5 transition-colors text-[10px] font-black uppercase tracking-widest text-primary group/item outline-hidden">
             <Icon name="bolt" class="text-lg group-hover/item:animate-pulse transition-transform" />
             Connect
           </button>
@@ -246,7 +246,7 @@ export function CardSection() {
         <button
           type="button"
           aria-labelledby="member-discovery-title"
-          class="relative rounded-2xl overflow-hidden shadow-elevated group transition-[transform,shadow] hover:shadow-2xl hover:-translate-y-1 focus-visible:shadow-2xl focus-visible:-translate-y-1 bg-card flex flex-col outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-left"
+          class="relative rounded-2xl overflow-hidden shadow-elevated group transition-[transform,shadow] hover:shadow-2xl hover:-translate-y-1 focus-visible:shadow-2xl focus-visible:-translate-y-1 bg-card flex flex-col outline-hidden ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-left"
         >
           {/* Background Bokeh */}
           <div class="absolute top-0 right-0 w-32 h-32 bg-blue-grad opacity-20 blur-3xl group-hover:scale-150 group-focus-visible:scale-150 transition-transform duration-700" />
@@ -341,14 +341,14 @@ export function CardSection() {
           </CardContent>
           <CardFooter class="p-0 border-t border-foreground/[0.03] overflow-hidden">
             <div class="grid grid-cols-2 w-full h-14">
-              <button class="flex items-center justify-center gap-3 hover:bg-foreground/[0.03] transition-colors text-xs font-bold uppercase tracking-widest border-r border-foreground/[0.03] group/item outline-none focus-visible:bg-foreground/[0.03]">
+              <button class="flex items-center justify-center gap-3 hover:bg-foreground/[0.03] transition-colors text-xs font-bold uppercase tracking-widest border-r border-foreground/[0.03] group/item outline-hidden focus-visible:bg-foreground/[0.03]">
                 <Icon
                   name="mail"
                   class="text-xl opacity-40 group-hover/item:opacity-100 group-hover/item:text-primary transition-all"
                 />
                 Email
               </button>
-              <button class="flex items-center justify-center gap-3 hover:bg-foreground/[0.03] transition-colors text-xs font-bold uppercase tracking-widest text-blue group/item outline-none focus-visible:bg-foreground/[0.03]">
+              <button class="flex items-center justify-center gap-3 hover:bg-foreground/[0.03] transition-colors text-xs font-bold uppercase tracking-widest text-blue group/item outline-hidden focus-visible:bg-foreground/[0.03]">
                 <Icon
                   name="person"
                   class="text-xl group-hover/item:scale-110 transition-transform"

@@ -26,10 +26,10 @@ These are backwards-compatible and don't need a new version:
 
 ## How to Add a v2 Endpoint
 
-1. In `cmd/server/main.go`, register the new handler on the v2 group:
+1. In `backend/internal/wire/routes.go`, register the new handler on the v2 group (wire receives the configured JWT middleware from `main.go`):
 
 ```go
-v2.GET("/me", userHandler.MeV2)
+v2.GET("/me", h.User.MeV2)
 ```
 
 2. Keep the v1 endpoint unchanged

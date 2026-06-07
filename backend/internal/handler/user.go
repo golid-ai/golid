@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/golid-ai/golid/backend/internal/apperror"
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/user"
 )
 
 // UserHandler handles user endpoints.
@@ -19,7 +19,7 @@ type UserHandler struct {
 }
 
 // NewUserHandler creates a new user handler.
-func NewUserHandler(userService *service.UserService) *UserHandler {
+func NewUserHandler(userService *user.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
@@ -75,7 +75,7 @@ func (h *UserHandler) UpdateProfile(c echo.Context) error {
 		return err
 	}
 
-	user, err := h.userService.UpdateProfile(c.Request().Context(), userID, &service.ProfileUpdate{
+	user, err := h.userService.UpdateProfile(c.Request().Context(), userID, &user.ProfileUpdate{
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
 		AvatarURL:    derefStr(req.AvatarURL),

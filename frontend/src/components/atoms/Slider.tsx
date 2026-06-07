@@ -174,7 +174,7 @@ export const Slider: Component<SliderProps> = (props) => {
               onInput={(e) => handleInput(e, i)}
               onFocus={() => setActiveIndex(i)}
               class={cn(
-                "slider-input absolute left-0 w-full h-10 top-1/2 -translate-y-1/2 appearance-none bg-transparent focus:outline-none cursor-pointer pointer-events-none",
+                "slider-input absolute left-0 w-full h-10 top-1/2 -translate-y-1/2 appearance-none bg-transparent focus:outline-hidden cursor-pointer pointer-events-none",
                 activeIndex() === i ? "z-30" : "z-20"
               )}
             />

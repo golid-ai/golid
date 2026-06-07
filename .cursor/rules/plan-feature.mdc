@@ -5,6 +5,8 @@ alwaysApply: false
 
 # Plan a Feature
 
+> **Thesis:** Plan the data model and permission model upfront. Everything else — API surface, frontend, tests — follows from those two decisions.
+
 Use this structure when planning a new feature module.
 
 ## Planning Checklist
@@ -35,7 +37,7 @@ Phase 2: Backend Service
 Phase 3: Backend Handler + Routes
   - Request types, validation
   - Handler methods
-  - Route registration in main.go
+  - Wire in internal/wire/ (services.go, handlers.go, routes.go)
 
 Phase 4: Frontend API Types + Client
   - TypeScript interfaces matching backend structs
@@ -94,7 +96,7 @@ Check `frontend/src/components/index.ts` for the full list of available exports 
 
 ## Reference Files
 
-- Service pattern: `backend/internal/service/auth.go`, `backend/internal/service/user.go`
+- Service pattern: `backend/internal/service/auth/auth.go`, `backend/internal/service/user/user.go`
 - Handler pattern: `backend/internal/handler/auth.go`, `backend/internal/handler/user.go`
 - Migration pattern: `backend/migrations/000001_init.up.sql`
 - Frontend page: `frontend/src/routes/(private)/dashboard/index.tsx`, `frontend/src/routes/(private)/settings/index.tsx`

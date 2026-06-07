@@ -160,7 +160,7 @@ export const DateRangePicker: Component<DateRangePickerProps> = (props) => {
             disabled={props.disabled}
             class={cn(
               "flex w-full items-center justify-between rounded-sm border border-input bg-transparent text-left text-sm ring-offset-background transition-all",
-              "hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              "hover:border-foreground/30 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
               sizeClasses[props.size || "default"],
               !props.value?.start && "text-muted-foreground",

@@ -35,33 +35,35 @@
           "**/app.config.timestamp_*": true
         },
 
+        // Disable npm-scripts sidebar scanner — races with postCreate npm install
+        // and shows a bogus "failed to parse package.json" toast. Tasks still work.
+        "npm.autoDetect": "off",
+
         // --- Port Forwarding ---
         // Known service ports — controls label & notification behavior
         "remote.portsAttributes": {
           "3000": { "label": "Frontend", "onAutoForward": "silent" },
           "8080": { "label": "Backend API", "onAutoForward": "notify" },
-          "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+          "5432": { "label": "PostgreSQL", "onAutoForward": "silent" },
+          "24678": { "label": "Vite HMR (client)", "onAutoForward": "silent" },
+          "24679": { "label": "Vite HMR (SSR)", "onAutoForward": "silent" },
+          "24680": { "label": "Vite HMR (server-fn)", "onAutoForward": "silent" }
         },
-        // Auto-forward any port a process listens on (e.g. vinxi's
-        // random HMR WebSocket port). Without this, HMR breaks because
-        // the browser can't reach the container's random port.
-        // See: https://github.com/nksaraf/vinxi/issues/394
-        "remote.autoForwardPorts": true,
-        "remote.autoForwardPortsSource": "process",
-        // Forward unknown ports silently (no toast notifications)
-        "remote.otherPortsAttributes": {
-          "onAutoForward": "silent"
-        }
+        // HMR ports are pinned in frontend/app.config.ts; forward them explicitly
+        // below instead of scanning every process (which accumulated 180+ ports).
+        "remote.autoForwardPorts": false,
+        "remote.restoreForwardedPorts": false
       }
     }
   },
 
-  "forwardPorts": [3000],
+  "forwardPorts": [3000, 8080, 5432, 24678, 24679, 24680],
+  "waitFor": "postCreateCommand",
 
   // Runs on the HOST before docker compose — creates config/.env.local if missing
   "initializeCommand": "test -f config/.env.local || make setup",
 
-  "postCreateCommand": "sudo chown -R vscode:vscode /workspace/backend /workspace/frontend 2>/dev/null || true && cd /workspace/backend && go build -p 4 ./... && cd /workspace/frontend && rm -f .npm-ready && sudo rm -rf node_modules 2>/dev/null; npm install && touch .npm-ready",
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspace/backend /workspace/frontend /home/vscode/.cache 2>/dev/null || true && node -e \"const v=+process.versions.node.split('.')[0]; if(v<24){console.error('Node 24+ required (got '+process.versions.node+'). Rebuild devcontainer without cache.'); process.exit(1)}\" && cd /workspace/frontend && rm -f .npm-ready && npm install --no-audit --no-fund && touch .npm-ready",
   "postStartCommand": "cd /workspace/backend && bash entrypoint.dev.sh",
 
   "remoteUser": "vscode"

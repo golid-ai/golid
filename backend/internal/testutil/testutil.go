@@ -6,19 +6,68 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TestDB holds a connection to the test database.
-type TestDB struct {
-	Pool *pgxpool.Pool
+// requireTestDatabaseURL resolves the integration test DB URL with a hard
+// safety guard: panic if TEST_DATABASE_URL is unset or if the resolved URL's
+// database name doesn't contain "test".
+//
+// Why this matters: integration tests call CleanAllTables, which runs
+// TRUNCATE … CASCADE on `users` — wiping every dependent table. If the suite
+// ever runs against the dev database (DATABASE_URL → postgres://.../golid)
+// because TEST_DATABASE_URL wasn't set, the dev environment is destroyed.
+//
+// Parallel packages each use an isolated Postgres schema (it_<package>_<pid>)
+// migrated via golang-migrate on first pool setup. Set TESTUTIL_SHARED_SCHEMA=1
+// to use public instead (serial only; migrations run against public once).
+//
+// The "test in dbname" convention matches CI's `golid_test` configuration
+// (.github/workflows/ci.yml) and docker-compose's `golid_test` service. If a
+// CI environment ever uses a non-conforming name, set
+// TESTUTIL_ALLOW_NONTEST_DB=1 to opt in (intentionally noisy).
+func requireTestDatabaseURL() string {
+	dbURL := os.Getenv("TEST_DATABASE_URL")
+	if dbURL == "" {
+		panic("TEST_DATABASE_URL is required for integration tests — refusing to fall back " +
+			"to DATABASE_URL because CleanAllTables would TRUNCATE the dev DB. " +
+			"Set TEST_DATABASE_URL=postgres://dev:dev@localhost:5432/golid_test?sslmode=disable " +
+			"(or whatever your test DB is) before running -tags=integration tests.")
+	}
+	if !strings.Contains(dbURL, "test") && os.Getenv("TESTUTIL_ALLOW_NONTEST_DB") != "1" {
+		panic(fmt.Sprintf("TEST_DATABASE_URL %q does not contain 'test' in the dbname — refusing "+
+			"to TRUNCATE this DB. Convention: use a database name like 'golid_test'. "+
+			"If your CI uses a non-conforming name, set TESTUTIL_ALLOW_NONTEST_DB=1 to bypass.", dbURL))
+	}
+	return dbURL
 }
 
+// TestDB holds a connection to the test database.
+type TestDB struct {
+	Pool   *pgxpool.Pool
+	Schema string
+}
+
+// TestPasswordHash is the bcrypt-hash-of-"password" constant used by every
+// integration test that inserts a user via raw SQL. Pre-refactor, this
+// hash was defined (with different local names: testPasswordHash,
+// taskTestPasswordHash, testBcryptHash) inside individual integration
+// test files. After the service-subpackage refactor, those constants
+// became inaccessible across the new package boundary — consolidated
+// here so every integration test imports the single canonical
+// definition.
+//
+// The hash decodes to the plaintext "password" and was selected
+// originally for its known-good shape (bcrypt-2a, cost 10).
+const TestPasswordHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
+
 // SetupTestDB creates a connection to the test database.
-// It uses the DATABASE_URL environment variable or defaults to the local Docker database.
+// TEST_DATABASE_URL is required and must reference a database whose name
+// contains "test" — see requireTestDatabaseURL above for the why.
 //
 // Usage:
 //
@@ -30,20 +79,19 @@ type TestDB struct {
 func SetupTestDB() *TestDB {
 	ctx := context.Background()
 
-	// Get database URL from environment or use default
-	dbURL := os.Getenv("TEST_DATABASE_URL")
-	if dbURL == "" {
-		dbURL = os.Getenv("DATABASE_URL")
+	schema, err := ensurePackageSchema()
+	if err != nil {
+		panic(fmt.Sprintf("failed to prepare integration schema: %v", err))
 	}
-	if dbURL == "" {
-		// Default to local Docker database
-		dbURL = "postgres://dev:dev@localhost:5432/golid?sslmode=disable"
-	}
+
+	dbURL := requireTestDatabaseURL()
 
 	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse database URL: %v", err))
 	}
+
+	configurePoolSearchPath(config, schema)
 
 	// Configure pool for testing
 	config.MaxConns = 5
@@ -61,7 +109,7 @@ func SetupTestDB() *TestDB {
 		panic(fmt.Sprintf("failed to ping database: %v", err))
 	}
 
-	return &TestDB{Pool: pool}
+	return &TestDB{Pool: pool, Schema: schema}
 }
 
 // Close closes the database connection pool.
@@ -95,6 +143,10 @@ func (db *TestDB) CleanAllTables(ctx context.Context) error {
 }
 
 // SkipIfNoTestDB skips the test if the test database is not available.
+// Unlike SetupTestDB this is a SOFT guard — when TEST_DATABASE_URL is unset
+// the test is skipped rather than the suite panicking. The DB-name "test"
+// requirement still applies when TEST_DATABASE_URL is set, because the
+// catastrophic-TRUNCATE failure mode is the same.
 func SkipIfNoTestDB(t *testing.T) {
 	t.Helper()
 
@@ -103,10 +155,12 @@ func SkipIfNoTestDB(t *testing.T) {
 
 	dbURL := os.Getenv("TEST_DATABASE_URL")
 	if dbURL == "" {
-		dbURL = os.Getenv("DATABASE_URL")
+		t.Skip("Skipping integration test: TEST_DATABASE_URL is not set (refusing to fall back to DATABASE_URL — CleanAllTables would wipe the dev DB).")
+		return
 	}
-	if dbURL == "" {
-		dbURL = "postgres://dev:dev@localhost:5432/golid?sslmode=disable"
+	if !strings.Contains(dbURL, "test") && os.Getenv("TESTUTIL_ALLOW_NONTEST_DB") != "1" {
+		t.Skipf("Skipping integration test: TEST_DATABASE_URL %q does not contain 'test' in the dbname (set TESTUTIL_ALLOW_NONTEST_DB=1 to bypass).", dbURL)
+		return
 	}
 
 	pool, err := pgxpool.New(ctx, dbURL)

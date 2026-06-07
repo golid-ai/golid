@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white" alt="Go" />
   <img src="https://img.shields.io/badge/Echo-v4-1B9AAA?logo=go&logoColor=white" alt="Echo" />
   <img src="https://img.shields.io/badge/SolidJS-1.8-2C4F7C?logo=solid&logoColor=white" alt="SolidJS" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
@@ -31,8 +31,8 @@ Most starter templates give you a folder structure and leave you to wire everyth
 - **Zero to deployed in minutes** — `docker compose up` starts everything. `./scripts/deploy.sh` provisions Cloud Run, Cloud SQL, and secrets in a single command. No 200-step setup guide.
 - **Go + SolidJS > Node + React** — Go compiles to a single binary, starts in <100ms, handles 10x the concurrent connections of Node.js. SolidJS benchmarks faster than React in every metric. No vendor lock-in to Vercel.
 - **Opt-in complexity** — Email, job queues, tracing, and metrics are off by default. Set one env var to enable each. `docker compose up` works with zero configuration.
-- **AI-native development** — 27 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
-- **740+ tests across three layers** — Go unit + integration (real PostgreSQL), SolidJS component tests, and 22 Playwright E2E tests. 82%+ Codecov coverage. Not a scaffold — a starter that proves itself.
+- **AI-native development** — 37 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
+- **752 tests across three layers** — 277 Go tests (236 unit + 41 integration), 455 SolidJS component tests, and 20 Playwright E2E tests. Codecov regression tracking on backend and frontend. Not a scaffold — a starter that proves itself.
 - **No vendor lock-in** — Runs on Cloud Run, Fly.io, Railway, Render, or bare metal. PostgreSQL everywhere. No proprietary abstractions.
 
 | | Golid | Next.js + API | Go-only starters | Rails / Laravel |
@@ -45,7 +45,7 @@ Most starter templates give you a folder structure and leave you to wire everyth
 
 ## Quick Start
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) 24+, [Node.js](https://nodejs.org/) 20+ (for frontend dev), [Go](https://go.dev/dl/) 1.26+ (for local backend dev outside Docker)
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) 24+, [Node.js](https://nodejs.org/) 24+ (for frontend dev), [Go](https://go.dev/dl/) 1.26+ (for local backend dev outside Docker)
 
 ```bash
 # 1. Clone + setup (generates JWT secret, installs frontend deps)
@@ -77,7 +77,7 @@ cd frontend && npm run dev
 - JWT auth with TOCTOU-safe refresh token rotation (atomic revoke + issue in a single transaction), password reset with selector/verifier pattern + constant-time comparison, email verification with SHA-256 hashed tokens
 - SSE real-time hub with per-user channels, one-time ticket auth (no JWT in URLs), backpressure, connection limits
 - Two-layer auth on every endpoint: handler extracts identity (authn), service verifies resource membership (authz)
-- Dual-tier rate limiting (strict on auth, general on API), security headers (configurable CSP, HSTS, X-Frame-Options), email enumeration prevention
+- Dual-tier rate limiting (strict on auth, general on API), CSRF protection (`X-Requested-With: golid-app`; set `CSRF_ENFORCE=true` in production — see `docs/runbooks/csrf-production-rollout.md`), security headers (configurable CSP, HSTS, X-Frame-Options), email enumeration prevention
 - Job queue (asynq + Redis, falls back to goroutines), Mailgun email with retry + graceful degradation
 - OpenTelemetry tracing + Prometheus metrics (both opt-in via env vars), feature flags (DB-backed with cache)
 - API versioning (`/api/v1` + `/api/v2`), OpenAPI 3.1 spec with TypeScript type generation pipeline
@@ -90,15 +90,15 @@ cd frontend && npm run dev
 - Full auth UI: registration, login, password reset, email verification, settings
 - Zero `createResource`, zero `any` in production code — consistent `onMount` + signals + `alive` guard + `batch` pattern throughout
 - SSR with middleware auth redirects, dark mode, responsive layouts, reactive logout on token expiry
-- Atomic design (atoms/molecules/organisms), Tailwind CSS
+- Atomic design (atoms/molecules/organisms), Tailwind CSS 4 (`@tailwindcss/vite`)
 - Accessibility: ARIA attributes, keyboard navigation, focus trapping, skip link, axe-core CI verification
 
-### Testing (740+ tests, 82%+ coverage)
+### Testing (752 tests)
 
-- Go unit + integration tests (real PostgreSQL, concurrency race tests, auth security edge cases)
-- 450+ frontend tests (Vitest + @solidjs/testing-library + axe-core)
-- 22 Playwright E2E tests (auth flows, signup, settings, password reset, components)
-- Three-job CI pipeline: backend, frontend, E2E (all blocking gates)
+- 277 Go tests (236 unit + 41 integration with `-tags integration`) — per-package schemas via `TEST_DATABASE_URL`, handler HTTP integration tests, concurrency race tests, auth security edge cases
+- 455 frontend tests (Vitest 4 + @solidjs/testing-library + axe-core)
+- 20 Playwright E2E tests (auth flows, signup, settings, password reset, components)
+- Multi-job CI with path filters: change detection, spec-drift + rule-health gates, sharded backend unit/integration/coverage, frontend, scaffold-verify, and E2E (docs-only PRs skip heavy jobs)
 - govulncheck + npm audit + Codecov coverage tracking with regression thresholds
 
 ### Infrastructure
@@ -211,18 +211,18 @@ See [scripts/README.md](scripts/README.md) for full details and [docs/deployment
 | [Deployment Options](docs/deployment-options.md) | Cloud Run, Fly.io, Railway, Render, bare metal |
 | [API Reference](backend/openapi.yaml) | OpenAPI 3.1 spec |
 | [Changelog](CHANGELOG.md) | Release history |
-| [Full Index](docs/README.md) | Complete documentation map (27 docs, 3 ADRs) |
+| [Full Index](docs/README.md) | Complete documentation map (module specs, organism pattern, CLI reference, 7 ADRs) |
 
 ### Cursor AI Rules
 
-27 rules in `.cursor/rules/` auto-activate based on which file you're editing:
+37 rules in `.cursor/rules/` auto-activate based on which file you're editing:
 
 | Rule | Activates on | What it does |
 |------|-------------|-------------|
-| `go-service.mdc` | `service/*.go` | Service patterns: retry, auth, transactions, pagination |
-| `go-handler.mdc` | `handler/*.go` | Handler patterns: interfaces, validation, route registration |
-| `sse-realtime.mdc` | `sse*.go`, `sse.ts` | SSE hub, ticket auth, keepalive, reconnect |
-| `write-tests.mdc` | `*_test.go`, `*.test.*` | Mock-based, integration, E2E, and component testing patterns |
+| `go-service.mdc` | `backend/internal/service/**/*.go` | Service patterns: retry, auth, transactions, pagination |
+| `go-handler.mdc` | `handler/**/*.go`, `middleware/**/*.go` | Handler patterns: interfaces, validation, module spec consumption, route registration |
+| `sse-realtime.mdc` | `service/sse/**/*.go`, `sse.ts` | SSE hub, ticket auth, keepalive, reconnect |
+| `write-tests.mdc` | `backend/**/*_test.go` | Backend integration and unit test patterns |
 | `solidjs-pages.mdc` | `routes/**/*.tsx` | Data fetching, alive guards, modals, Switch/Match |
 | `frontend-forms.mdc` | Description-triggered | Form submission, toast vs Alert, batch() in try/catch |
 | `ci-workflow.mdc` | `.github/workflows/*` | CI patterns, Codecov, common mistakes |
