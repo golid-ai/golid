@@ -1,4 +1,4 @@
-package service
+package retry
 
 import "time"
 

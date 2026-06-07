@@ -1,4 +1,4 @@
-package service
+package pagination
 
 func NormalizePagination(page, perPage, defaultPerPage, maxPerPage int) (int, int) {
 	if page < 1 {
