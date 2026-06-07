@@ -184,8 +184,11 @@ Concrete pattern: inline `errors.As + 23505 → Conflict` blocks in create/updat
 # Backend unit tests (fast, no DB needed)
 cd backend && go test ./...
 
-# Backend integration tests (requires running PostgreSQL)
-cd backend && go test -tags=integration ./...
+# Backend integration tests (requires golid_test + migrations path)
+export TEST_DATABASE_URL='postgres://dev:dev@localhost:5432/golid_test?sslmode=disable'
+scripts/init-test-db.sh
+cd backend && TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
+  go test -tags=integration ./internal/handler/... ./internal/service/... -race
 ```
 
 ### Integration tests wipe the database they connect to
@@ -203,7 +206,9 @@ If it's empty or points at the dev DB:
 - **Don't run integration tests.** Use `go build ./...`, `go vet ./...`, and untagged unit tests for verification.
 - Or set `TEST_DATABASE_URL` to a separate DB for the duration of the command:
   ```bash
-  TEST_DATABASE_URL=postgres://dev:dev@db:5432/golid_test go test -tags=integration ./...
+  TEST_DATABASE_URL=postgres://dev:dev@db:5432/golid_test \
+    TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
+    go test -tags=integration ./internal/handler/... ./internal/service/... -race
   ```
   (CI sets only `TEST_DATABASE_URL` — see `ci-workflow` rule.)
 

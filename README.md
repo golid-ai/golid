@@ -15,13 +15,19 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
-<p align="center">Production-ready <strong>Go + SolidJS</strong> starter — auth, 70+ components, SSR, SSE, scripted GCP deploy.</p>
+<p align="center"><strong>An AI-native software factory</strong> for cloud-hosted <strong>Go + SolidJS</strong> apps.</p>
 
-<p align="center"><strong><a href="https://golid.ai">golid.ai</a></strong> — Live demo featuring the full component library</p>
+<p align="center">Production harness — plans, module specs, 38 Cursor rules, drift CI, integration test harness — plus a runnable starter app and GCP deploy scripts.</p>
+
+<p align="center"><strong>Live example:</strong> <a href="https://golid.ai">golid.ai</a> — marketing site built with this factory; clone the repo for the harness and template app.</p>
 
 <p align="center">
-  <img src="docs/images/showcase-charts.png" alt="Data visualization components" width="49%" />
-  <img src="docs/images/showcase-components.png" alt="Interactive UI components" width="49%" />
+  <a href="#how-the-factory-works">Factory</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#fork-and-customize">Fork</a> ·
+  <a href="#why-golid">Why Golid</a> ·
+  <a href="#deployment">Deploy</a> ·
+  <a href="#documentation">Docs</a>
 </p>
 
 ---
@@ -36,13 +42,36 @@
 | Email         | Mailgun (`IsConfigured()`)              | Job Queue      | asynq + Redis (goroutine fallback)    |
 | Observability | OpenTelemetry · Prometheus (opt-in)     | Feature Flags  | DB-backed with 30s cache              |
 | Hot Reload    | Air (Go) + Vite HMR                     | DevContainer   | One-click setup, zero config          |
-| Testing       | 993 tests (351 Go + 622 Vitest + 20 E2E) | AI Rules       | 38 Cursor rules (auto-activate)       |
+| Testing       | 995 tests (353 Go unit + 622 Vitest + 20 E2E) | Factory harness | Plans · spec-drift · rule-health · plan loop |
+| AI Rules      | 38 Cursor rules (auto-activate on edit)       | Integration     | `TEST_DATABASE_URL` · per-package schemas (separate `go test -tags integration` run) |
+
+---
+
+## How the factory works
+
+Agents and humans share the same production contract — not prompt memory, not ad-hoc CI.
+
+**1. Classify & plan** — [`workflow-routing`](.cursor/rules/workflow-routing.mdc) picks risk tier (T0–T3). Write slices in `docs/plans/` under [`planning-standards`](.cursor/rules/planning-standards.mdc) guardrails: verify schema and file claims against migrations and source; acceptance criteria per slice. New modules: [`plan-feature`](.cursor/rules/plan-feature.mdc). Calibration: [golden-slices](docs/golden-slices.md).
+
+**2. Execute slices** — [`slice-and-ship`](.cursor/rules/slice-and-ship.mdc) per slice: implement → test → spec/OpenAPI sync → commit → audit. For multi-slice plans, invoke [`plan-execution-loop`](.cursor/rules/plan-execution-loop.mdc) to orchestrate subagents: implement → audit (≥90/100) → fix → re-audit before the next slice. Archive completed plans under `docs/plans/archive/`.
+
+| Step | What | Where |
+| ---- | ---- | ----- |
+| **Spec** | Current behavior (updated as slices land) | `docs/modules/*/spec.md` |
+| **Build** | Rules + scaffold enforce patterns | `.cursor/rules/` · `make new-module` |
+| **Verify** | Unit + integration harness, race detector | Per-package `it_<pkg>_<pid>` schemas · sharded CI |
+| **Gate** | Spec changes must match code | `check_spec_drift.sh` · citation freshness · rule health on every PR |
+| **Ship** | Cloud deploy + full rebrand | `./scripts/deploy.sh` · `make rename` (20+ file categories) |
+
+**vs blank repo + AI:** OpenAPI + module specs + drift CI (not prompt memory) · `planning-standards` → `slice-and-ship` / `plan-execution-loop` · path-filtered CI + E2E + Codecov 80% gate · `make rename` rebrands the whole factory.
+
+Full map: [Organism Pattern](docs/organism-pattern.md) · [Plans](docs/plans/README.md) · [routing eval](docs/routing-eval.md)
 
 ---
 
 ## What's Inside
 
-Starter modules — extend with `make new-module` or follow [example-module.md](docs/example-module.md).
+Starter modules the factory extends — use `make new-module` or follow [example-module.md](docs/example-module.md).
 
 | Module            | What it does                                                                  |
 | ----------------- | ----------------------------------------------------------------------------- |
@@ -54,6 +83,11 @@ Starter modules — extend with `make new-module` or follow [example-module.md](
 | **Opt-in infra**  | Email, queue, Redis rate limiting, tracing, metrics — off by default          |
 
 **Also included:** OpenAPI 3.1 + TypeScript codegen, sqlc queries, golang-migrate (with down migrations), CSRF + dual-tier rate limiting, scaffold generator, domain-safe rename tool, GCP deploy/teardown scripts.
+
+<p align="center">
+  <img src="docs/images/showcase-charts.png" alt="Data visualization components" width="49%" />
+  <img src="docs/images/showcase-components.png" alt="Interactive UI components" width="49%" />
+</p>
 
 ---
 
@@ -86,7 +120,7 @@ cd frontend && npm run dev # frontend on :3000
 
 **Test accounts** (after seed): `admin@example.com` / `Password123!` (admin) · `user@example.com` / `Password123!` (user)
 
-**Guides:** [Quick Start](docs/quick-start.md) · [Start Here](docs/start-here.md) · **Upgrading from 0.2?** [CHANGELOG 0.3.0](CHANGELOG.md#030---2026-06-07)
+**Guides:** [Quick Start](docs/quick-start.md) · [Start Here](docs/start-here.md) · **Forking?** [`make rename`](#fork-and-customize) · **Upgrading from 0.2?** [CHANGELOG 0.3.0](CHANGELOG.md#030---2026-06-07)
 
 ---
 
@@ -116,7 +150,7 @@ golid/
 │           └── (private)/       # dashboard, settings, component showcase
 ├── docs/
 │   ├── modules/                 # Auth, users, feature specs (+ drift CI)
-│   ├── plans/                   # Active feature plans
+│   ├── plans/                   # Feature plans (active + archive/)
 │   ├── architecture.md          # Layers, auth, SSE, wire
 │   └── patterns/                # Stack quick references (Go, SolidJS, …)
 ├── .cursor/rules/               # 38 AI coding rules
@@ -136,7 +170,10 @@ cd frontend && npm run dev         # Frontend dev server (port 3000)
 make test                          # Backend + frontend unit tests
 make check                         # lint + test + build (local CI parity)
 
-cd backend && go test -tags integration ./...   # Needs TEST_DATABASE_URL
+export TEST_DATABASE_URL='postgres://dev:dev@localhost:5432/golid_test?sslmode=disable'
+scripts/init-test-db.sh
+cd backend && TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
+  go test -tags integration ./internal/handler/... ./internal/service/... -race
 make new-module name=notes         # Scaffold CRUD module
 make rename name=myapp module=github.com/user/myapp/backend
 make help                          # All Makefile targets
@@ -151,12 +188,24 @@ Integration test setup: [CLI Reference](docs/cli-reference.md) (`init-test-db.sh
 
 ## Why Golid?
 
+### vs blank repo + AI
+
+| | Golid | Blank repo + AI |
+| --- | --- | --- |
+| **Contract** | OpenAPI + module specs + drift CI | Prompt memory |
+| **Integration safety** | `TEST_DATABASE_URL`, isolated schemas | Easy to wipe dev DB |
+| **Agent ops** | `workflow-routing` → `planning-standards` → `slice-and-ship` / `plan-execution-loop` (38 rules) | Ad-hoc |
+| **Production CI** | Path-filtered, E2E, Codecov 80% gate | Often none |
+| **Fork factory** | `make rename` rebrands harness + app | Manual find-and-replace |
+
+### vs other stacks
+
 |                        | Golid                                       | Next.js + API         | Go-only starters |
 | ---------------------- | ------------------------------------------- | --------------------- | ---------------- |
 | Full-stack type safety | Go + TypeScript (OpenAPI → generated types) | TypeScript (tRPC/Zod) | Go only          |
 | Production UI          | 70+ components                              | BYO                   | None             |
 | SSR + real-time        | SolidStart SSR + SSE                        | Partial               | None             |
-| Deploy                 | One command, any host                       | Vercel-centric        | BYO              |
+| Deploy                 | One-command GCP (`deploy.sh`); Docker elsewhere | Vercel-centric        | BYO              |
 | Memory                 | ~30MB binary                                | ~200MB+               | ~30MB            |
 
 Opt-in complexity: `docker compose up` works with zero Redis, Mailgun, or OTEL. Set one env var per module when you need it — see [Opt-In Modules](#opt-in-modules) below.
@@ -223,7 +272,7 @@ The rename tool updates 20+ file categories (imports, Docker, CI, Cursor rules, 
 | Auth           | TOCTOU-safe refresh, selector/verifier                  | SSR redirects, reactive 401 logout           |
 | Linting        | golangci-lint (see `backend/.golangci.yml`)             | ESLint + `eslint-plugin-solid`               |
 | Testing        | Unit + integration (real DB), race tests                | Vitest 4 + axe-core + Playwright E2E         |
-| Coverage       | Codecov **82.98%** project; `target: 80%` gate           | Vitest floors **75/54/78/75** (included files); see `docs/plans/archive/6-7-26/` |
+| Coverage       | Codecov project (see badge); `target: 80%` gate          | Vitest floors **75/54/78/75** (included files) |
 | CI             | Path filters, spec-drift, rule-health, sharded coverage | lint, typecheck, build, audit (non-blocking) |
 
 ---
@@ -247,7 +296,7 @@ The rename tool updates 20+ file categories (imports, Docker, CI, Cursor rules, 
 | [Changelog](CHANGELOG.md)                           | Release history (0.3.0 breaking changes)                              |
 | [Full Index](docs/README.md)                        | Complete documentation map                                            |
 
-**Cursor rules:** 38 rules in `.cursor/rules/` — full index with thesis lines and globs in [cursor-rules.md](docs/cursor-rules.md). Examples: `go-service` (business logic), `go-handler` (HTTP + spec consumption), `solidjs-pages` (data fetching patterns), `plan-execution-loop` (implement → audit → fix per plan slice).
+**Cursor rules:** 38 rules in `.cursor/rules/` — full index in [cursor-rules.md](docs/cursor-rules.md). Factory workflow: `workflow-routing` → `planning-standards` → `slice-and-ship` / `plan-execution-loop`. Domain examples: `go-service`, `go-handler`, `solidjs-pages`.
 
 ---
 

@@ -92,7 +92,11 @@ Module mapping (Golid):
 
 Escape hatch: `[skip-spec(<module>): <reason>]` or `[skip-spec: <reason>]` in any commit message in the range.
 
-**CI wiring** — the `spec-drift` job runs on every push and PR. Both `check_spec_drift.sh` and `check_citation_freshness.sh` fail the job on drift. No `continue-on-error`.
+**CI wiring** — the `spec-drift` job runs on every push and PR. All three scripts fail the job on drift (no `continue-on-error`):
+
+1. `scripts/check_spec_drift.sh`
+2. `scripts/check_citation_freshness.sh`
+3. `scripts/check_rule_health.sh` — validates Cursor rules (thesis lines, globs)
 
 Local usage: `scripts/check_spec_drift.sh origin/main` before opening a PR. Pairs with `slice-and-ship` contract closeout and `git-commits` pre-commit check.
 

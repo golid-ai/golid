@@ -8,6 +8,23 @@ import (
 	"testing"
 )
 
+// TestTEST_MIGRATIONS_PATHEnv exercises the same resolver findMigrationsDir uses
+// when TEST_MIGRATIONS_PATH is set (schema.go env branch).
+func TestTEST_MIGRATIONS_PATHEnv(t *testing.T) {
+	dir, err := filepath.Abs(filepath.Join("..", "..", "migrations"))
+	if err != nil {
+		t.Fatalf("abs migrations path: %v", err)
+	}
+	t.Setenv("TEST_MIGRATIONS_PATH", dir)
+	got, err := migrationsDirFromEnv(os.Getenv("TEST_MIGRATIONS_PATH"))
+	if err != nil {
+		t.Fatalf("migrationsDirFromEnv(TEST_MIGRATIONS_PATH): %v", err)
+	}
+	if got != dir {
+		t.Fatalf("got %q, want %q", got, dir)
+	}
+}
+
 func TestSanitizeSchemaIdent(t *testing.T) {
 	tests := []struct {
 		in   string
@@ -23,6 +40,23 @@ func TestSanitizeSchemaIdent(t *testing.T) {
 		if got := sanitizeSchemaIdent(tt.in); got != tt.want {
 			t.Errorf("sanitizeSchemaIdent(%q) = %q, want %q", tt.in, got, tt.want)
 		}
+	}
+}
+
+func TestMigrationsDirFromEnv(t *testing.T) {
+	dir, err := filepath.Abs(filepath.Join("..", "..", "migrations"))
+	if err != nil {
+		t.Fatalf("abs migrations path: %v", err)
+	}
+	got, err := migrationsDirFromEnv(dir)
+	if err != nil {
+		t.Fatalf("migrationsDirFromEnv: %v", err)
+	}
+	if got != dir {
+		t.Fatalf("migrationsDirFromEnv = %q, want %q", got, dir)
+	}
+	if _, err := migrationsDirFromEnv(filepath.Join(dir, "nonexistent-subdir")); err == nil {
+		t.Fatal("expected error for missing migrations path")
 	}
 }
 

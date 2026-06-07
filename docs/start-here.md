@@ -104,7 +104,10 @@ Full reference: [Cursor Rules](cursor-rules.md)
 
 ```bash
 cd backend && go test ./...                     # unit tests
-cd backend && go test -tags integration ./...   # integration (needs DB)
+export TEST_DATABASE_URL='postgres://dev:dev@localhost:5432/golid_test?sslmode=disable'
+scripts/init-test-db.sh
+cd backend && TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
+  go test -tags integration ./internal/handler/... ./internal/service/... -race
 cd frontend && npm run test:coverage            # Vitest
 cd frontend && npm run typecheck                # type check (always run before push)
 make test                                       # full suite

@@ -86,7 +86,7 @@ The surface must be:
 
 ```
 # Cycle: 5-30 sec per iteration
-1. Spend 30 minutes building /admin/experiments/og-preview (or similar)
+1. Spend 30 minutes building a dev-only preview route (e.g. `/components` showcase at `frontend/src/routes/(private)/components/`)
 2. Edit renderer code
 3. Air rebuilds (~5s)
 4. Click "Refresh preview" in the experiment
