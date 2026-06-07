@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- **Tailwind CSS 4** — `@tailwindcss/vite` + `@tailwindcss/postcss`, CSS `@import` entry, `tailwind-variants` v1 (removed `withTV`), v4 utility renames (`shadow-xs`, `rounded-xs`, `outline-hidden`)
+- **Tailwind CSS 4** — `@tailwindcss/vite` only (no PostCSS plugin), CSS `@import 'tailwindcss'` entry in `app.css`, `tailwind-variants` v1 (removed `withTV`), design-system border preflight, button cursor restore, v4 utility renames (`shadow-xs`, `outline-hidden`; custom radius scale keeps `rounded-sm`)
 
 ## [0.3.0] - 2026-06-07
 

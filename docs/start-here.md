@@ -88,8 +88,8 @@ Read the module spec at `docs/modules/{module}/spec.md` before making changes to
 37 rules in `.cursor/rules/`. Every rule opens with a thesis statement.
 
 - **Always-on (3):** `codebase-standards`, `git-commits`, `parallel-subagents`
-- **File-scoped (23):** `go-service`, `solidjs-pages`, `write-tests`, `write-tests-frontend`, etc. — auto-activates when editing matching files
-- **On-demand (11):** `plan-feature`, `slice-and-ship`, `audit-bugs`, `write-rules`, etc. — invoke by name or via task description
+- **File-scoped (24):** `go-service`, `go-handler`, `solidjs-pages`, `write-tests`, etc. — auto-activates when editing matching files
+- **On-demand (10):** `plan-feature`, `slice-and-ship`, `audit-bugs`, `write-rules`, etc. — invoke by name or via task description
 
 Full reference: [Cursor Rules](cursor-rules.md)
 

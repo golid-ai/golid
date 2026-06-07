@@ -33,7 +33,7 @@ These fire on every interaction. Every line costs context, so they're kept compa
 | Rule | Fires on | Thesis |
 |------|----------|--------|
 | `go-service` | `service/**/*.go` | Services own business logic and data access. They are framework-agnostic, verify resource membership, and never trust the caller to have checked permissions. |
-| `go-handler` | `handler/*.go`, `middleware/*.go` | Handlers are thin translators between HTTP and services. They validate input, extract auth, delegate to services, and return JSON — nothing more. |
+| `go-handler` | `handler/**/*.go`, `middleware/**/*.go` | Handlers are thin translators between HTTP and services. They validate input, extract auth, delegate to services, and return JSON — nothing more. |
 | `solidjs-pages` | `routes/**/*.tsx` | Pages fetch data on mount, guard against stale async with alive checks, and use flat Switch/Match for content states — never nested Show. |
 | `solidstart-routing` | `app.tsx`, `routes/**/*.tsx`, navigation organisms, `constants.ts` | Path-transparent route groups and global app chrome make product boundaries a shell concern, not just a page concern. |
 | `frontend-components` | `components/**/*.tsx` | Components are stateless building blocks. Atoms compose into molecules, molecules into organisms. Every component exports from the barrel. |

@@ -73,6 +73,23 @@ Cloud SQL and GCS buckets are **never** deleted by the script (data loss risk). 
 
 ---
 
+## Hygiene Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `check_spec_drift.sh` | Fail if handler/service changes lack matching module spec updates |
+| `check_citation_freshness.sh` | Validate line-number Verified citations in specs |
+| `check_rule_health.sh` | Validate Cursor rules (thesis lines, globs) — runs in CI |
+| `init-test-db.sh` | Create `golid_test` database and run migrations for local integration tests |
+
+```bash
+./scripts/init-test-db.sh
+./scripts/check_spec_drift.sh
+./scripts/check_rule_health.sh
+```
+
+---
+
 ## What Gets Created
 
 | Resource | QA Name | Prod Name |

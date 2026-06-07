@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white" alt="Go" />
   <img src="https://img.shields.io/badge/Echo-v4-1B9AAA?logo=go&logoColor=white" alt="Echo" />
   <img src="https://img.shields.io/badge/SolidJS-1.8-2C4F7C?logo=solid&logoColor=white" alt="SolidJS" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
@@ -90,7 +90,7 @@ cd frontend && npm run dev
 - Full auth UI: registration, login, password reset, email verification, settings
 - Zero `createResource`, zero `any` in production code — consistent `onMount` + signals + `alive` guard + `batch` pattern throughout
 - SSR with middleware auth redirects, dark mode, responsive layouts, reactive logout on token expiry
-- Atomic design (atoms/molecules/organisms), Tailwind CSS
+- Atomic design (atoms/molecules/organisms), Tailwind CSS 4 (`@tailwindcss/vite`)
 - Accessibility: ARIA attributes, keyboard navigation, focus trapping, skip link, axe-core CI verification
 
 ### Testing (752 tests)
@@ -98,7 +98,7 @@ cd frontend && npm run dev
 - 277 Go tests (236 unit + 41 integration with `-tags integration`) — per-package schemas via `TEST_DATABASE_URL`, handler HTTP integration tests, concurrency race tests, auth security edge cases
 - 455 frontend tests (Vitest 4 + @solidjs/testing-library + axe-core)
 - 20 Playwright E2E tests (auth flows, signup, settings, password reset, components)
-- Multi-job CI with path filters: change detection, spec-drift gate, sharded backend unit/integration/coverage, frontend, scaffold-verify, and E2E (docs-only PRs skip heavy jobs)
+- Multi-job CI with path filters: change detection, spec-drift + rule-health gates, sharded backend unit/integration/coverage, frontend, scaffold-verify, and E2E (docs-only PRs skip heavy jobs)
 - govulncheck + npm audit + Codecov coverage tracking with regression thresholds
 
 ### Infrastructure
@@ -211,7 +211,7 @@ See [scripts/README.md](scripts/README.md) for full details and [docs/deployment
 | [Deployment Options](docs/deployment-options.md) | Cloud Run, Fly.io, Railway, Render, bare metal |
 | [API Reference](backend/openapi.yaml) | OpenAPI 3.1 spec |
 | [Changelog](CHANGELOG.md) | Release history |
-| [Full Index](docs/README.md) | Complete documentation map (module specs, organism pattern, CLI reference, 5 ADRs) |
+| [Full Index](docs/README.md) | Complete documentation map (module specs, organism pattern, CLI reference, 7 ADRs) |
 
 ### Cursor AI Rules
 
@@ -220,7 +220,7 @@ See [scripts/README.md](scripts/README.md) for full details and [docs/deployment
 | Rule | Activates on | What it does |
 |------|-------------|-------------|
 | `go-service.mdc` | `backend/internal/service/**/*.go` | Service patterns: retry, auth, transactions, pagination |
-| `go-handler.mdc` | `handler/*.go` | Handler patterns: interfaces, validation, route registration |
+| `go-handler.mdc` | `handler/**/*.go`, `middleware/**/*.go` | Handler patterns: interfaces, validation, module spec consumption, route registration |
 | `sse-realtime.mdc` | `service/sse/**/*.go`, `sse.ts` | SSE hub, ticket auth, keepalive, reconnect |
 | `write-tests.mdc` | `backend/**/*_test.go` | Backend integration and unit test patterns |
 | `solidjs-pages.mdc` | `routes/**/*.tsx` | Data fetching, alive guards, modals, Switch/Match |
