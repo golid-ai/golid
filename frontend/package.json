@@ -43,7 +43,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.60.0",
     "@solidjs/testing-library": "^0.8.10",
     "@testing-library/jest-dom": "^6.4.0",
     "@types/d3-ease": "^3.0.2",

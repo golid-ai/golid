@@ -1,0 +1,4 @@
+# CI E2E overlay — backend image is pre-built with GHA cache (see ci.yml e2e job).
+services:
+  backend:
+    image: golid-backend:latest
