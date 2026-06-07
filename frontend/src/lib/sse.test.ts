@@ -25,6 +25,10 @@ const mockToast = vi.mocked(toast);
 let lastEventSource: MockEventSource | null = null;
 let nativeEventSource: typeof EventSource | undefined;
 
+function trackEventSource(source: MockEventSource) {
+  lastEventSource = source;
+}
+
 function installMockEventSource() {
   nativeEventSource = globalThis.EventSource;
   globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
@@ -45,7 +49,7 @@ class MockEventSource {
 
   constructor(url: string) {
     this.url = url;
-    lastEventSource = this;
+    trackEventSource(this);
     setTimeout(() => this.onopen?.(), 0);
   }
 
