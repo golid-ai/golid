@@ -92,7 +92,7 @@ When splitting a large file reveals duplicated code that already has a centraliz
 
 The smoking gun is usually a comment on the shared helper explaining why callers haven't migrated. If you see that comment, the duplication is intentional and the migration is a **product decision**, not a refactor.
 
-**Concrete case (`backend/internal/service/match/match_access.go:47-57`):** the centralized `verifyBusinessMatchAccess` allows business owners + members at a configurable role; `service/task/task.go` and `service/task/timesheet.go` keep their own `verifyMatchMembership` that gates owner-only. The doc comment on `verifyBusinessMatchAccess` literally calls out: *"replacing them is a separate, behavior-changing migration tracked as a follow-up."* A first draft of `large-service-file-refactor.md` proposed the migration as a one-liner and would have silently broadened "who can submit timesheets" from owner to every business member.
+**Concrete case:** two callers each have `verifyResourceAccess`-style helpers that look identical but enforce different membership predicates (e.g. owner-only vs any member). A shared helper's doc comment may explicitly say *"replacing caller X is a separate, behavior-changing migration."* A refactor that swaps local checks for the shared helper without reading that comment can silently widen permissions.
 
 ### Workflow when you spot duplication
 

@@ -100,7 +100,7 @@ All env vars are in `config/.env.local` (loaded automatically by the DevContaine
 ```bash
 # Backend (auto-started by DevContainer via Air)
 cd backend && go build ./...            # Build check
-cd backend && go test ./...             # Unit tests (~351 cases)
+cd backend && go test ./...             # Unit tests (~353 cases)
 export TEST_DATABASE_URL='postgres://dev:dev@localhost:5432/golid_test?sslmode=disable'
 scripts/init-test-db.sh
 cd backend && TEST_MIGRATIONS_PATH="$(pwd)/migrations" \

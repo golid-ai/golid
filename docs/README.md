@@ -79,15 +79,17 @@ Starter modules. Specs are the source of truth for implemented behavior; optiona
 
 ## Cursor Rules
 
-38 rules in `.cursor/rules/` that give the AI agent context about this codebase. Every rule opens with a thesis statement — one sentence stating what it enforces and why.
+45 rules in `.cursor/rules/` that give the AI agent context about this codebase. Every rule opens with a thesis statement — one sentence stating what it enforces and why.
 
 | Type | Count | Examples |
 |------|-------|---------|
-| Always active | 3 | `codebase-standards`, `git-commits`, `parallel-subagents` |
-| File-scoped (auto-activate via glob) | 24 | `go-service`, `go-handler`, `solidjs-pages`, `write-tests` |
-| Description-triggered (on-demand) | 11 | `plan-feature`, `slice-and-ship`, `plan-execution-loop`, `audit-bugs`, `write-rules` |
+| Always active | 2 | `codebase-standards`, `git-commits` |
+| File-scoped (auto-activate via glob) | 29 | `go-service`, `go-service-errors`, `solidjs-pages`, `solidjs-data-fetching`, `write-tests`, `write-tests-planning` |
+| Description-triggered (on-demand) | 14 | `plan-feature`, `plan-feature-execution`, `slice-and-ship`, `plan-execution-loop`, `audit-bugs`, `parallel-subagents`, `dynamic-image-http` |
 
 **Full reference with thesis lines, globs, and design principles:** [Cursor Rules](cursor-rules.md)
+
+Pre-merge: run `audit-bugs` against touched files before declaring a slice done; use `audit-codebase` for release readiness.
 
 ---
 

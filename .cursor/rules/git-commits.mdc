@@ -63,7 +63,9 @@ Heuristics for "this should be N commits":
 - The commit body wants sub-headings (`### Backend`, `### Frontend`, `### Tests`).
 - The diff touches three or more unrelated subsystems.
 - The message uses "and" between non-trivial verbs ("add X **and** refactor Y **and** fix Z").
-- A future bisect would want to land on a finer-grained commit ("which of these three things broke auth?").
+- A future bisect would want to land on a finer-grained commit ("which of these five things broke autopay?").
+
+Real example of the failure mode: one `chore:` commit bundling five independent bug fixes across unrelated subsystems (match expiry, external API error handling, upload error surfacing, logging, TTL config). Should have been five commits. A body with four sub-sections is the tell.
 
 When in doubt: smaller. Squashing later is trivial; splitting later requires `git rebase -i` and is error-prone.
 
@@ -75,7 +77,7 @@ When in doubt: smaller. Squashing later is trivial; splitting later requires `gi
 | "Splitting takes too long" | Stage hunks (`git add -p`). 30 seconds per split. The bisect savings on a future bug pay it back instantly. |
 | "It's all part of the same card/PR" | Cards group commits for review; they don't dictate commit boundaries. A 5-commit PR is fine. |
 | "I'll squash before merge" | Squashing destroys exactly the granularity bisect needs. We don't squash on merge — keep commits atomic from the start. |
-| "It's just a chore commit, doesn't matter" | Chore commits that bundle unrelated cleanup bisect-block real bugs the most. Split them. |
+| "It's just a chore commit, doesn't matter" | Audit-cleanup chore commits that bundle unrelated fixes bisect-block real bugs the most. Split them. |
 | "It's a sweep-up from parallel subagents, the rule allows it" | Only if it's shared-file edits and the body maps each edit to its source feature. If you're sweeping up bug fixes or unrelated chores, the exception doesn't apply — split them. |
 
 ## Branch Naming
@@ -84,40 +86,10 @@ When in doubt: smaller. Squashing later is trivial; splitting later requires `gi
 type/short-description
 ```
 
-Use the same type prefixes as commits: `feat/jwt-auth`, `fix/session-expiry`,
-`chore/upgrade-deps`, `docs/getting-started`. Keep descriptions to 2-4 words,
+Use the same type prefixes as commits: `feat/payment-schedule`, `fix/token-expiry`,
+`chore/upgrade-deps`, `docs/api-reference`. Keep descriptions to 2-4 words,
 hyphen-separated.
 
 ## Examples
 
-**Good — single intent:**
-
-```
-feat: add refresh token rotation on /auth/refresh
-
-Atomically revokes the old refresh token and issues a new pair so
-concurrent refresh attempts can't race and reuse the same session.
-```
-
-**Good — chore with clear scope:**
-
-```
-chore: pin postgres image to postgres:16-alpine in docker-compose
-```
-
-**Bad — bundled unrelated changes:**
-
-```
-feat: add login page and update CI and fix health check
-
-### Backend
-- JWT validation middleware
-### Frontend
-- login form with field errors
-### CI
-- add integration test job
-```
-
-Should be three commits: backend auth middleware, frontend login, CI job.
-
-See `docs/git-reference.md` for additional edge-case guidance.
+See `docs/git-reference.md` for commit examples and detailed edge-case guidance.

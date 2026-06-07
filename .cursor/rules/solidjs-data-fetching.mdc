@@ -1,0 +1,130 @@
+---
+description: Route data fetching — onMount, signals, alive guard, batch; never createResource
+globs: frontend/src/routes/**/*.tsx
+alwaysApply: false
+---
+
+# SolidJS Route Data Fetching
+
+> **Thesis:** Route data loads via `onMount` + signals + `alive` + `batch`; never `createResource`.
+
+**Reference files:** `dashboard/index.tsx` and `settings/index.tsx` (settings tabs are extracted to `settings/_components/`).
+
+**Before modifying a module's routes,** read `docs/modules/{module}/spec.md`
+for frontend components, data fetching patterns, and modal state management.
+
+## Data Fetching
+
+**Always use `onMount` + `createSignal` + `alive` guard + `batch`.** This is the established pattern across all pages. Do not use `createResource` — it causes orphaned computation warnings on route transitions and triggers route-level Suspense when inside conditional components.
+
+> `createAsync` + `query` from `@solidjs/router` is the official SolidJS recommendation going forward (Solid 2.0). Not yet adopted in this project — use the signals pattern for consistency.
+
+```tsx
+// STANDARD — used on all pages
+const [data, setData] = createSignal<MyType[]>([]);
+const [loading, setLoading] = createSignal(true);
+const [error, setError] = createSignal("");
+
+let alive = true;
+onCleanup(() => {
+  alive = false;
+});
+
+const fetchData = async () => {
+  setLoading(true);
+  setError("");
+  try {
+    const result = await myApi.list();
+    if (!alive) return;
+    batch(() => {
+      setData(result);
+      setLoading(false);
+    });
+  } catch (err) {
+    if (!alive) return;
+    batch(() => {
+      setError(getErrorMessage(err, "Failed to load"));
+      setLoading(false);
+    });
+  }
+};
+
+onMount(() => {
+  fetchData();
+});
+```
+
+## Async Data Pattern
+
+Three rules that MUST be used together for any page that fetches data:
+
+**1. `batch()` signal updates** — wrap `setData` + `setLoading(false)` in `batch()` so they update atomically. Without this, nested reactive scopes resolve in intermediate states during route transitions, creating computations outside the reactive root.
+
+**2. `onMount` for initial fetch** — never rely on `createEffect` for the first fetch.
+
+**3. `defer: true` on `createEffect(on(...))` for reactive refetches** — prevents the effect from firing synchronously during mount (which overlaps with route transitions).
+
+**Exception: Auth guards** use `on()` without `defer` — they must fire synchronously to prevent flash of unauthorized content. SSR middleware handles the server-side redirect; the client-side effect is a safety net for SPA navigation. See `routes/(private).tsx` and `solidjs-pages` Auth & Routing.
+
+```tsx
+import { batch, onMount, createEffect, on } from "solid-js";
+
+onMount(() => {
+  fetchData();
+}); // ← initial fetch
+createEffect(
+  on(
+    () => [filter(), page()] as const,
+    () => {
+      fetchData();
+    },
+    { defer: true }, // ← skip synchronous initial run
+  ),
+);
+```
+
+## Stale Responses From Rapid Param Changes
+
+`alive` handles unmount. It does not handle "same component, new params" while
+an earlier request is still in flight. Any page that fetches from `useParams()`
+needs a latest-request guard.
+
+```tsx
+let alive = true;
+let loadRequestID = 0;
+onCleanup(() => { alive = false; });
+
+async function loadDetail(id = params.id) {
+  const requestID = ++loadRequestID;
+  const detail = await api.get(id);
+  if (!alive || requestID !== loadRequestID) return;
+  setDetail(detail);
+}
+
+onMount(() => void loadDetail(params.id));
+createEffect(on(() => params.id, (id) => void loadDetail(id), { defer: true }));
+```
+
+Reference: apply this pattern on any detail route that refetches when `useParams()` changes (e.g. future `[id]` routes under `(private)/`).
+
+## Alive Guard
+
+Every component with async operations needs the cleanup guard:
+
+```tsx
+let alive = true;
+onCleanup(() => {
+  alive = false;
+});
+```
+
+Check `if (!alive) return;` before every signal setter after an `await`.
+
+- **NEVER return from `onMount` or `createEffect`** — SolidJS silently ignores return values. The React pattern `onMount(() => { ...; return () => cleanup() })` compiles but the cleanup never runs. Always use `onCleanup(() => cleanup())` inside the body.
+
+## Related Rules
+
+- Route UI (Switch/Match, modals, auth gates) — see `solidjs-pages`.
+- Form submission and error display — see `frontend-forms`.
+- Splitting large route files — see `refactor-large-files`.
+- Layout cookbook — see `docs/patterns/solidjs/1-Page.md` under "Golid route patterns".

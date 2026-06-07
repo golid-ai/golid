@@ -3,6 +3,10 @@
 > Critical scenarios for Golid's three starter modules (auth, users, feature).
 > Derived from integration tests and module spec business rules.
 > Use for manual QA passes and release verification.
+>
+> **Release gate:** also run [manual-qa/release-smoke.md](manual-qa/release-smoke.md)
+> (drift scripts, rule health, CI green). For T2+ slices, run [`audit-bugs`](../.cursor/rules/audit-bugs.mdc)
+> against touched files before declaring work done.
 
 ---
 

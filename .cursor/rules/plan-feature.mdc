@@ -89,7 +89,7 @@ Phase 5: Frontend Pages + Components
 - **Goals / non-goals** — name what v1 does and what is intentionally deferred.
 - **Modal vs page** for detail views — prefer modal for "detail within a list" (notes, items). Use page for standalone content.
 - **Transaction boundaries** — identify which operations need multi-write transactions.
-- **Permission model** — who can create/read/update/delete? Map to `verifyResourceAccess` or similar. See "Role-Based Permissions" below.
+- **Permission model** — who can create/read/update/delete? Map to `verifyResourceAccess` or similar. See permissions mapping in `plan-feature-execution`.
 - **Status side effects** — what happens on transitions? Auto-history? Cascading approvals?
 - **Computed vs stored** — prefer computed fields (via SQL subquery) over stored aggregates.
 - **Side effects** — what happens on key events? Emails, webhooks, audit logging?
@@ -98,65 +98,8 @@ Phase 5: Frontend Pages + Components
 - **Performance posture** — for derived sorts, computed counts, broad `ILIKE` search, or throttling `COUNT(*)` checks, name the expected index/query plan or explicitly accept low-volume sequential scans for v1. Do not invent observability gates the project does not have; use existing slow-query logs, `EXPLAIN ANALYZE`, or concrete test evidence.
 - **Docs timing** — OpenAPI/module specs/permissions docs land with the slice that changes behavior, not in a final cleanup-only commit.
 
-## Execution Readiness
+## Related Rules
 
-- Prefer shippable slices that deliver user-visible value. Internal-only schema/service work can be an implementation milestone, but don't call it a complete slice unless it must land separately for review size.
-- Each user-facing slice needs a deploy gate, a rollback or kill-switch note, and a manual QA smoke path.
-- For risky migrations or auth/security changes, call out asymmetric rollback cases and whether hotfix-forward is safer than revert.
-
-## Iterative Planning Loop
-
-For T2/T3 plans, treat planning as a critique loop before implementation, not a
-single authoring pass:
-
-1. Parent agent drafts or updates the plan and owns final decisions.
-2. Spawn focused subagents to audit independent surfaces: data/permissions,
-   API/contracts, frontend/UX, docs/QA/rollback.
-3. Parent reconciles findings into the plan, explicitly recording decisions and
-   rejected alternatives where future audits might disagree.
-4. Repeat once when subagents find high-severity gaps or plan contradictions.
-
-Use this loop when the feature crosses privacy, security, money, public
-contracts, or three or more modules. Skip it for T0/T1 work; the extra time only
-pays back when a missed decision would create release risk.
-
-## Role-Based Permissions
-
-When planning a feature, map each action to user roles. Example role levels:
-
-| Role | Who |
-|---|---|
-| **User** | Can view own data |
-| **Admin** | Can create/edit/manage all resources |
-
-In handlers, extract auth and check roles:
-```go
-userID, err := requireUserID(c)
-userType, err := requireUserType(c)
-if userType != "admin" {
-    return apperror.Forbidden("Admin access required")
-}
-```
-
-Services accept `userID` directly from the handler (extracted from JWT context) — never look up user details in the service layer for auth purposes.
-
-## Frontend Component Rule
-
-For UI component selection, use `frontend-components` and `docs/components.md`.
-Do not repeat the component inventory in feature plans.
-
-## Reference Files
-
-- Service pattern: `backend/internal/service/auth/auth.go`, `backend/internal/service/user/user.go` (one subpackage per domain under `service/`)
-- Handler pattern: `backend/internal/handler/auth.go`, `backend/internal/handler/user.go`
-- Migration pattern: `backend/migrations/000001_init.up.sql`
-- Frontend page: `frontend/src/routes/(private)/dashboard/index.tsx`, `frontend/src/routes/(private)/settings/index.tsx`
-- API types: `frontend/src/lib/api.ts`
-- Component barrel: `frontend/src/components/index.ts`
-- Auth context helpers: `backend/internal/handler/context.go`
-- Frontend auth helpers: `frontend/src/lib/auth.ts`
-
-## Post-Implementation
-
-During implementation, follow `slice-and-ship`: each slice gets tests, contract
-sync, and the relevant `audit-bugs` pass before the next slice starts.
+- Execution readiness, critique loop, permissions — see `plan-feature-execution`.
+- Universal checklist and length guidance — see `planning-standards`.
+- Slicing and shipping — see `slice-and-ship`.

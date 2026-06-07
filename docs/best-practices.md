@@ -220,6 +220,46 @@ onMount(() => {
 
 Reference: Dashboard, Settings pages. See also [SolidJS docs on resources](https://docs.solidjs.com/reference/basic-reactivity/create-resource).
 
+For concurrent refetches (filters, tabs), increment a `loadRequestID` and discard stale responses when `requestID !== loadRequestID` — the `alive` guard alone does not cancel in-flight requests.
+
+---
+
+### Use `Switch/Match` for content states — never nested `<Show>`
+
+Nested `<Show when={!loading()}>` → `<Show when={error()}>` chains create stacked reactive scopes that leak computations during route transitions.
+
+```tsx
+// GOOD — flat state machine
+<Switch>
+  <Match when={loading()}><Spinner /></Match>
+  <Match when={error()}><Alert variant="error">{error()}</Alert></Match>
+  <Match when={data()}>{(d) => <Content data={d()} />}</Match>
+</Switch>
+```
+
+Reference: `.cursor/rules/solidjs-pages.mdc`
+
+---
+
+### Auth gates: `<Show>` in JSX, not early return after `navigate`
+
+Calling `navigate(..., { replace: true })` and then `return null` unmounts the route before auth resolves, which can blank the page or leak computations.
+
+```tsx
+// GOOD — stay mounted; redirect in onMount, gate content with Show
+onMount(() => {
+  if (auth.user?.type !== "admin") navigate("/dashboard", { replace: true });
+});
+
+return (
+  <Show when={auth.user?.type === "admin"} fallback={<Spinner />}>
+    <AdminContent />
+  </Show>
+);
+```
+
+Reference: admin route pattern in `.cursor/rules/solidjs-pages.mdc`
+
 ---
 
 ### No reactive expressions inside `<Title>`

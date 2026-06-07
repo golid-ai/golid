@@ -78,6 +78,17 @@ Workflow needs `pull-requests: read` for paths-filter on PRs.
 - `config/.env.example` must be committed (check `.gitignore` exceptions) — CI copies it to `.env.local`
 - Needs `actions: write` permission for BuildKit GHA cache
 
+## Codecov config
+
+Golid uses a fixed coverage floor (not `target: auto`):
+
+- `codecov.yml`: `target: 80%`, `threshold: 2%`, `patch: off`
+- Dual flags: `backend` (`backend/`) and `frontend` (`frontend/src/`) — uploads use `-F backend` / `-F frontend`
+- `flag_management.default_rules.carryforward: true` — docs-only pushes keep the last report on HEAD
+- Path fixes: `github.com/golid-ai/golid/backend/::backend/` for monorepo layout
+
+Do not remove `flags:` from uploads — Codecov uses them to map coverage to the correct directories.
+
 ## Spec-Drift Gate
 
 `scripts/check_spec_drift.sh [base_ref]` reports `internal/handler/*.go` and `internal/service/*/*.go` files changed without a matching `docs/modules/<module>/spec.md` change. Default base is `origin/main`. Exit 0 = clean, exit 1 = drift.

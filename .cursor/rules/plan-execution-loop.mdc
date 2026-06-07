@@ -1,11 +1,11 @@
 ---
-description: Execute a docs/plans/*.md slice with subagent implement → audit → fix until 90+ — invoke manually when running a plan
+description: Execute a docs/plans/*.md slice with subagent implement → evidence-based audit → fix until 90+ — invoke manually when running a plan
 alwaysApply: false
 ---
 
 # Plan Execution Loop
 
-> **Thesis:** One plan slice at a time — implement, audit (≥90/100), fix, re-audit — then next slice. Parent agent orchestrates; subagents implement and audit.
+> **Thesis:** One plan slice at a time — implement, evidence-based audit (≥90/100, file:line proof required), fix, re-audit — then next slice. Parent agent orchestrates; subagents implement and audit.
 >
 > **Invoke when:** User says "run the plan", "execute slice X", or points at `docs/plans/*.md` for implementation.
 
@@ -13,9 +13,9 @@ alwaysApply: false
 
 ```
 1. IMPLEMENT — Task subagent: read plan slice only; implement; run verification commands; update Progress row
-2. AUDIT   — Task subagent (readonly): grade /100 vs slice acceptance; PASS only if ≥90
+2. AUDIT   — Task subagent (readonly): grade /100 vs slice acceptance with file:line evidence; PASS only if ≥90 and every criterion has proof
 3. FIX     — if FAIL: Task subagent applies audit fix list; no scope creep
-4. RE-AUDIT — repeat 2–3 until ≥90
+4. RE-AUDIT — repeat 2–3 until ≥90 with full evidence
 5. NEXT SLICE — only after current slice PASS
 ```
 
@@ -25,24 +25,65 @@ alwaysApply: false
 - Acceptance criteria from plan (copy verbatim)
 - Verification commands (`npm run test:coverage`, `check_spec_drift.sh`, etc.)
 - Forbidden scope (other slices, unrelated refactors)
-- "Return: grade, PASS/FAIL, files changed, blockers"
+- Evidence rule: every deduction needs `path:line` citation; every PASS criterion needs `path:line` proof or automatic FAIL
+- **Fresh grade (audit dispatches only):** grade the artifact **as it exists now** — start at 100, deduct only for **current** gaps with `path:line` proof. Do not reward "improvement since last pass", prior fix lists, or Progress table history. Parent must not anchor with prior scores (see Re-audit below).
+- "Return: grade, PASS/FAIL, evidence table, fix list, files changed, blockers"
+
+## Evidence-based audit (mandatory)
+
+Audit subagents grade **evidence**, not vibes. A numeric score without citations is invalid.
+
+**For every deduction** — cite `path:line` (or `path:line-line` for a range) showing the gap. Example: `-5 Scope: backend/internal/handler/foo.go:42 — touches bar.go, outside slice file list`.
+
+**For every slice acceptance criterion** — cite `path:line` (or command output) proving it is met. If the auditor cannot find proof after reading the diff and running verification commands, that criterion is **automatic FAIL** regardless of the running score.
+
+**Score math:**
+
+- Start at 100.
+- Deduct per finding with cited evidence only — no uncited deductions.
+- Uncited "looks good" claims do not count toward PASS.
+- Final grade = 100 minus cited deductions. If any acceptance criterion lacks proof → **FAIL** even when grade ≥90.
+
+**Required audit return format:**
+
+```
+Grade: NN/100 — PASS | FAIL
+Acceptance evidence:
+  - [criterion verbatim]: path:line — one-line proof
+Deductions:
+  - [-N Dimension]: path:line — finding
+Fix list: (ordered, only if FAIL)
+Blockers: (only if FAIL)
+```
+
+Parent agent: reject audit output missing the evidence table or with blank acceptance proofs — re-dispatch audit with "evidence required" before FIX or NEXT SLICE.
+
+### Re-audit — avoid accumulation bias
+
+Fix loops invite **score drift** when auditors see prior grades and nudge scores up. Re-audits grade the **current artifact only**, not deltas from the last grade.
+
+**Audit subagent (re-audit):** Same rubric as pass 1. No prior scores or fix-list history in context. Fixed issues = no deduction, not bonus points. No `path:line` proof → criterion fails.
+
+**Parent agent (re-audit dispatch):** Do not paste prior grades into the prompt. Reject audits that cite "pass N fixed X" without re-verifying X in the current file.
 
 ## Parent agent responsibilities
 
 - Read plan slice before dispatching — do not dump whole plan into subagent
-- Run `opt/homebrew/bin/bash scripts/check_spec_drift.sh origin/main` before commit when handler/service touched
-- Commit per slice or logical batch after PASS; never commit with audit below 90
+- Reject audit subagent output without file:line evidence — re-dispatch, do not accept inflated scores
+- On re-audit dispatch: omit prior pass scores from the prompt; reject grade inflation without cited gap closure (see Re-audit — accumulation bias)
+- Run `scripts/check_spec_drift.sh origin/main` before commit when handler/service touched
+- Commit per slice or logical batch after PASS; never commit with audit below 90 or missing evidence
 - Update `docs/plans/*.md` Progress table after each PASS
 
 ## Audit dimensions (default weights)
 
-| Dimension | What to check |
-|-----------|---------------|
-| Completeness | All deliverables in slice scope |
-| Accuracy | Paths, commands, plan citations match repo |
-| Acceptance | Slice-specific gates met |
-| Scope | No slice creep; spec sync if required |
-| Verification | Commands run, exit 0 |
+| Dimension | What to check | Evidence required |
+|-----------|---------------|-------------------|
+| Completeness | All deliverables in slice scope | `path:line` per deliverable, or FAIL |
+| Accuracy | Paths, commands, plan citations match repo | `path:line` or command output |
+| Acceptance | Slice-specific gates met | `path:line` or test output per criterion |
+| Scope | No slice creep; spec sync if required | `path:line` for out-of-scope edits, or `rg`/diff showing clean scope |
+| Verification | Commands run, exit 0 | Paste exit code + relevant output snippet |
 
 ## Contract closeout (from `slice-and-ship`)
 
@@ -91,9 +132,14 @@ git worktree add -b plan/<name> ../golid-<name> HEAD
 | Audit whole plan at end | Audit each slice before next |
 | Skip audit because "tests pass" | Audit grades behavior + docs + scope |
 | Commit at 82/100 | Fix loop until ≥90 |
+| Grade 92 with no file:line citations | Reject output; re-audit with evidence |
+| "Criterion met" without path:line proof | Automatic FAIL for that criterion |
+| Vague deductions ("could be cleaner") | Cited finding or no deduction |
+| Re-audit prompt includes prior scores or sympathy grading | Fresh grade from 100; re-verify fixes at `path:line` only |
 
 ## Related
 
 - `slice-and-ship` — slice definition, contract closeout
+- `audit-bugs` — finding citation standard (`path:line` or `rg` count)
 - `git-commits` — `check_spec_drift.sh` before commit; parallel shared-file exception
 - `parallel-subagents` — worktree isolation, cherry-pick order, shared-file pre-flight

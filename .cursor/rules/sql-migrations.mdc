@@ -98,20 +98,18 @@ DECLARE
     bad_ids TEXT;
 BEGIN
     SELECT string_agg(id::text, ', ') INTO bad_ids
-    FROM items
-    WHERE status NOT IN ('new', 'in_progress', 'complete', 'cancelled');
+    FROM feature_flags
+    WHERE key IS NULL OR trim(key) = '';
     IF bad_ids IS NOT NULL THEN
         RAISE EXCEPTION
-            'Migration NNN cannot apply items_status_check: % row(s) violate predicate (ids: %). Fix data before re-running.',
-            (SELECT count(*) FROM items WHERE status NOT IN ('new', 'in_progress', 'complete', 'cancelled')),
+            'Migration NNN cannot apply feature_flags_key_not_empty: % row(s) have empty key (ids: %). Fix data before re-running.',
+            (SELECT count(*) FROM feature_flags WHERE key IS NULL OR trim(key) = ''),
             bad_ids;
     END IF;
 END $$;
 
-ALTER TABLE items
-    ADD CONSTRAINT items_status_check CHECK (
-        status IN ('new', 'in_progress', 'complete', 'cancelled')
-    );
+ALTER TABLE feature_flags
+    ADD CONSTRAINT feature_flags_key_not_empty CHECK (trim(key) <> '');
 ```
 
 When this matters most: any CHECK that tightens a previously-loose column (`NOT NULL` → `> 0`, free-text → enum, etc.). One bad legacy row is enough to fail the deploy.

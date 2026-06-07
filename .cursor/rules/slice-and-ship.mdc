@@ -10,7 +10,7 @@ alwaysApply: false
 > and review. Most "clean up audit follow-ups" rollups exist because we
 > audited the whole feature instead of each slice as it landed.
 >
-> **Refrain:** `Plan → Slice → Implement → Test → Sync → Closeout → Commit → Audit → Repeat`
+> **Refrain:** `Plan → Slice → Implement → Test → Sync → Closeout → Audit → Commit → Repeat`
 
 ## What Is a Slice
 
@@ -24,10 +24,10 @@ A slice is the smallest change that is independently:
 A slice is **larger** than a commit (a slice may be 2–4 atomic commits) and **smaller** than a feature (a feature is usually 3–8 slices).
 
 For seed/demo work, mirror the user-facing walkthrough in the commit structure:
-auth → profile/settings → feature flags → optional showcase surfaces. Each
-layer should be usable and rollback-validated before the next layer lands.
-This preserves git archaeology: future-you can answer "why is this data shaped
-this way?" from the commit timeline.
+accounts → hiring funnel → work state → money state → proof/reviews → optional
+secondary surfaces. Each layer should be usable and rollback-validated before
+the next layer lands. This preserves git archaeology: future-you can answer
+"why is this data shaped this way?" from the commit timeline.
 
 ## The Loop
 
@@ -48,9 +48,9 @@ For each acceptance criterion in the plan:
 3. **Write the test before declaring the criterion done.** New branch needs new test. See `write-tests` rule, "Test Plan from Predicate."
 4. **Sync the spec/docs in the same set of commits.** State machine row, enum value, API surface, env var — see `document-module` rule, "Same-Commit Spec Sync."
 5. **Run contract closeout when the diff requires it.** See the checklist below before "ready to commit."
-6. **Commit atomically** — usually 2–3 commits per slice (`feat:`, `test:`, sometimes `docs:`). See `git-commits` rule, "Change Sizing."
-7. **Audit the slice.** Run the relevant section of `audit-bugs` against the files this slice touched. Cite evidence.
-8. **STOP.** Do not start the next slice until the current one is fully audited. This is the single hardest rule to follow and the highest-leverage one.
+6. **Audit the slice.** Run the relevant section of `audit-bugs` against the files this slice touched. Cite evidence. Fix findings before commit.
+7. **Commit atomically** — usually 2–3 commits per slice (`feat:`, `test:`, sometimes `docs:`). See `git-commits` rule, "Change Sizing."
+8. **STOP.** Do not start the next slice until the current one is fully audited and committed.
 
 ## Iterative Release Harness
 
@@ -98,9 +98,9 @@ contract closeout means the rest of the codebase can safely depend on it.
 
 ## Why This Rule Exists
 
-Three audit-cleanup rollups since `87c59bd` (`d5af0e9`, `9f7e878`, `d176e89`) totaled ~30 file changes that should have been zero. Each happened because we landed an entire feature in 5–10 commits, then audited the pile. The same `23505 → Conflict` translation gap was found in `match.go` (round 1) and `application.go` (round 3) — two months apart, same conceptual fix. A slice-by-slice audit would have caught the second instance the first time.
+Three audit-cleanup rollups on large features totaled ~30 file changes that should have been zero. Each happened because an entire feature landed in 5–10 commits before audit. A slice-by-slice audit would have caught cross-cut bugs as the first slice's findings, not as a third audit pass.
 
-Concretely: if Project-Based Work had been sliced into "list project on marketplace", "apply to project from detail page", "confirm project suggestion", "accept deliverable", "terminate match cleanup" — and each slice had been audited before the next started — the cross-cut bugs would have surfaced as the first slice's findings, not as a third audit pass.
+Concretely: a multi-slice feature decomposed into independently mergeable criteria — each audited before the next starts — surfaces cross-cut bugs as the first slice's findings, not as a third audit pass.
 
 ## What a Slice Is Not
 

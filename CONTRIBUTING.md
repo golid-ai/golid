@@ -26,9 +26,16 @@ See [docs/quick-start.md](docs/quick-start.md) for detailed setup instructions.
 3. Ensure tests pass:
    ```bash
    cd backend && go build ./... && go vet ./... && go test ./...
-   cd ../frontend && npm run build && npm test
+   cd ../frontend && npm run build && npm test && npm run typecheck
    ```
-4. Submit a pull request
+4. If you touched module-owned handlers/services or cursor rules, run drift checks:
+   ```bash
+   scripts/check_spec_drift.sh origin/main
+   scripts/check_citation_freshness.sh
+   scripts/check_rule_health.sh
+   ```
+5. Before opening a PR for non-trivial work, run the relevant [`audit-bugs`](.cursor/rules/audit-bugs.mdc) checklist against files you changed
+6. Submit a pull request
 
 ## Code Style
 

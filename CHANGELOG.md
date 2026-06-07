@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Rule split** — split seven monolith rules into sibling pairs (45 rules total; only `go-handler` exceeds 150 at 153 lines). New siblings: `solidjs-data-fetching`, `go-service-errors`, `dynamic-image-http`, `write-tests-planning`, `write-tests-frontend-workflow`, `plan-feature-execution`, `frontend-components-advanced`. Preserved Golid-specific rules: `solidstart-routing`, `external-api`, `iteration-surface`, `rename-tool`, `go-handler`, `openapi`, `deploy-infra`, `sse-realtime`, `frontend-lib`, `job-queue`
+- **Cursor rule audit backport** — pre-merge `audit-bugs` gate, evidence requirements; `slice-and-ship` loop order aligned to audit → commit
+- **Doc sync** — README/start-here/cursor-rules updated for 45-rule inventory and split structure
+
 ## [0.3.2] - 2026-06-07
 
 Shelf-release doc sync and Codecov carryforward on docs-only pushes.

@@ -1,0 +1,100 @@
+---
+description: Backend test planning — discriminator matrix, predicate-derived plans, integration DB safety
+globs: backend/**/*_test.go
+alwaysApply: false
+---
+
+# Backend Test Planning
+
+> **Thesis:** Derive test plans from predicates and discriminators before writing code — don't invent coverage after the fact.
+
+## Discriminator-Column Test Matrix
+
+When a column branches behavior at runtime, every write path that touches the table needs a test for **each value of the discriminator**, not just the value the implementer happened to remember.
+
+Common discriminators in this codebase: `status`, `user_type`, `role`, `category`, `type`.
+
+The rule:
+
+> If column `X` changes which branch executes, then for every function `F` that writes to the table, there must be a test for each value of `X` that `F` can encounter.
+
+Worked example. A table with `status` ∈ {`open`, `closed`} and two write paths that branch on status needs four cells covered when both paths touch both statuses — not two happy-path tests for the value the implementer remembered first.
+
+When to apply:
+
+- Any column with a CHECK constraint that varies behavior
+- Any column the service `switch`es on (`status` controls which transitions are legal)
+- Any column the handler reads to pick a code path (`tier` controls feature access)
+
+When NOT to apply:
+
+- Columns that only affect display (no behavior fork)
+- Columns with one-way transitions where prior states are tested by inheritance (e.g., `pending → active → archived` — testing `archived` implicitly exercised `active`)
+
+Catch this in code review: when a PR adds or modifies a discriminator column, scan every service method that writes to the table. If a branch isn't covered by a test, the PR isn't done.
+
+## Test Plan from Predicate
+
+When you write a predicate with multiple terms, the test plan derives mechanically from it. Don't invent the plan — read it off the code.
+
+| Predicate shape | Required tests |
+|---|---|
+| `WHERE x IN ('a', 'b', 'c')` | One test per value. |
+| `WHERE x = 'a' AND status = 'active'` | x match + active, x match + inactive, x miss. |
+| `if a \|\| b \|\| c { ... }` | One test per disjunct hitting the branch. |
+| `switch v { case A: ... case B: ... default: ... }` | One per case + default. |
+| `errors.As(err, &x) && x.Code == "23505"` | Bare 23505, wrapped 23505 (`fmt.Errorf("...: %w", ...)`), other pg code, non-pg error. |
+
+Real example: a service method with `WHERE status IN ('open', 'closed')` needs a test for each listed status, not just the branch the author exercised first.
+
+If you can't enumerate one test per branch from the predicate, you don't understand the predicate well enough to ship it.
+
+## When Integration Tests Can't Reach a Branch
+
+Some branches are only reachable under conditions the test infrastructure can't deterministically reproduce — TOCTOU races, third-party API failures, time-dependent expiry. Don't skip the test; **extract the branch into a pure helper and unit-test the helper**.
+Concrete pattern: inline `errors.As + 23505 → Conflict` blocks in create/update paths. The race between a SELECT and INSERT is non-deterministic from a service test. Solution: extract `translateUniqueConflict(err, resource)` and unit-test it with synthetic `*pgconn.PgError` values.
+
+This is the standard escape hatch when the audit asks "where's the test for branch X?" and the honest answer is "the branch isn't reachable from the test seam."
+
+## Anti-Rationalization
+
+| Excuse | Counter |
+|---|---|
+| "I'll add the test in a follow-up" | `aa78e98`, `40834e9`, `f29d720`, `5bb69aa` were all "follow-up tests" for features shipped earlier. Each cost more than writing the test inline would have. |
+| "The branch is too hard to trigger from a test" | Extract a helper. See "When Integration Tests Can't Reach a Branch" above. |
+| "Tests pass" | Existing tests pass means existing behavior unchanged. New branches need new tests. Read the predicate, derive the matrix. |
+| "It's just a small refactor, no test needed" | Refactors with no behavior change should have no test changes either. If the refactor needs new tests, it's not behavior-neutral. If it doesn't, the existing tests prove it. |
+| "I'll just run the code manually" | Manual verification doesn't survive the next PR. Tests do. |
+
+## Running Tests
+
+```bash
+cd backend && go test ./...
+
+cd backend && go test -tags=integration ./...
+```
+
+### Integration tests wipe the database they connect to
+
+`testutil.SetupTestDB()` **requires** `TEST_DATABASE_URL` and panics if it is unset — there is no fallback to `DATABASE_URL`. In the devcontainer, `DATABASE_URL` points at the same Postgres the running app uses; every integration test calls `CleanAllTables` (directly or via `WithTestDB`), so running `-tags=integration` against the dev DB **truncates seeded users and everything** and the user has to restart the container to reseed.
+
+Before running any `-tags=integration` command, verify `TEST_DATABASE_URL` is set to a database that is safe to wipe:
+
+```bash
+echo "$TEST_DATABASE_URL"   # must point at a non-dev DB (e.g. golid_test)
+```
+
+If it's empty or points at the dev DB:
+
+- **Don't run integration tests.** Use `go build ./...`, `go vet ./...`, and untagged unit tests (no `-tags=integration`) for verification, and ask the user to smoke-test the path manually.
+- Or set `TEST_DATABASE_URL` to a separate DB for the duration of the command:
+  ```bash
+  TEST_DATABASE_URL=postgres://dev:dev@db:5432/golid_test go test -tags=integration ./...
+  ```
+  (CI sets both `DATABASE_URL` and `TEST_DATABASE_URL` to the same ephemeral DB — see `ci-workflow` rule. The devcontainer does not, by design.)
+
+The failure mode is silent: tests pass, dev data is gone, and nothing in the test output explains why the user can't log in next time they refresh.
+
+## Related Rules
+
+For integration/unit test patterns and error-path coverage, see `write-tests`. For known-good test commands, see `common-commands`.

@@ -1,0 +1,57 @@
+---
+description: Frontend test workflow — coverage thresholds, sync discipline, pre-push checklist
+globs: frontend/**/*.test.ts,frontend/**/*.test.tsx
+alwaysApply: false
+---
+
+# Frontend Test Workflow
+
+> **Thesis:** Ratchet coverage, keep tests in sync with public interfaces, and verify types before push — workflow discipline prevents silent CI failures.
+
+## Coverage Thresholds
+
+After writing tests, update `vitest.config.ts` thresholds to 5% below the new actual coverage. This prevents regression without blocking future work. Ratchet up as coverage grows.
+
+Current thresholds: `statements: 75, branches: 54, functions: 78, lines: 75` (included files; recalibrated 2026-06-07). CI fails if coverage drops below these. Codecov project gate (`target: 80%`) is documented in `docs/plans/archive/6-7-26/coverage-and-eslint.md`.
+
+## Keep Tests In Sync With Code
+
+Any commit that changes a component's **public interface** must include test updates in the same commit. Public interface means:
+
+- Placeholder text, labels, or rendered copy
+- Toast/snackbar message strings (title, subtitle)
+- Component swaps (checkbox → button, outline → neutral)
+- Props that tests assert on (variant, size, disabled state)
+- API mock shapes (new fields, changed signatures)
+- Route changes or navigation targets
+
+**Search for affected tests before committing.** Use `rg "the old text"` across `*.test.tsx`, `*.test.ts`, and `tests/e2e/*.spec.ts`. If a test references something you changed, fix it in the same commit.
+
+E2E tests (`tests/e2e/`) use browser selectors that match rendered HTML — placeholder changes, button text changes, and form restructuring all break them silently until CI runs. See `write-tests-e2e` for browser-test patterns.
+
+## Pre-Push Checklist
+
+Before pushing any test file changes, run both:
+
+```bash
+cd frontend && npx vitest run          # runtime tests
+cd frontend && npx tsc --noEmit        # type checking
+```
+
+TypeScript catches import errors (non-existent exports, using types as values) that JavaScript silently ignores at runtime. CI runs `npm run typecheck` and will reject type errors even when all tests pass.
+
+## Running Tests
+
+```bash
+# Frontend unit + component tests
+cd frontend && npm test
+
+# Frontend type check (run before pushing — catches import errors tests miss)
+cd frontend && npx tsc --noEmit
+```
+
+## Related Rules
+
+For component test patterns (SolidJS Testing Library, mocking, jsdom limits), see `write-tests-frontend` rule.
+For backend test patterns (integration with TestDB, unit table-driven, handler mocks), see `write-tests` rule.
+For browser/E2E tests, see `write-tests-e2e` rule.

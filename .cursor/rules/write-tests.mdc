@@ -18,28 +18,26 @@ Test real SQL against a real PostgreSQL instance using `testutil.WithTestDB`.
 ```go
 //go:build integration
 
-package note
+package service_test
 
 import (
     "testing"
-
-    "github.com/jackc/pgx/v5/pgxpool"
-
+    "github.com/golid-ai/golid/backend/internal/service"
     "github.com/golid-ai/golid/backend/internal/testutil"
 )
 
-func TestNoteService_Create(t *testing.T) {
+func TestItemService_Create(t *testing.T) {
     testutil.WithTestDB(t, func(pool *pgxpool.Pool) {
-        svc := NewNoteService(pool, 20, 100)
+        svc := service.NewItemService(pool, 20, 100)
 
         // Seed prerequisite data with raw SQL
         _, err := pool.Exec(ctx, `INSERT INTO users (...) VALUES (...)`)
         // ...
 
         // Test the service method
-        result, err := svc.Create(ctx, &CreateNoteInput{...})
+        result, err := svc.Create(ctx, &service.CreateItemInput{...})
         if err != nil { t.Fatalf("expected no error, got %v", err) }
-        if result.Title != "Test Note" { t.Errorf("expected title 'Test Note', got %s", result.Title) }
+        if result.Title != "Test Item" { t.Errorf("expected title 'Test Item', got %s", result.Title) }
     })
 }
 ```
@@ -61,7 +59,7 @@ func TestNoteService_Create(t *testing.T) {
 - **Conflict**: Duplicate entries. Expect `CONFLICT`.
 - **Edge cases**: Empty arrays, null optional fields, boundary values.
 
-Reference: existing `*_integration_test.go` files in `backend/internal/service/<pkg>/`
+Reference: existing `_integration_test.go` files in `backend/internal/service/`
 
 ## Unit Tests (Pure Logic)
 
@@ -72,7 +70,7 @@ package pagination
 
 import "testing"
 
-func TestNormalizePagination(t *testing.T) {
+func TestNormalize(t *testing.T) {
     tests := []struct {
         page, perPage   int
         wantP, wantPP   int
@@ -82,9 +80,9 @@ func TestNormalizePagination(t *testing.T) {
         {5, 10, 5, 10},
     }
     for _, tt := range tests {
-        p, pp := NormalizePagination(tt.page, tt.perPage, 20, 100)
+        p, pp := Normalize(tt.page, tt.perPage, 20, 100)
         if p != tt.wantP || pp != tt.wantPP {
-            t.Errorf("NormalizePagination(%d, %d) = (%d, %d), want (%d, %d)",
+            t.Errorf("Normalize(%d, %d) = (%d, %d), want (%d, %d)",
                 tt.page, tt.perPage, p, pp, tt.wantP, tt.wantPP)
         }
     }
@@ -94,11 +92,11 @@ func TestNormalizePagination(t *testing.T) {
 ### Key Rules
 
 - **No build tag** — runs on every `go test`.
-- **Same package** — test unexported functions directly (e.g., `NormalizePagination`).
+- **Same package** — test exported functions in their own subpackage (e.g., `pagination.Normalize` lives in `service/pagination/` and is tested in `service/pagination/pagination_test.go`).
 - **Table-driven tests** — use `[]struct` pattern for multiple cases.
 - **File naming**: `x_test.go` in the same directory as the code.
 
-Reference: existing `_test.go` files in `backend/internal/pagination/`, `backend/internal/service/<pkg>/`, and other pure-logic packages
+Reference: existing `_test.go` files in `backend/internal/service/`
 
 ## Mock-based Handler Tests
 
@@ -114,29 +112,6 @@ Create a mock struct implementing the service interface. Set function fields for
 
 After scaffolding, fill in test bodies for your specific validation rules, error paths, and edge cases. The generated tests follow the same pattern as `auth_test.go`.
 
-## Discriminator-Column Test Matrix
-
-When a column branches behavior at runtime, every write path that touches the table needs a test for **each value of the discriminator**, not just the value the implementer happened to remember.
-
-Common discriminators: `status`, `tier`, `role`, `category`, `type`.
-
-The rule:
-
-> If column `X` changes which branch executes, then for every function `F` that writes to the table, there must be a test for each value of `X` that `F` can encounter.
-
-When to apply:
-
-- Any column with a CHECK constraint that varies behavior
-- Any column the service `switch`es on (`status` controls which transitions are legal)
-- Any column the handler reads to pick a code path (`tier` controls feature access)
-
-When NOT to apply:
-
-- Columns that only affect display (no behavior fork)
-- Columns with one-way transitions where prior states are tested by inheritance
-
-Catch this in code review: when a PR adds or modifies a discriminator column, scan every service method that writes to the table. If a branch isn't covered by a test, the PR isn't done.
-
 ## Always Test Error Paths
 
 Don't just test happy paths. Every service method should have tests for:
@@ -148,72 +123,8 @@ Don't just test happy paths. Every service method should have tests for:
 
 These are the bugs that slip through manual testing and break in production.
 
-## Test Plan from Predicate
-
-When you write a predicate with multiple terms, the test plan derives mechanically from it. Don't invent the plan — read it off the code.
-
-| Predicate shape | Required tests |
-|---|---|
-| `WHERE x IN ('a', 'b', 'c')` | One test per value. |
-| `WHERE x = 'a' AND status = 'active'` | x match + active, x match + inactive, x miss. |
-| `if a \|\| b \|\| c { ... }` | One test per disjunct hitting the branch. |
-| `switch v { case A: ... case B: ... default: ... }` | One per case + default. |
-| `errors.As(err, &x) && x.Code == "23505"` | Bare 23505, wrapped 23505 (`fmt.Errorf("...: %w", ...)`), other pg code, non-pg error. |
-
-If you can't enumerate one test per branch from the predicate, you don't understand the predicate well enough to ship it.
-
-## When Integration Tests Can't Reach a Branch
-
-Some branches are only reachable under conditions the test infrastructure can't deterministically reproduce — TOCTOU races, third-party API failures, time-dependent expiry. Don't skip the test; **extract the branch into a pure helper and unit-test the helper**.
-
-Concrete pattern: inline `errors.As + 23505 → Conflict` blocks in create/update paths. The race between a SELECT and INSERT is non-deterministic from a service test. Solution: extract `translateSlugConflict(err, op)` and unit-test it with synthetic `*pgconn.PgError` values.
-
-## Anti-Rationalization
-
-| Excuse | Counter |
-|---|---|
-| "I'll add the test in a follow-up" | Follow-up tests for shipped features cost more than writing the test inline. |
-| "The branch is too hard to trigger from a test" | Extract a helper. See "When Integration Tests Can't Reach a Branch" above. |
-| "Tests pass" | Existing tests pass means existing behavior unchanged. New branches need new tests. Read the predicate, derive the matrix. |
-| "It's just a small refactor, no test needed" | Refactors with no behavior change should have no test changes either. If the refactor needs new tests, it's not behavior-neutral. |
-| "I'll just run the code manually" | Manual verification doesn't survive the next PR. Tests do. |
-
-## Running Tests
-
-```bash
-# Backend unit tests (fast, no DB needed)
-cd backend && go test ./...
-
-# Backend integration tests (requires golid_test + migrations path)
-export TEST_DATABASE_URL='postgres://dev:dev@localhost:5432/golid_test?sslmode=disable'
-scripts/init-test-db.sh
-cd backend && TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
-  go test -tags=integration ./internal/handler/... ./internal/service/... -race
-```
-
-### Integration tests wipe the database they connect to
-
-`testutil.SetupTestDB()` **requires** `TEST_DATABASE_URL` and panics if it is unset — there is no fallback to `DATABASE_URL`. In the devcontainer, `DATABASE_URL` points at the same Postgres the running app uses; every integration test calls `CleanAllTables` (directly or via `WithTestDB`), so running `-tags=integration` against the dev DB **truncates seeded users and everything** — restart the container to reseed.
-
-Before running any `-tags=integration` command, verify `TEST_DATABASE_URL` is set to a database that is safe to wipe:
-
-```bash
-echo "$TEST_DATABASE_URL"   # must point at a non-dev DB (e.g. golid_test)
-```
-
-If it's empty or points at the dev DB:
-
-- **Don't run integration tests.** Use `go build ./...`, `go vet ./...`, and untagged unit tests for verification.
-- Or set `TEST_DATABASE_URL` to a separate DB for the duration of the command:
-  ```bash
-  TEST_DATABASE_URL=postgres://dev:dev@db:5432/golid_test \
-    TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
-    go test -tags=integration ./internal/handler/... ./internal/service/... -race
-  ```
-  (CI sets only `TEST_DATABASE_URL` — see `ci-workflow` rule.)
-
-The failure mode is silent: tests pass, dev data is gone, and nothing in the test output explains why the user can't log in next time they refresh.
+> This section is intentionally duplicated in `write-tests.mdc` and `write-tests-frontend.mdc`. If updated, change both.
 
 ## Related Rules
 
-For frontend component test patterns, see `write-tests-frontend`. For browser/E2E test patterns, see `write-tests-e2e`.
+For test planning patterns (discriminator matrix, predicate-derived plans, integration DB safety), see `write-tests-planning`. For frontend component test patterns, see `write-tests-frontend`. For browser/E2E test patterns, see `write-tests-e2e`.

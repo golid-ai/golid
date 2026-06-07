@@ -36,7 +36,7 @@ listed trigger is present.
   test assertion.
 - T2: add an endpoint; change response shape; add a reversible migration.
 - T3: change invoice fee math; touch password reset tokens; modify payout or
-  Stripe webhook behavior.
+  webhook signature verification behavior.
 
 Not T3:
 

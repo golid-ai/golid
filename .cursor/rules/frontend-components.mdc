@@ -8,7 +8,7 @@ alwaysApply: false
 
 > **Thesis:** Components are stateless building blocks. Atoms compose into molecules, molecules into organisms. Every component exports from the barrel.
 
-Follow the established patterns from `Button.tsx` (atom) and `Modal.tsx` (molecule).
+**Reference files:** `Button.tsx` (atom) and `Modal.tsx` (molecule).
 
 ## Atom vs Molecule vs Organism
 
@@ -92,66 +92,6 @@ export default NewComponent;
 export { NewComponent, type NewComponentProps } from "./atoms/NewComponent/NewComponent";
 ```
 
-### Lazy Loading (Browser-Only Components)
+## Related Rules
 
-Components that use browser APIs (Three.js, WebRTC, canvas) must be lazy-loaded with `<Suspense>`:
-
-```tsx
-// In the CONSUMER file (e.g., a section or page):
-import { lazy, Suspense } from "solid-js";
-const Canvas3D = lazy(() => import("~/components/molecules/Canvas3D/Canvas3D")
-  .then(m => ({ default: m.Canvas3D })));
-
-// Usage — Suspense is REQUIRED or the component silently renders nothing:
-<Suspense>
-  <Canvas3D />
-</Suspense>
-```
-
-Inside the lazy component, if `onMount` appends DOM nodes (e.g., `containerRef.appendChild(canvas)`), the return JSX **must include a static wrapper div** — not just a `Switch/Match`. Without a static element, `onMount` may not fire:
-
-```tsx
-// GOOD — static div always in DOM, conditional content inside
-<div ref={containerRef} class="relative w-full h-full">
-  <div class="absolute inset-0 pointer-events-none"
-    style={{ display: loading() || error() ? undefined : "none" }}>
-    <Switch>
-      <Match when={loading()}><Spinner /></Match>
-      <Match when={error()}><ErrorText /></Match>
-    </Switch>
-  </div>
-</div>
-
-// BAD — Switch as only child can prevent onMount from firing
-<div ref={containerRef}>
-  <Switch>
-    <Match when={loading()}>...</Match>
-  </Switch>
-</div>
-```
-
-Never call `onCleanup()` after an `await` — use mutable refs cleaned up in the synchronous `onCleanup` registered during component creation.
-
-### Do NOT
-- Import from other atoms inside an atom (that makes it a molecule)
-- Use `createSignal` for internal state unless the component is interactive (forms, toggles)
-- Use inline styles — use Tailwind classes
-- Create a raw HTML element when a component exists (`<select>` → use `<Select>`, `confirm()` → use `<DestructiveModal>`)
-- Use `lazy()` without a `<Suspense>` boundary — it silently renders nothing
-- Build "demo state" (random failures, fake delays, mocked data, `simulateX` helpers) directly into a component that is also used in production. If a component needs a showcase variant, gate the demo behavior on the absence of an integration prop (`Show when={hasFiles() && !props.onFilesSelected}`) so the demo UI only renders when no callback is wired. Mock data on dedicated showcase routes (e.g. `(private)/components/sections/`) is fine — those routes are the showcase, not consumers of one component.
-
-### Legitimate raw-`<input>` exceptions
-
-Two raw `<input>` cases are intentional and should not be wrapped with the
-shared `<Input>` component:
-
-1. **Hidden file inputs triggered by ref.** The `<Input>` component does not
-   support file uploads. Use a hidden `<input ref={fileRef} type="file"
-   class="hidden" />` clicked from a styled `<Button>`. See
-   `settings/_components/ProfileHeader.tsx` if present.
-2. **Honeypot anti-spam fields.** Hidden inputs with `autocomplete="off"` and a
-   tempting name like `website` should stay raw so bots fill them and humans do
-   not see them. Wrapping them in `<Input>` defeats the trap.
-
-If a third legitimate case appears, add it here in the same commit that
-introduces it.
+- Lazy loading, demo-state traps, raw-input exceptions — see `frontend-components-advanced`.

@@ -42,7 +42,7 @@ test: add integration tests for password reset flow
 The "one logical change" rule has one narrow exception: cross-cutting touches
 produced by parallel subagents working on shared files such as `openapi.yaml`,
 module specs, barrels, `frontend/src/lib/api.ts`, `frontend/src/lib/constants.ts`,
-or `main.go`. See `parallel-subagents` before using this exception.
+or `internal/wire/routes.go`. See `parallel-subagents` before using this exception.
 
 When a parallel batch produces shared-file edits that do not fit cleanly into a
 single feature commit, one sweep-up commit per batch is correct. Do not split it

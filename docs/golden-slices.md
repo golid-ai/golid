@@ -33,7 +33,7 @@ selection and `slice-and-ship` when a planned T2/T3 slice is active.
 
 **Expected rules:** `workflow-routing`, existing plan or `planning-standards`, `slice-and-ship`, module spec, `go-handler`, `go-service`, `write-tests`, `openapi`.
 
-**Verification:** Update OpenAPI and specs; run focused handler/service tests; regenerate frontend types when needed; complete slice-and-ship contract closeout.
+**Verification:** Update OpenAPI and specs; run focused handler/service tests; regenerate frontend types when needed; run `audit-bugs` on touched files before commit; complete slice-and-ship contract closeout.
 
 **Avoid:** Treating a contract change as a local bug fix because the diff is small.
 

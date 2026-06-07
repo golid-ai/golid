@@ -1,13 +1,14 @@
 ---
 description: Feature flag patterns — use when working with feature toggles
-globs: ["**/feature*.go", "**/features.ts"]
+globs: **/feature*.go,**/features.ts
+alwaysApply: false
 ---
 
 # Feature Flag Patterns
 
 > **Thesis:** Flags are database-backed with a 30-second cache. IsEnabled() returns false for unknown keys. Never use flags for auth decisions.
 
-Follow the established patterns in `service/feature/feature.go` and `handler/feature.go`.
+**Reference files:** `service/feature/feature.go`, `handler/feature.go`
 
 ## Usage in Services
 

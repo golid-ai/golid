@@ -92,11 +92,13 @@ Read the module spec at `docs/modules/{module}/spec.md` before making changes to
 
 ## Cursor Rules
 
-38 rules in `.cursor/rules/`. Every rule opens with a thesis statement.
+45 rules in `.cursor/rules/`. Every rule opens with a thesis statement.
 
-- **Always-on (3):** `codebase-standards`, `git-commits`, `parallel-subagents`
-- **File-scoped (24):** `go-service`, `go-handler`, `solidjs-pages`, `write-tests`, etc. — auto-activates when editing matching files
-- **On-demand (11):** `plan-feature`, `slice-and-ship`, `plan-execution-loop`, `audit-bugs`, `write-rules`, etc. — invoke by name or via task description
+- **Always-on (2):** `codebase-standards`, `git-commits`
+- **File-scoped (29):** `go-service`, `go-service-errors`, `solidjs-pages`, `solidjs-data-fetching`, `write-tests`, `write-tests-planning`, etc. — auto-activates when editing matching files (sibling rules may share globs)
+- **On-demand (14):** `plan-feature`, `plan-feature-execution`, `slice-and-ship`, `plan-execution-loop`, `audit-bugs`, `parallel-subagents`, `dynamic-image-http`, etc. — invoke by name or via task description
+
+Before declaring a slice done, run [`audit-bugs`](../.cursor/rules/audit-bugs.mdc) against files you touched (pre-merge gate). For release readiness, use [`audit-codebase`](../.cursor/rules/audit-codebase.mdc).
 
 Full reference: [Cursor Rules](cursor-rules.md)
 
@@ -114,6 +116,14 @@ make test                                       # full suite
 ```
 
 Integration tests use `//go:build integration` and `testutil.WithTestDB`. Always test error paths, not just happy paths.
+
+PRs that touch module-owned code or cursor rules should pass all three drift scripts (also run in CI `spec-drift`):
+
+```bash
+scripts/check_spec_drift.sh origin/main
+scripts/check_citation_freshness.sh
+scripts/check_rule_health.sh
+```
 
 ## Further Reading
 

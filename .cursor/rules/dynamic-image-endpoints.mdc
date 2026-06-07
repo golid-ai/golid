@@ -39,10 +39,7 @@ output, no I/O, no network, no browser, no embedded language runtime.
 **BAD: Node/browser/screenshot pipeline**
 
 ```go
-// Spawns headless Chrome, navigates to a route, screenshots the page.
-// Adds a second runtime path, multiplies deploy surface area, and
-// produces non-deterministic bytes (font hinting, anti-aliasing
-// vary between Chrome versions).
+// Headless Chrome screenshot: second runtime, non-deterministic pixels.
 func RenderOGImage(profile *Profile) ([]byte, error) {
     return chromiumScreenshot("https://localhost/render-og?slug=" + profile.Slug)
 }
@@ -51,9 +48,7 @@ func RenderOGImage(profile *Profile) ([]byte, error) {
 **GOOD: Pure Go renderer**
 
 ```go
-// Pure function. No network, no shell-out, no external runtime.
-// Same input → same bytes. Testable in 50ms via `go test`.
-// Hot-reloadable via Air during iteration.
+// Pure function: same input → same bytes; testable in 50ms via `go test`.
 func RenderPublicProfileOGImage(ctx context.Context, profile *PublicStudentProfile) (*PublicProfileOGImage, error) {
     img := image.NewRGBA(...)
     drawProofCardSurface(img, ...)
@@ -65,24 +60,16 @@ func RenderPublicProfileOGImage(ctx context.Context, profile *PublicStudentProfi
 
 **Why this matters:**
 
-- **Testable.** A pure function takes 50ms to test against fixtures;
-  a Chrome screenshot test takes 5-10s minimum and requires the
-  browser binary in CI.
-- **Deterministic.** Same input always produces the same bytes,
-  which means ETag stability (a content hash works) and visual
-  regression detection (golden-file tests are stable).
-- **Fast.** Go's `image/draw` runs in 50-200ms per render. Chrome
+- **Testable & deterministic.** Pure functions test in 50ms with
+  stable golden files; Chrome screenshot tests need the binary and
+  take seconds with non-deterministic pixels.
+- **Fast.** Go's `image/draw` runs in 50-200ms per render; Chrome
   screenshot is 2-5s.
-- **Hot-reloadable.** Air rebuilds the Go binary in seconds; a
-  Chrome-based renderer requires container restarts.
 - **Cache-stable.** No external network calls means no dependence
   on GCS/S3 availability for the render path.
 
-If pure Go rendering can't hit the visual quality bar (e.g. complex
-typography with kerning, multi-line text wrapping with hyphenation,
-SVG rendering), prefer adding a tiny library (`oksvg`, `rasterx`,
-`golang.org/x/image/font/opentype`) over introducing a second
-runtime. Go has good libraries for almost everything image-related.
+If pure Go can't hit the visual bar, prefer a tiny library (`oksvg`,
+`rasterx`, `golang.org/x/image/font/opentype`) over a second runtime.
 
 ## Rule 2: Renderer version in the ETag hash
 
@@ -127,112 +114,25 @@ func computeETag(profile *PublicStudentProfile) string {
 }
 ```
 
-**Bump the constant when:**
+**Bump the constant when:** layout, colors, fonts, borders/gradients,
+or image dimensions change.
 
-- Layout changes (positions, sizes, padding)
-- Colors change
-- Font face or size changes
-- Border, gradient, or visual treatment changes
-- Image dimensions change (e.g. switching to 2x render)
-
-**Do NOT bump when:**
-
-- Profile data changes (those already invalidate via field hash)
-- Refactor that doesn't change rendered output
-- Adding new edge-case handling (e.g. truncating longer names) that
-  doesn't change output for existing inputs
+**Do NOT bump when:** profile data changes (field hash handles that),
+refactors with identical output, or edge-case handling that doesn't
+change output for existing inputs.
 
 **Lock the contract with a test:**
 
 ```go
 func TestETag_VersionBumpInvalidatesCache(t *testing.T) {
     profile := &Profile{...}
-    currentETag := computeETag(profile)
-    // Simulate a renderer version bump by recomputing with a
-    // different version string. Must produce a different ETag.
-    bumpedFields := []string{"v-test-bump", profile.Slug, ...}
-    bumpedETag := hashFields(bumpedFields)
-    if currentETag == bumpedETag {
+    bumped := hashFields([]string{"v-test-bump", profile.Slug, ...})
+    if computeETag(profile) == bumped {
         t.Fatal("ETag did not change when renderer version differed")
     }
 }
 ```
 
-## Rule 3: Cache headers per response
+## Related Rules
 
-Different paths emit different cache headers. **Never use the same
-Cache-Control for all responses** — it creates cache oracles for
-disabled or missing resources.
-
-| Response | Cache-Control |
-|---|---|
-| `200 image/png` (success) | `public, max-age=300, stale-while-revalidate=3600` |
-| `304 Not Modified` (ETag match) | inherits success headers |
-| `404 Not Found` (any miss case) | `no-store` |
-| `500 Internal Server Error` | `no-store` |
-
-The miss-case `no-store` is **critical for privacy** when the
-endpoint resolves auth/visibility state — a `max-age` 404 would
-let an attacker confirm a slug's existence via response time after
-the cache expires.
-
-Also set `X-Content-Type-Options: nosniff` on success responses so
-clients don't sniff the bytes as something other than PNG.
-
-## Rule 4: Per-request render budget
-
-Image rendering is CPU-bound and unbounded by default (a huge name
-+ long skills + many fields can take seconds). Always wrap the
-render in a `context.WithTimeout`.
-
-```go
-const RenderBudget = 750 * time.Millisecond
-
-func Handler(c echo.Context) error {
-    ctx, cancel := context.WithTimeout(c.Request().Context(), RenderBudget)
-    defer cancel()
-    img, err := RenderImage(ctx, profile)
-    // ...
-}
-
-func RenderImage(ctx context.Context, profile *Profile) (*Image, error) {
-    if err := ctx.Err(); err != nil { return nil, err }  // pre-expensive
-    drawGradient(img)
-    if err := ctx.Err(); err != nil { return nil, err }  // mid-expensive
-    drawText(...)
-    if err := ctx.Err(); err != nil { return nil, err }  // pre-encode
-    encodePNG(img)
-    return result, nil
-}
-```
-
-A render that exceeds the budget returns 500 with `no-store` so a
-transient slow render doesn't poison the cache.
-
-## Rule 5: Max encoded bytes ceiling
-
-Define an explicit `MaxBytes` constant and reject renders that
-exceed it. Unfurlers have their own caps (Slack 5MB, LinkedIn 5MB,
-Twitter 5MB, Facebook 8MB) but you want to fail fast on a runaway
-render before you hit the wire.
-
-```go
-const PublicProfileOGImageMaxBytes = 2 * 1024 * 1024  // 2MB at 2x render
-
-// After png.Encode:
-if buf.Len() > PublicProfileOGImageMaxBytes {
-    return nil, fmt.Errorf("og image too large: %d bytes", buf.Len())
-}
-```
-
-## Reference implementations
-
-When adding a dynamic image endpoint to Golid, follow this rule's patterns
-deterministically (renderer version constant, ETag mixing, HEAD parity, render
-budget, max bytes). Wire the handler in `internal/wire/routes.go` and exclude
-the route from gzip/timeout middleware if long-lived or cache-sensitive.
-
-## Reference docs
-
-- `.cursor/rules/dynamic-image-endpoints.mdc` — full pattern (this file)
-- `docs/patterns/` — add a 1-pager when the first Golid dynamic image endpoint ships
+- HTTP cache headers, render budget, max bytes — see `dynamic-image-http`.

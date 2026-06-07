@@ -28,7 +28,7 @@ Two chains depending on whether the value is a secret or plain config.
 1. `backend/internal/config/config.go` — add field to `Config` struct + `os.Getenv()` in `Load()`
 2. `config/.env.local` — add with dev/sandbox value
 3. `config/.env.example` — add with placeholder (backend vars only)
-4. `frontend/.env.example` — add with placeholder (for `VITE_*` browser-exposed vars only). Per-environment values (e.g. test vs live Stripe public key) go in `config/.env.{qa,prod}` and are passed as build args during frontend image build.
+4. `frontend/.env.example` — add with placeholder (for `VITE_*` browser-exposed vars only). Per-environment values (e.g. QA vs prod `VITE_API_URL`) go in `config/.env.{qa,prod}` and are passed as build args during frontend image build.
 5. `config/.env.qa` — add with QA value
 6. `config/.env.prod` — add with production value
 7. `scripts/deploy.sh` — add to the `env_vars` block in `ship_api()` (if backend needs it at runtime)
@@ -64,7 +64,7 @@ NewAPIKey: os.Getenv("NEW_API_KEY"),
 **Never hardcode secrets.** Hybrid approach:
 
 - **Development:** `config/.env.local` (gitignored), loaded by Docker Compose
-- **QA/Prod — simple secrets** (`JWT_SECRET`, `MAILGUN_API_KEY`, `STRIPE_*`): stored in GCP Secret Manager, injected via Cloud Run `--set-secrets`. Never visible in service config.
+- **QA/Prod — simple secrets** (`JWT_SECRET`, `MAILGUN_API_KEY`, `REDIS_URL`): stored in GCP Secret Manager, injected via Cloud Run `--set-secrets`. Never visible in service config.
 - **QA/Prod — `DB_PASSWORD`**: fetched from Secret Manager at deploy time by `deploy.sh`, used to construct `DATABASE_URL` (which requires the dynamic Cloud SQL socket path), then passed as `--set-env-vars`.
 - **QA/Prod — plain config** (`FRONTEND_URL`, `MAILGUN_DOMAIN`, etc.): stays in `config/.env.{qa,prod}`, passed as `--set-env-vars`.
 

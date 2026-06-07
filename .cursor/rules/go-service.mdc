@@ -1,6 +1,6 @@
 ---
 description: Patterns for Go service layer files — business logic, DB access, auth checks
-globs: backend/internal/service/**/*.go
+globs: backend/internal/service/*.go,backend/internal/service/**/*.go
 alwaysApply: false
 ---
 
@@ -24,9 +24,10 @@ func NewXService(pool *pgxpool.Pool, paginationDefault, paginationMax int) *XSer
 ```
 
 This is the canonical shape for paginated CRUD services. Real services
-diverge based on dependencies — `NewUserService(pool, publicBaseURL)`,
-`NewAuthService(pool, jwtSecret, jwtIssuer, accessDuration, refreshDuration, passwordResetTTL)` —
-but every service follows the same "concrete struct + constructor + framework-agnostic
+diverge based on their dependencies — `NewUserService(pool, publicBaseURL)`,
+`NewAuthService(pool, jwtSecret, jwtIssuer, accessDuration, refreshDuration, passwordResetTTL)`,
+`NewFeatureService(pool)` — but every
+service follows the same "concrete struct + constructor + framework-agnostic
 methods" rule. Match the constructor shape that fits the dependencies, not the
 template literally.
 
@@ -78,44 +79,6 @@ if err := tx.Commit(ctx); err != nil { ... }
 
 For operations that need both a check and a mutation (read-then-write), use atomic `UPDATE ... WHERE guard RETURNING` inside the transaction to prevent TOCTOU races. Never SELECT outside the transaction then UPDATE inside it. See `auth/auth.go` `Refresh` method.
 
-## Error Handling
-
-- Always check `pgx.ErrNoRows` explicitly — return `apperror.NotFound` for missing entities.
-- Check real DB errors before ErrNoRows: `if err != nil && err != pgx.ErrNoRows { return 500 }`.
-- Never `_ = pool.Exec(...)` — log failures with `logger.Error`.
-- Pass bare resource nouns to `apperror.NotFound("User")` — not `"User not found"` (double-suffix).
-
-### PostgreSQL Error Translation Checklist
-
-When a service method writes to a table with a `UNIQUE`, `CHECK`, or `FOREIGN KEY` constraint, the corresponding `pgconn.PgError` SQLSTATE must be translated to an `apperror`. A bare 500 from a PG constraint violation is always a bug — the constraint exists *because* the situation is expected.
-
-| SQLSTATE | Meaning | Translate to |
-|---|---|---|
-| `23505` | unique_violation | `apperror.Conflict("...")` |
-| `23503` | foreign_key_violation | `apperror.BadRequest` (parent missing) or `apperror.Conflict` (child blocking delete) |
-| `23514` | check_violation | `apperror.BadRequest` with the constraint name |
-| `23502` | not_null_violation | `apperror.BadRequest` (input was missing) or `apperror.Internal` (code bug) |
-
-Standard pattern (always use `errors.As`, never type assertion — the error may be wrapped):
-
-```go
-var pgErr *pgconn.PgError
-if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-    return apperror.Conflict("...")
-}
-return apperror.Internal(fmt.Errorf("...: %w", err))
-```
-
-When the same translation appears in two or more methods, **extract a helper** and unit-test it directly with synthetic `*pgconn.PgError` values. The TOCTOU race that triggers 23505 isn't deterministic from an integration test, but a unit test of the helper pins the contract.
-
-### Don't Discard Errors
-
-Every function that returns `error` must have its return checked. Audit pattern:
-
-```bash
-rg "_, _ :=|_ = \w" backend/internal/service/ -g '*.go' --no-heading
-```
-
 ## Status Guards
 
 Check parent entity status at the top of mutating methods:
@@ -130,46 +93,6 @@ if access.Status != "active" {
 
 Use `pagination.NormalizePagination(page, perPage, s.paginationDefault, s.paginationMax)` from `internal/pagination`. Return `XListResult` with `total`, `page`, `per_page`, `total_pages`.
 
-## History/Audit
+## Related
 
-For entities with audit trails, insert structured history entries:
-
-```go
-s.addHistory(ctx, id, userID, "Status changed to Complete",
-    map[string]any{"field": "status", "old": oldStatus, "new": newStatus})
-```
-
-Use JSONB `metadata` for structured data + TEXT `action` for human-readable display.
-
-## Nullable TIMESTAMPTZ Columns
-
-**Never scan nullable TIMESTAMPTZ directly into `*string`.** PostgreSQL's binary protocol can't convert timestamptz to string. Always use `*time.Time` intermediate:
-
-```go
-var publishedAt *time.Time
-err := row.Scan(&publishedAt)
-// Then format for JSON:
-if publishedAt != nil {
-    ts := publishedAt.Format(time.RFC3339)
-    result.PublishedAt = &ts
-}
-```
-
-Do NOT use `column::text` casts in SQL as a workaround — they prevent index usage and are fragile.
-
-## Background Side Effects
-
-When a service method triggers a side effect (email, webhook, etc.), use a fire-and-forget goroutine:
-
-```go
-go func() {
-    if err := s.emailSvc.Send(context.Background(), recipientEmail, subject, body); err != nil {
-        logger.Error("email: send failed", slog.String("error", err.Error()))
-    }
-}()
-```
-
-Rules: use `context.Background()` (goroutine outlives request), always log errors from goroutines.
-
-- **Retry helper** — Use `retry.Retry(3, time.Second, fn)` from `internal/retry` for external API calls in goroutines.
-- **Request ID propagation** — Capture the request ID before spawning goroutines for log correlation.
+- **Error translation, nullable scans, history, side effects:** `go-service-errors`

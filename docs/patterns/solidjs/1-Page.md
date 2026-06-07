@@ -38,6 +38,8 @@ COMPONENT RUNS ONCE
 | `<For>` with primitives      | Index changes cause issues                            | Use `<Index>` instead                               |
 | createSignal in render       | Recreates on every call                               | Lift to component top                               |
 | `createResource` + route nav | Resource resolves after unmount, orphaned computation | Use signals + `onMount` + `alive` guard (see below) |
+| Nested `<Show>` for loading/error/data | Stacked reactive scopes leak on route transition | Flat `Switch/Match` — one `Match` per state |
+| `navigate` + `return null` for auth | Route unmounts before auth resolves; blank page | Redirect in `onMount`; gate content with `<Show>` |
 
 ### Control Flow
 
@@ -132,9 +134,25 @@ export default function MyPage() {
 
 **Why not `createResource`?** It internally writes to its signal when the promise resolves — you cannot cancel this. If the user navigates away before resolution, the write fires into a disposed component tree, causing "computations created outside a createRoot" warnings. The `alive` guard pattern avoids this entirely.
 
+For concurrent refetches (filters, tabs), increment a `loadRequestID` and discard stale responses when `requestID !== loadRequestID` — the `alive` guard alone does not cancel in-flight requests.
+
 Also avoid reactive expressions in `<Title>` — the `@solidjs/meta` head manager
 lives outside the component tree and creates orphaned computations on unmount.
 Use static titles or pre-compute as `createMemo`.
+
+**Auth gates:** call `navigate(..., { replace: true })` in `onMount` when needed, but gate page content with `<Show when={auth.user?.type === "admin"} fallback={<Spinner />}>` — never `return null` after navigate.
+
+```tsx
+onMount(() => {
+  if (auth.user?.type !== "admin") navigate("/dashboard", { replace: true });
+});
+
+return (
+  <Show when={auth.user?.type === "admin"} fallback={<Spinner />}>
+    <AdminContent />
+  </Show>
+);
+```
 
 ### SolidStart SSR
 
@@ -286,6 +304,8 @@ function D3Chart(props) {
 
 ### Definition of Done
 
+- [ ] Flat `Switch/Match` for loading/error/data (no nested `<Show>`)
+- [ ] Auth redirects use `<Show>` gate, not `return null` after `navigate`
 - [ ] No props destructuring at component level
 - [ ] `createMemo` for expensive computations
 - [ ] `batch()` for multiple state updates

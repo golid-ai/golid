@@ -1,15 +1,19 @@
 ---
-description: Use parallel subagents when auditing or editing 5+ files in a single task
-alwaysApply: true
+description: Use parallel subagents when auditing or editing 5+ independent files, the user asks to run in parallel, or plan-execution-loop dispatches parallel implement subagents
+alwaysApply: false
 ---
 
 # Parallel Subagents for Multi-File Operations
 
 > **Thesis:** Sequential edits across many files waste time and lose context. Split independent work across subagents, verify after completion.
 
-When a task involves **auditing or editing 5+ independent files**, prefer parallel subagents over sequential tool calls. If changes have ordering dependencies, keep dependent steps sequential.
+## When to invoke
 
-Running **multiple plans** in parallel (each with its own implement → audit loop) requires **one worktree per plan** — see `plan-execution-loop` "Multiple plans in parallel".
+- **5+ independent files** — auditing or editing across many files with no ordering dependencies between them
+- **User request** — the user explicitly asks to run work in parallel or use subagents
+- **Plan parallel slices** — `plan-execution-loop` dispatches parallel implement subagents for a multi-file slice
+
+When a task involves **auditing or editing 5+ independent files**, prefer parallel subagents over sequential tool calls. If changes have ordering dependencies, keep dependent steps sequential.
 
 ## When to parallelize
 
@@ -33,7 +37,7 @@ Bad splits:
 
 ## Pre-flight: predict shared-file collisions
 
-Before dispatching, `rg` the plans/specs for file paths each subagent will touch. Flag any file appearing in 2+ subagents — typically `openapi.yaml`, module `spec.md` files, shared type files (`frontend/src/lib/api.ts`, `frontend/src/lib/constants.ts`), `internal/wire/{services,handlers,routes}.go`, barrels. These cause cherry-pick conflicts.
+Before dispatching, `rg` the plans/specs for file paths each subagent will touch. Flag any file appearing in 2+ subagents — typically `openapi.yaml`, module `spec.md` files, shared type files (`frontend/src/lib/api.ts`, `frontend/src/lib/constants.ts`), barrels, `internal/wire/routes.go`. These cause cherry-pick conflicts.
 
 For each shared file, decide upfront: which subagent owns which section? Tell each subagent explicitly to make **additive** edits (new sections, new contiguous blocks) and **not restructure** unrelated content. Textual diffs that touch different lines in the same file merge cleanly; restructured files do not.
 
@@ -54,7 +58,7 @@ If subagents will branch, commit, or otherwise touch git state:
 - **Worktree isolation is mandatory.** Each subagent gets its own `git worktree`. NEVER let a subagent operate directly in the parent repo (e.g., `/workspace`).
 - **Forbid destructive git ops on the parent repo.** Explicitly tell every subagent: do NOT run `git reset --hard`, `git clean -fd`, `git stash drop`, or `git checkout --force` outside their assigned worktree. A previous incident lost uncommitted user edits this way.
 - **Forbid `git add -A`** — subagents must explicitly add only the files they changed, so untracked user state in the parent isn't accidentally swept in.
-- **Isolate cross-cutting touches in a final commit.** When two subagents both edit shared files (openapi, specs, wire files, barrels, `constants.ts`), instruct each to put those edits in one dedicated final commit. Conflicts then land in one focused commit instead of mixed in with functional changes — much faster to resolve. This is the one legitimate exception to the "one logical change per commit" rule in `git-commits` — see "Parallel Shared-File Exception" there for what qualifies and what doesn't. Name it `chore: sweep-up shared-file edits from <batch-name>` and list the per-feature mapping in the body.
+- **Isolate cross-cutting touches in a final commit.** When two subagents both edit shared files (openapi, specs, barrels), instruct each to put those edits in one dedicated final commit. Conflicts then land in one focused commit instead of mixed in with functional changes — much faster to resolve. This is the one legitimate exception to the "one logical change per commit" rule in `git-commits` — see "Parallel Shared-File Exception" there for what qualifies and what doesn't. Name it `chore: sweep-up shared-file edits from <batch-name>` and list the per-feature mapping in the body.
 - **Cherry-pick order matters when collisions are expected.** Land the smaller / more additive branch first; the larger restructure second. The restructuring commit then carries the burden of merging the smaller changes into its new layout.
 - **Cherry-pick ONE commit at a time when bringing back a worktree branch.** Bulk `git cherry-pick A B C D ...` will sometimes fail at commit 3+ with a phantom `Your local changes to the following files would be overwritten by merge` error against files that are demonstrably clean (`git status` shows nothing, `git diff HEAD` is empty). The bulk run aborts and silently rolls back commits that already landed, leaving a partial state that builds with mysterious missing-method errors. A simple loop (`for sha in A B C D ...; do git cherry-pick $sha; done`) avoids this entirely.
 

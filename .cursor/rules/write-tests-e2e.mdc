@@ -51,11 +51,11 @@ await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
 When text appears in multiple elements, use role-based selectors:
 
 ```typescript
-// BAD: "Uflex" appears in navbar, h1, and footer
-await expect(page.getByText("Uflex")).toBeVisible();
+// BAD: "Golid" appears in navbar, h1, and footer
+await expect(page.getByText("Golid")).toBeVisible();
 
 // GOOD: targets the specific heading
-await expect(page.getByRole("heading", { name: "Uflex" })).toBeVisible();
+await expect(page.getByRole("heading", { name: "Golid" })).toBeVisible();
 ```
 
 When a heading and button share text, target the button role:
@@ -101,6 +101,33 @@ The signup form uses `type="text"` with `inputmode="email"` rather than
 ```typescript
 page.locator('[placeholder="you@example.com"]');
 ```
+
+## Prefer Client-Side Navigation
+
+For authenticated pages, use sidebar links instead of `page.goto()`. `page.goto()`
+triggers a full SSR request which can fail if the page has SSR-unsafe imports.
+
+```typescript
+// BAD — triggers SSR, may show blank page if component uses window/document
+await page.goto("/settings");
+
+// GOOD — client-side navigation, no SSR
+await page.locator('a[href="/settings"]').first().click();
+await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+```
+
+## Duplicate Elements (Desktop + Mobile)
+
+Responsive layouts often render the same link/button twice. Use `.first()`:
+
+```typescript
+await expect(page.getByRole("link", { name: "Sign Up" }).first()).toBeVisible();
+```
+
+## E2E Test Credentials
+
+E2E tests use seeded users from `backend/seeds/dev_seed.sql`. If you change seed
+data credentials, update ALL E2E test files in `frontend/tests/e2e/`.
 
 ## Serial Execution
 

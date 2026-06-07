@@ -9,10 +9,13 @@
 
 | Document | Stale when... | Last verified |
 |----------|---------------|---------------|
+| `README.md` | Factory workflow, test counts, rule count, or drift scripts change | 2026-06-07 |
 | `docs/architecture.md` | Auth flow, middleware stack, SSE hub, or data-fetching pattern changes | 2026-06-07 |
-| `docs/best-practices.md` | SolidJS fetching pattern, error handling, or testing conventions change | 2026-06-06 |
+| `docs/best-practices.md` | SolidJS fetching pattern, error handling, or testing conventions change | 2026-06-07 |
 | `docs/cli-reference.md` | Makefile targets, health/ready endpoints, or test DB setup change | 2026-06-07 |
-| `docs/testing-checklist.md` | Module business rules or critical integration scenarios change | 2026-06-06 |
+| `docs/testing-checklist.md` | Module business rules or critical integration scenarios change | 2026-06-07 |
+| `docs/patterns/solidjs/1-Page.md` | SolidJS fetching, content states, or auth gate patterns change | 2026-06-07 |
+| `docs/manual-qa/release-smoke.md` | Release gate scripts or tag workflow change | 2026-06-07 |
 | `docs/example-module.md` | Scaffold output layout, wire paths, or frontend page patterns change | 2026-06-07 |
 | `docs/flows.md` | Cross-module request chains or auth/SSE ticket flow changes | 2026-06-07 |
 | `docs/glossary.md` | New domain terms or renamed concepts | 2026-06-07 |
@@ -21,6 +24,8 @@
 | `docs/error-contracts.md` | apperror codes, HTTP mapping, or frontend error handling change | 2026-06-07 |
 | `docs/dependency-graph.md` | Module Depends On sections or new modules added | 2026-06-07 |
 | `docs/cursor-rules.md` | Rules added, removed, or glob/thesis changes | 2026-06-07 |
+| `docs/organism-pattern.md` | Organism layers, drift scripts, or consumption paths change | 2026-06-07 |
+| `CONTRIBUTING.md` | PR workflow, drift scripts, or audit gates change | 2026-06-07 |
 | `docs/patterns/tailwind/1-Page.md` | Tailwind major version or `app.css` / `tailwind.config.js` setup changes | 2026-06-07 |
 
 ## Per-Module Documents
@@ -44,7 +49,8 @@ When any of these fire, re-verify every doc category listed in "Affected docs".
 | Wire/routes refactor (`internal/wire/routes.go`) | Module spec API Surface tables | — |
 | OpenAPI spec change (`backend/openapi.yaml`) | Module spec API Surface tables; `frontend/src/lib/api.generated.ts` | — |
 | Tailwind major version bump | `docs/patterns/tailwind/1-Page.md`, `app.css`, `tailwind.config.js`, component utility classes | 2026-06-07 |
-| New or removed Cursor rule | `docs/cursor-rules.md`, `docs/start-here.md`, `docs/rules-health.md` | — |
+| New or removed Cursor rule | `docs/cursor-rules.md`, `docs/start-here.md`, `docs/rules-health.md`, `README.md` | 2026-06-07 |
+| Cursor rule split (7 monolith → sibling pairs) | `docs/cursor-rules.md`, `docs/start-here.md`, `README.md`, `codebase-standards` Rule Index | 2026-06-07 |
 
 ## Automated Checks
 

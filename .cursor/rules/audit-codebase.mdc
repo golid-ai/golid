@@ -7,7 +7,9 @@ alwaysApply: false
 
 > **Thesis:** Score the codebase across 7 categories with exact file citations. Check ADRs before flagging documented design decisions.
 
-Run this checklist for release readiness audits. Cite exact file paths and line numbers for every finding. Check `docs/decisions/` for ADRs before flagging documented design decisions.
+Run this checklist for release readiness audits. Cite exact file paths and line numbers for every finding. Check docs/adr/ for ADRs before flagging documented design decisions.
+
+Core patterns (`apperror`, parameterized SQL, `batch()`, Switch/Match, `createResource`, alive guard) — see `codebase-standards`. Frontend fetch — `solidjs-data-fetching`. Route UI — `solidjs-pages`.
 
 ## Backend
 
@@ -26,23 +28,23 @@ Run this checklist for release readiness audits. Cite exact file paths and line 
 
 ## Frontend
 
-- [ ] Zero `createResource` (use onMount + signals)
-- [ ] Zero nested `<Show>` for mutually exclusive content states (use Switch/Match)
-- [ ] Zero `window.confirm()` (use DestructiveModal)
-- [ ] Zero onMount/createEffect returning cleanup functions (use onCleanup)
-- [ ] Zero `any` in production code (test files acceptable) — includes `Record<string, any>`, use `Record<string, unknown>`
-- [ ] Auth store reacts to token clearing (`auth:session-expired` event)
-- [ ] Auth cookie Secure on HTTPS (both set and clear paths)
-- [ ] Skip link present with correct target and tabindex
-- [ ] Auth guard effects use `on()` syntax (without defer — documented exception in solidjs-pages.mdc)
-- [ ] `batch()` wraps signal updates after every `await`
-- [ ] Param-driven pages use latest-request guard (`loadRequestID`) not just `alive`
+- [ ] Zero `createResource` — use onMount + signals (see `solidjs-data-fetching`)
+- [ ] Zero nested `<Show>` for content states — use `Switch/Match` (see `solidjs-pages`)
+- [ ] Zero `window.confirm()` — use `DestructiveModal` (see `solidjs-pages`)
+- [ ] Zero onMount/createEffect cleanup returns — use `onCleanup` (see `solidjs-data-fetching`)
+- [ ] Zero `any` in production — use `unknown` (e.g. `Record<string, unknown>`)
+- [ ] Auth store reacts to `auth:session-expired` when token cleared
+- [ ] Auth cookie `Secure` on HTTPS set and clear paths
+- [ ] Skip link present with correct target and `tabindex`
+- [ ] Auth guard effects use `on()` without defer (see `solidjs-pages`)
+- [ ] `batch()` wraps signal updates after every `await` (see `solidjs-data-fetching`)
 
 ## Security
 
 - [ ] No endpoints leak DB errors or stack traces to clients
 - [ ] Rate limiting covers auth (strict) and general API
 - [ ] SSE excluded from gzip and timeout middleware
+- [ ] SSE payloads validated with Zod schemas in `sse.ts` (`validators` map has entry for each event type)
 - [ ] CSP configurable via `CSP_POLICY` env var
 - [ ] CORS rejects all origins when `ALLOWED_ORIGINS` unset (deny-by-default)
 - [ ] Password hashing uses bcrypt with 72-byte max enforcement (`len([]byte(password))`, not `len(password)`)
@@ -55,9 +57,8 @@ Run this checklist for release readiness audits. Cite exact file paths and line 
 - [ ] Covers all file types: Go, TSX/TS, CSS, docs, Cursor rules, CI, infra, env files, entrypoints, .gcloudignore, benchmarks, openapi.yaml, scaffold, testutil, teardown.sh
 - [ ] ALL-CAPS replacement applied to env files, entrypoints, and config files
 - [ ] Validates project name format (lowercase alphanumeric + hyphens)
-- [ ] Protects domain (`golid.ai`) from corruption via `replaceInFileSafe`
+- [ ] Protects domain (original framework domain) from corruption via `replaceInFileSafe`
 - [ ] `frontend/.env.example` gets lowercase + titled + ALL-CAPS passes
-- [ ] Updates `scripts/init-test-db.sh`, `check_spec_drift.sh`, `check_citation_freshness.sh`, `internal/wire/*.go`
 
 ## Tooling — Scaffold Tool
 
@@ -72,6 +73,7 @@ Run this checklist for release readiness audits. Cite exact file paths and line 
 - [ ] Zero broken internal links (check all `*.md` files in docs/)
 - [ ] Review `docs/staleness.md` — for each row, check if the verification trigger has occurred since the last verified date
 - [ ] Permission matrix (`docs/permissions.md`) matches current endpoint auth logic
+- [ ] ADR stubs in `docs/adr/` with unfilled Rationale past due date — fill or remove
 - [ ] Flow map primary method citations match current code (check transaction boundaries)
 - [ ] README Quick Start works on fresh clone (including JWT_SECRET generation)
 - [ ] `docs/quick-start.md` Option B includes JWT_SECRET generation
@@ -80,8 +82,9 @@ Run this checklist for release readiness audits. Cite exact file paths and line 
   - `go-service.mdc` constructor and `NormalizePagination` signature
   - `write-tests.mdc` constructor and pagination helper
   - `frontend-lib.mdc` store method names
-  - `sse-realtime.mdc` `NewSSEHub` signature and notification store
-- [ ] Release-state docs accurate (module spec `Last Verified` dates, plan archive `Status` fields, rule counts, coverage thresholds, feature claims)
+  - `sse-realtime.mdc` `NewSSEHub` signature, notification store, and Zod validation pattern
+- [ ] Release-state docs accurate (module spec `Last Verified` dates, plan
+  archive `Status` fields, rule counts, coverage thresholds, feature claims)
 - [ ] All test counts, coverage numbers, and version badges match actual values
 - [ ] Migration numbers in examples don't conflict with existing migrations
 
@@ -90,17 +93,22 @@ Run this checklist for release readiness audits. Cite exact file paths and line 
 - [ ] All integration test files compile with current constructor signatures
 - [ ] Test assertions match current service behavior (e.g., error codes, return values)
 - [ ] Concurrency tests enforce correct outcomes (e.g., exactly 1 success for token refresh race)
-- [ ] `TEST_DATABASE_URL` required — testutil panics without it (never wipes dev DB)
 
 ## Thesis Alignment
 
 - [ ] Generated service code is framework-agnostic (no Echo imports) — reflects `go-service` thesis
 - [ ] Generated handlers are thin (validate → delegate → return, no business logic) — reflects `go-handler` thesis
-- [ ] Generated pages use onMount + signals + alive guard + Switch/Match — reflects `solidjs-pages` thesis
+- [ ] Generated pages use onMount + signals + alive guard + Switch/Match — reflects `solidjs-data-fetching` and `solidjs-pages` theses
 
 ## Sequential audit methodology
 
-Running multiple audits in a row (audit → remediation → re-audit) is the normal cycle. The trap: each successive audit anchors on the previous grade and confirms the predicted jump while missing real findings that only surface with fresh eyes.
+Running multiple audits in a row (e.g., audit → remediation → re-audit to verify) is the normal cycle. The trap: each successive audit anchors on the previous grade and confirms the predicted jump while missing real findings that only surface with fresh eyes.
+
+The 2026-05-26 sequence is the load-bearing example:
+
+- **Audit #1** (cold): 84/100. Surfaced 6 Important findings. Cleanup batch closed all 6.
+- **Audit #2** (contextualized with "predicted to jump from 84 → 89"): 86/100. Confirmed the closures, surfaced 1 new Important.
+- **Audit #3** (fresh, NO prior-grade context): 84/100 — same as cold. The fresh pass surfaced **new Important findings** (e.g. transaction boundary mistakes, `testutil.SetupTestDB` dev-DB misuse, broken rename tool) that audits #1 and #2 missed because they were focused on confirming what we'd just done.
 
 **Rule:** For second and third audits in a sequence, dispatch the subagent **without** prior-grade context, prior Important findings, or predicted outcomes. Let the audit re-discover the state fresh. Anchoring biases the grade up and biases the finding search toward closing what was already known.
 
@@ -112,10 +120,10 @@ When auditing the Backend section, explicitly check `backend/internal/handler/*_
 
 - Each public method's success path
 - Each method's validation error path (where applicable)
-- Each method's `NoAuth` path (where the method calls `requireUserID` / `requireUserType`)
+- Each method's `NoAuth` path (where the method calls `requireUserID` / `requireUserType` / `requireBusinessID`)
 - Each method's `NotFound` and `Forbidden` paths (where the service can surface them)
 
-The canonical pattern is `backend/internal/handler/auth_test.go` — mock struct with panic-by-default + per-test func-field overrides.
+The canonical pattern is `backend/internal/handler/payment_test.go` — mock struct with panic-by-default + per-test func-field overrides.
 
 Service integration tests do NOT substitute for handler unit tests. Integration tests cover the data path; handler tests cover request binding, validation, and role gates at the HTTP boundary.
 

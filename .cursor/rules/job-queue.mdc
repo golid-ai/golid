@@ -1,6 +1,7 @@
 ---
 description: Job queue patterns — use when editing queue package or adding background tasks
 globs: ["**/queue/*.go", "**/worker/**"]
+alwaysApply: false
 ---
 
 # Job Queue Patterns

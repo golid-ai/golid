@@ -12,7 +12,7 @@ alwaysApply: false
 ## Order of Operations
 
 1. **Schema first** — read the migrations in `backend/migrations/` to understand tables, enums, relationships, indexes
-2. **Service logic** — each service module lives in its own subpackage at `backend/internal/service/<module>/`. Read `<module>.go` for business rules, auth checks, transactions, status transitions
+2. **Service logic** — each service module lives in its own subpackage at `backend/internal/service/<module>/`. Read `<module>.go` (plus split files like `auth_password.go`, `auth_verify.go`) for business rules, auth checks, transactions, status transitions
 3. **Handler surface** — read `backend/internal/handler/*.go` for request validation and response shapes; route registration lives in `backend/internal/wire/routes.go`
 4. **Frontend routes** — read `frontend/src/routes/(private)/*.tsx` for pages, modals, state management
 5. **Write the spec** — fill `docs/modules/_templates/spec.md` and save it to
@@ -21,18 +21,18 @@ alwaysApply: false
 ## Evidence Standards
 
 - Every business rule must be marked:
-  - `[Verified: service/auth/auth.go, Register()]` — confirmed by reading the code (function names preferred)
-  - `[Verified: service/auth/auth.go:142]` — line citation (checked by `check_citation_freshness.sh`)
+  - `[Verified: service/auth/auth.go, Refresh()]` — confirmed by reading the code
   - `[NEEDS VERIFICATION]` — inferred from naming or partial evidence
 - Do NOT invent business rules. If you can't confirm it, mark it unverified.
-- Use **function names** in `[Verified:]` annotations when possible — line numbers drift with every PR; function names are stable.
+- Use **function names** in `[Verified:]` annotations, not line numbers. Line numbers drift with every PR; function names are stable.
+- File paths are good — they can be verified with `ls` or `glob`. Include them freely.
 
 ## Anti-Rot Rules
 
 These are the #1 source of documentation staleness. Follow strictly:
 
 - **Never put exact line counts** in docs. Use complexity tiers (Low/Medium/High/Critical) or approximate scale (`~3k lines`). Exact counts are wrong after the next PR.
-- **Never list code quality issues** (missing error handling, unused imports, dead code) in docs. Those are linter/grep concerns, not documentation.
+- **Never list code quality issues** (missing error handling, unused imports, dead code) in docs. Those are linter/grep concerns, not documentation. They go stale the moment someone cleans up code.
 - **Do list architectural concerns** (file too large for splitting, duplicated utility, drift risk between frontend/backend). These change rarely and help future developers.
 - **Never put exact line numbers in Known Issues**. Use function names or describe the pattern.
 
@@ -54,12 +54,15 @@ copy it first, then fill it with verified evidence.
 
 Save to `docs/modules/{module}/spec.md`. Create the directory if it doesn't exist.
 
-**After updating a spec,** regenerate `docs/dependency-graph.md` if Depends On entries changed. Check `docs/flows.md` for flows involving this module. If endpoint auth logic changed, update `docs/permissions.md`.
+**After updating a spec,** regenerate the reverse dependency map
+(`docs/dependency-graph.md`) if Depends On entries changed. Check
+`docs/flows.md` for flows involving this module and update if transaction
+boundaries or failure modes changed. If endpoint auth logic changed,
+update `docs/permissions.md`.
 
 ## After Writing
 
 Run `@audit-codebase` against the spec to verify:
-
 1. Every FK dependency has a Depends On entry
 2. Every Scope Includes item has matching content
 3. Business rules cite actual file paths
@@ -74,19 +77,19 @@ What counts as "documented contract":
 - A row in the State Machine table.
 - An enum literal listed under Entities.
 - A bullet under Business Rules with `[Verified: ...]`.
+- A `created_via` / `source` / `status` enum value.
 - A side effect listed under Side Effects (email, webhook, SSE event).
 - A row in the API Surface table.
-- A Tests entry describing handler/service coverage for a module endpoint.
 
-If the spec doesn't mention the thing you changed, update the **Tests** section when handler or service test files change — `check_spec_drift.sh` flags any handler/service edit without a matching spec touch.
+If the spec doesn't mention the thing you changed, no sync needed. If it does, the spec change goes in the same commit as the code change.
 
-To verify before committing: `scripts/check_spec_drift.sh <base-ref>`. If the change legitimately does not affect module behavior, include `[skip-spec(<module>): <one-line reason>]` in the commit message, or `[skip-spec: <reason>]` to skip all modules. See `ci-workflow` "Spec-Drift Gate".
+To verify before opening a PR: `scripts/check_spec_drift.sh`. The script flags handler/service files changed without a matching spec change. If the drift is intentional (refactor, rename, no behavior change), include `[skip-spec(<module>): <one-line reason>]` in any commit message in the range, or `[skip-spec: <reason>]` to skip all modules. See `ci-workflow` "Spec-Drift Gate" for the full mapping and CI wiring.
 
 ## Anti-Rationalization
 
 | Excuse | Counter |
 |---|---|
-| "I'll update the spec in a follow-up doc commit" | CI `spec-drift` job fails the PR. Sync in the same commit costs 30 seconds. |
-| "The spec is auto-generated from code" | It isn't. Specs are hand-written narrative + `[Verified:]` annotations. |
-| "The change is too small to matter to the spec" | Handler/service file changes always require a spec touch or `[skip-spec(...)]` — the drift script is path-based, not semantic. |
-| "Someone will catch it in audit" | They will — that's the CI failure you're trying to avoid. |
+| "I'll update the spec in a follow-up doc commit" | Spec-drift follow-ups produced `2b6568e`, `9294451`, `c9ba50d`, `a4e9405` — four separate commits that should have been zero. Sync in the same commit costs 30 seconds. |
+| "The spec is auto-generated from code" | It isn't. Specs in this repo are hand-written narrative + `[Verified:]` annotations. They don't auto-update. |
+| "The change is too small to matter to the spec" | If it's small enough that the spec doesn't need updating, the spec already covers it. If the spec is silent on the thing you changed, the spec is now wrong. |
+| "Someone will catch it in audit" | They will. That's the cleanup commit you're trying to avoid. |

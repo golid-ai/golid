@@ -35,6 +35,7 @@ shell snippet.
 - Starting or debugging local services.
 - Running tests, builds, migrations, or seed commands.
 - Inspecting GCP logs, secrets, deploy status, or storage.
+- Running webhook or external API test commands.
 - Checking what needs to be pushed.
 - Validating generated contracts such as `backend/openapi.yaml`.
 
@@ -43,7 +44,7 @@ shell snippet.
 | Do Not Use | Use Instead | Why |
 |---|---|---|
 | `python` | `python3` | The dev container does not provide `python`; repeated probes waste time. |
-| `grep`, `find`, `cat`, `head`, `tail` | Cursor tools: `rg`, `Glob`, `Read` | Tooling rules already provide safer, faster search/read paths. |
+| `grep`, `find`, `cat`, `head`, `tail` | Cursor tools: `rg`, `Glob`, `ReadFile` | Tooling rules already provide safer, faster search/read paths. |
 | `npx --yes @apidevtools/swagger-cli ...` | `npm run generate:types` from `frontend/`, or a repo-local parser if type generation is too heavy | `npx` can fail in Cursor's server path; generated API types are the contract smoke test this repo already uses. |
 | `go test -tags=integration ...` without checking env | Untagged `go test`, or `go test -tags=integration <pkg> -run '^$'` for compile-only, unless `TEST_DATABASE_URL` is confirmed safe | Integration tests can wipe the dev DB. |
 | `git add -A` | Stage explicit files | Avoid sweeping unrelated user changes into commits. |

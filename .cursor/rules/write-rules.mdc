@@ -97,6 +97,6 @@ the rule covers two concerns and should be split.
 
 ## Rule Health
 
-Run `scripts/check_rule_health.sh` quarterly, or whenever any rule crosses 150 lines.
-See also `docs/rules-health.md`. The audit is pruning-oriented: prefer deleting,
-moving, or narrowing guidance before adding new rules.
+Run `docs/rules-health.md` quarterly, or whenever any rule crosses 150 lines.
+The audit is pruning-oriented: prefer deleting, moving, or narrowing guidance
+before adding new rules.

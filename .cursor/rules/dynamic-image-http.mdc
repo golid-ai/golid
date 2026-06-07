@@ -1,0 +1,96 @@
+---
+description: Dynamic image HTTP posture — cache headers, render budget, max bytes for OG/badge/PDF endpoints; use when adding any backend endpoint that returns dynamically rendered image bytes
+alwaysApply: false
+---
+
+# Dynamic Image HTTP
+
+> **Thesis:** HTTP-facing dynamic image endpoints need explicit cache
+> posture, render budgets, and byte caps so clients/CDNs behave
+> predictably without unbounded work or stale conditional-GET
+> surprises.
+
+## Rule 3: Cache headers per response
+
+Different paths emit different cache headers. **Never use the same
+Cache-Control for all responses** — it creates cache oracles for
+disabled or missing resources.
+
+| Response | Cache-Control |
+|---|---|
+| `200 image/png` (success) | `public, max-age=300, stale-while-revalidate=3600` |
+| `304 Not Modified` (ETag match) | inherits success headers |
+| `404 Not Found` (any miss case) | `no-store` |
+| `500 Internal Server Error` | `no-store` |
+
+The miss-case `no-store` is **critical for privacy** when the
+endpoint resolves auth/visibility state — a `max-age` 404 would
+let an attacker confirm a slug's existence via response time after
+the cache expires.
+
+Also set `X-Content-Type-Options: nosniff` on success responses so
+clients don't sniff the bytes as something other than PNG.
+
+## Rule 4: Per-request render budget
+
+Image rendering is CPU-bound and unbounded by default (a huge name
++ long skills + many fields can take seconds). Always wrap the
+render in a `context.WithTimeout`.
+
+```go
+const RenderBudget = 750 * time.Millisecond
+
+func Handler(c echo.Context) error {
+    ctx, cancel := context.WithTimeout(c.Request().Context(), RenderBudget)
+    defer cancel()
+    img, err := RenderImage(ctx, profile)
+    // ...
+}
+
+func RenderImage(ctx context.Context, profile *Profile) (*Image, error) {
+    // Check ctx.Err() before each expensive step (gradient, text, encode)
+    if err := ctx.Err(); err != nil { return nil, err }
+    drawGradient(img)
+    drawText(...)
+    encodePNG(img)
+    return result, nil
+}
+```
+
+A render that exceeds the budget returns 500 with `no-store` so a
+transient slow render doesn't poison the cache.
+
+## Rule 5: Max encoded bytes ceiling
+
+Define an explicit `MaxBytes` constant and reject renders that
+exceed it. Unfurlers have their own caps (Slack 5MB, LinkedIn 5MB,
+Twitter 5MB, Facebook 8MB) but you want to fail fast on a runaway
+render before you hit the wire.
+
+```go
+const PublicProfileOGImageMaxBytes = 2 * 1024 * 1024  // 2MB at 2x render
+
+// After png.Encode:
+if buf.Len() > PublicProfileOGImageMaxBytes {
+    return nil, fmt.Errorf("og image too large: %d bytes", buf.Len())
+}
+```
+
+## Reference implementations
+
+When adding a dynamic image endpoint to Golid, follow this rule's patterns
+deterministically (renderer version constant, ETag mixing, HEAD parity, render
+budget, max bytes). Wire the handler in `internal/wire/routes.go` and exclude
+the route from gzip/timeout middleware if cache-sensitive.
+
+## Reference docs
+
+- `.cursor/rules/dynamic-image-endpoints.mdc` — pure renderer + ETag versioning
+- `docs/patterns/` — add a 1-pager when the first Golid dynamic image endpoint ships
+- `iteration-surface` — build a preview harness before iterating on visual output
+
+## Related Rules
+
+- Pure renderer + ETag versioning — see `dynamic-image-endpoints`.
+- Iteration surface for slow visual feedback loops — see
+  `iteration-surface`.

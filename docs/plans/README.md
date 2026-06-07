@@ -50,7 +50,7 @@ Eval prompts: `docs/routing-eval.md`.
 
 ## Iteration model (how we run plans)
 
-This matches the uflex dogfood loop, scaled for a solo OSS maintainer:
+This matches the Golid factory loop, scaled for a solo OSS maintainer:
 
 ```
 1. Plan     → thesis, non-goals, slices, risks (plan-feature / planning-standards)

@@ -1,143 +1,12 @@
 ---
-description: Patterns for SolidJS route pages — data fetching, state, modals, auth
+description: SolidJS route UI — Switch/Match, modals, auth gates; never nested Show or early returns
 globs: frontend/src/routes/**/*.tsx
 alwaysApply: false
 ---
 
 # SolidJS Page Patterns
 
-> **Thesis:** Pages fetch data on mount, guard against stale async with alive checks, and use flat Switch/Match for content states — never nested Show.
-
-**Reference files:** `dashboard/index.tsx` and `settings/index.tsx` (settings tabs are extracted to `settings/_components/`).
-
-**Before modifying a module's routes,** read `docs/modules/{module}/spec.md`
-for frontend components, data fetching patterns, and modal state management.
-
-## Data Fetching
-
-**Always use `onMount` + `createSignal` + `alive` guard + `batch`.** This is the established pattern across all pages. Do not use `createResource` — it causes orphaned computation warnings on route transitions and triggers route-level Suspense when inside conditional components.
-
-> `createAsync` + `query` from `@solidjs/router` is the official SolidJS recommendation going forward (Solid 2.0). Not yet adopted in this project — use the signals pattern for consistency.
-
-```tsx
-// STANDARD — used on all pages
-const [data, setData] = createSignal<MyType[]>([]);
-const [loading, setLoading] = createSignal(true);
-const [error, setError] = createSignal("");
-
-let alive = true;
-onCleanup(() => {
-  alive = false;
-});
-
-const fetchData = async () => {
-  setLoading(true);
-  setError("");
-  try {
-    const result = await myApi.list();
-    if (!alive) return;
-    batch(() => {
-      setData(result);
-      setLoading(false);
-    });
-  } catch (err) {
-    if (!alive) return;
-    batch(() => {
-      setError(getErrorMessage(err, "Failed to load"));
-      setLoading(false);
-    });
-  }
-};
-
-onMount(() => {
-  fetchData();
-});
-```
-
-## Async Data Pattern (batch + defer + onMount)
-
-Three rules that MUST be used together for any page that fetches data:
-
-**1. `batch()` signal updates** — wrap `setData` + `setLoading(false)` in `batch()` so they update atomically. Without this, nested reactive scopes resolve in intermediate states during route transitions, creating computations outside the reactive root.
-
-**2. `onMount` for initial fetch** — never rely on `createEffect` for the first fetch.
-
-**3. `defer: true` on `createEffect(on(...))` for reactive refetches** — prevents the effect from firing synchronously during mount (which overlaps with route transitions).
-
-**Exception: Auth guards** use `on()` without `defer` — they must fire synchronously to prevent flash of unauthorized content. SSR middleware handles the server-side redirect; the client-side effect is a safety net for SPA navigation. See `routes/(private).tsx`.
-
-```tsx
-import { batch, onMount, createEffect, on } from "solid-js";
-
-const fetchData = async () => {
-  setLoading(true);
-  setError("");
-  try {
-    const result = await api.list({ page: page() });
-    if (!alive) return;
-    batch(() => {
-      setData(result);
-      setLoading(false);
-    });
-  } catch (err) {
-    if (!alive) return;
-    batch(() => {
-      setError(getErrorMessage(err, "Failed to load"));
-      setLoading(false);
-    });
-  }
-};
-
-onMount(() => {
-  fetchData();
-});
-createEffect(
-  on(
-    () => [filter(), page()] as const,
-    () => {
-      fetchData();
-    },
-    { defer: true },
-  ),
-);
-```
-
-## Stale Responses From Rapid Param Changes
-
-`alive` handles unmount. It does not handle "same component, new params" while
-an earlier request is still in flight. Any page that fetches from `useParams()`
-needs a latest-request guard.
-
-```tsx
-let alive = true;
-let loadRequestID = 0;
-onCleanup(() => { alive = false; });
-
-async function loadDetail(id = params.id) {
-  const requestID = ++loadRequestID;
-  const detail = await api.get(id);
-  if (!alive || requestID !== loadRequestID) return;
-  setDetail(detail);
-}
-
-onMount(() => void loadDetail(params.id));
-createEffect(on(() => params.id, (id) => void loadDetail(id), { defer: true }));
-```
-
-## Alive Guard
-
-Every component with async operations needs the cleanup guard:
-
-```tsx
-let alive = true;
-onCleanup(() => {
-  alive = false;
-});
-```
-
-Check `if (!alive) return;` before every signal setter after an `await`.
-
-- **NEVER return from `onMount` or `createEffect`** — SolidJS silently ignores return values. The React pattern `onMount(() => { ...; return () => cleanup() })` compiles but the cleanup never runs. Always use `onCleanup(() => cleanup())` inside the body.
+> **Thesis:** Route UI uses flat `Switch/Match`, signal modals, and auth gates — never nested Show or early returns.
 
 ## Signal-Driven Modals
 
@@ -145,6 +14,8 @@ Detail views within list pages use a signal, not a sub-route:
 
 ```tsx
 const [activeItem, setActiveItem] = createSignal<Item | null>(null);
+// Open: setActiveItem(item)
+// Close: setActiveItem(null)
 
 <Show when={activeItem()}>
   {(item) => <DetailModal item={item()} onClose={() => setActiveItem(null)} />}
@@ -153,7 +24,22 @@ const [activeItem, setActiveItem] = createSignal<Item | null>(null);
 
 ## Destructive Actions
 
-Never `window.confirm()`. Always use `DestructiveModal`.
+Never `window.confirm()`. Always use `DestructiveModal`:
+
+```tsx
+const [deleteTarget, setDeleteTarget] = createSignal(false);
+// ...
+<DestructiveModal
+  open={deleteTarget()}
+  onOpenChange={(open) => {
+    if (!open) setDeleteTarget(false);
+  }}
+  onConfirm={handleDelete}
+  title="Delete item?"
+  message="This action cannot be undone."
+  confirmText="Delete"
+/>;
+```
 
 ## Page Titles
 
@@ -163,24 +49,13 @@ Never `window.confirm()`. Always use `DestructiveModal`.
 // BAD — reactive ternary inside <Title> leaks during route transition
 <Title>{userType() === "admin" ? "Manage Items" : "Items"} | My App</Title>
 
-// GOOD — pre-compute as a memo, pass resolved string
+// GOOD — pre-compute as a memo, pass resolved string (static strings are fine when no reactive expression is needed)
 const pageTitle = createMemo(() =>
   `${userType() === "admin" ? "Manage Items" : "Items"} | My App`
 );
+// ...
 <Title>{pageTitle()}</Title>
-
-// ALSO GOOD — static string (no reactive expression)
-<Title>Dashboard | My App</Title>
 ```
-
-## SSR Safety (CRITICAL)
-
-SolidStart renders components on the server during SSR. Any access to browser APIs crashes the production build and serves blank pages.
-
-- **Guard browser APIs** with `if (typeof window !== "undefined")` or use them only inside `onMount`.
-- **Heavy browser-only components** (Three.js, WebRTC, charts, video) must be `lazy()` + `<Suspense>`.
-- **Never import browser-only libraries at module top level** — use dynamic `import()` inside `onMount`.
-- **`createEffect` runs on server** — don't access `window`/`document` in effects without a guard.
 
 ## Auth & Routing
 
@@ -208,17 +83,24 @@ return (
 
 ## Build Recovery
 
-Stale chunk recovery is owned by `frontend/src/app.tsx` and
-`frontend/src/lib/chunk-recovery.ts`. Do not add route-level ErrorBoundaries
-that swallow `Failed to fetch dynamically imported module` or related chunk
-errors. New boundaries must rethrow chunk errors so the app shell can cache-bust
-and reload the current build.
+Stale chunk recovery is owned by `frontend/src/app.tsx` and `frontend/src/lib/chunk-recovery.ts`. Do not add route-level ErrorBoundaries that swallow `Failed to fetch dynamically imported module` or related chunk errors. New boundaries must rethrow chunk errors so the app shell can cache-bust and reload the current build.
 
-## Content States: Switch/Match, NOT nested Show
+## Content States
 
-**NEVER nest `<Show>` for loading/error/empty/data states.** Nested `<Show>` creates stacked reactive scopes that leak computations during route transitions.
+**NEVER nest `<Show>` for loading/error/empty/data states.** Nested `<Show>` creates stacked reactive scopes that leak computations during route transitions ("computations created outside createRoot" warning).
 
 ```tsx
+// BAD — 4 nested reactive scopes, leaks on route transition
+<Show when={!loading()} fallback={<Spinner />}>
+  <Show when={error()}><ErrorCard /></Show>
+  <Show when={!error() && items().length > 0} fallback={
+    <Show when={!error()}><EmptyState /></Show>
+  }>
+    <For each={items()}>{(item) => <Card />}</For>
+  </Show>
+</Show>
+
+// GOOD — flat, one active scope at a time
 <Switch>
   <Match when={loading()}><Spinner /></Match>
   <Match when={error()}><ErrorCard /></Match>
@@ -229,49 +111,13 @@ and reload the current build.
 </Switch>
 ```
 
-Import SolidJS `Switch` from `"solid-js"`, not the component library toggle. If both are needed, alias the component import (e.g., `Switch as ToggleSwitch`).
+Import SolidJS `Switch, Match` from `"solid-js"` — not the component-library toggle; alias if both needed (e.g. `Switch as ToggleSwitch`). Reference: Dashboard and Settings pages use flat `Switch/Match` for content states.
 
-## List Page Structure
+## Layout and Components
 
-1. Header (title + subtitle + primary action button)
-2. Summary bar (optional — stat cards)
-3. Filter tabs (status-based, using `createSignal`)
-4. Content (`Switch/Match` for loading/error/empty/data states)
-5. Empty states (contextual: "no items yet" vs "no items matching filter")
-6. Pagination (if applicable)
-
-## Consistent Styling
-
-- Section cards: follow the `Section` component pattern from `settings/index.tsx`
-- Status/priority chips: use `<Chip variant="..." size="xs">`
-- Page container: `p-6 sm:p-10 max-w-[1400px] mx-auto w-full`
-- Headers: `text-3xl font-bold font-montserrat text-foreground`
-
-## Imports and Components
-
-Use the component barrel: `import { Button, Chip, Icon, Card, Modal, DestructiveModal, Select, SelectItem } from "~/components"`
-
-**Never use raw HTML elements when a component exists.** Check `frontend/src/components/index.ts` for available exports.
-
-## Avatars and Logos
-
-Use the `Avatar` component from `~/components/atoms/Avatar`. Pass `src`, `alt`, and `size`.
-
-## Modal Content
-
-The global `Modal` component has `max-h-[90vh] overflow-y-auto`. For modals with embedded content (iframes, long forms):
-
-- **Iframe modals:** Set explicit height with `calc(80vh - 160px)` and `max-height: 700px`.
-- **Form modals:** Content scrolls automatically within the 90vh cap.
-- **Never use `centered` prop** for tall modals — it can push content off-screen.
-
-## Page Container Width
-
-All private route pages use `max-w-[1400px] mx-auto` for the main container. Settings uses `max-w-3xl`.
+Keep route files focused on behavior. Layout/styling cookbook: `docs/patterns/solidjs/1-Page.md` ("Golid route patterns"). Component selection, barrel exports, and raw-HTML exceptions: `frontend-components`.
 
 ## Related Rules
 
-- For files over 600 lines, see `refactor-large-files` rule.
-- For form submission and error display patterns, see `frontend-forms` rule.
-- For component selection and raw-HTML exceptions, see `frontend-components`.
-- Layout cookbook details: `docs/patterns/solidjs/1-Page.md`
+- Data fetching — see `solidjs-data-fetching`. Files over 600 lines — see `refactor-large-files`.
+- Form submission and error display — see `frontend-forms`. Component selection — see `frontend-components`.
