@@ -1,0 +1,123 @@
+---
+description: Git commit and branch conventions
+alwaysApply: true
+---
+
+# Git Commits
+
+> **Thesis:** Atomic commits with consistent prefixes make history scannable,
+> bisectable, and reviewable. One logical change per commit, imperative mood,
+> body explains "why" not "what".
+
+## Commit Message Format
+
+```
+type: short description (imperative, lowercase after type)
+
+Optional body explaining the "why" — not the "what".
+Keep to 1-3 sentences. Reference specific files or functions
+only when it adds clarity.
+```
+
+## Types
+
+| Type | When |
+|---|---|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `refactor` | Code restructure with no behavior change |
+| `perf` | Performance improvement |
+| `docs` | Documentation only |
+| `test` | Adding or updating tests |
+| `chore` | Deps, config, CI, dead code removal |
+| `style` | Formatting, whitespace, CSS-only changes |
+
+## Rules
+
+- First line under 72 characters
+- Imperative mood: "add", "fix", "remove" — not "added", "fixes", "removing"
+- No period at end of first line
+- Body separated from title by blank line
+- One logical change per commit — don't bundle unrelated changes
+- When `scripts/check_spec_drift.sh` exists (post-v0.3.0 Phase E), run it before commits touching module-owned files.
+- Use HEREDOC for multi-line: `git commit -m "$(cat <<'EOF' ... EOF)"`
+- Do NOT commit `.env`, credentials, or secret files
+- Do NOT amend commits that have been pushed
+
+## Parallel Shared-File Exception
+
+The "one logical change" rule has one narrow exception: cross-cutting touches
+produced by parallel subagents working on shared files. See `parallel-subagents`
+before using this exception.
+
+If you're writing one, name it explicitly:
+`chore: sweep-up shared-file edits from <batch-name>`. The commit body must
+map each edit to its source feature or subagent.
+
+## Change Sizing
+
+Aim for ~100 lines of diff per logical commit. Reviewable in one sitting, bisects to a single intent. The line count is a guideline, not a hard cap — but if you're past 300 lines the commit is almost certainly bundling.
+
+Heuristics for "this should be N commits":
+
+- The commit body wants sub-headings (`### Backend`, `### Frontend`, `### Tests`).
+- The diff touches three or more unrelated subsystems.
+- The message uses "and" between non-trivial verbs ("add X **and** refactor Y **and** fix Z").
+- A future bisect would want to land on a finer-grained commit ("which of these three things broke auth?").
+
+Example of the failure mode: one `chore:` commit bundling JWT middleware, login form validation, and a CI workflow update — three independent changes that should be three commits. A body with `### Backend`, `### Frontend`, and `### CI` sub-headings is the tell.
+
+When in doubt: smaller. Squashing later is trivial; splitting later requires `git rebase -i` and is error-prone.
+
+## Anti-Rationalization
+
+| Excuse | Counter |
+|---|---|
+| "These changes are related, one commit is fine" | "Related" usually means "I noticed both at the same time", not "they fail/pass as a unit". If they could be reverted independently, they're independent. |
+| "Splitting takes too long" | Stage hunks (`git add -p`). 30 seconds per split. The bisect savings on a future bug pay it back instantly. |
+| "It's all part of the same card/PR" | Cards group commits for review; they don't dictate commit boundaries. A 5-commit PR is fine. |
+| "I'll squash before merge" | Squashing destroys exactly the granularity bisect needs. We don't squash on merge — keep commits atomic from the start. |
+| "It's just a chore commit, doesn't matter" | Chore commits that bundle unrelated cleanup bisect-block real bugs the most. Split them. |
+| "It's a sweep-up from parallel subagents, the rule allows it" | Only if it's shared-file edits and the body maps each edit to its source feature. If you're sweeping up bug fixes or unrelated chores, the exception doesn't apply — split them. |
+
+## Branch Naming
+
+```
+type/short-description
+```
+
+Use the same type prefixes as commits: `feat/jwt-auth`, `fix/session-expiry`,
+`chore/upgrade-deps`, `docs/getting-started`. Keep descriptions to 2-4 words,
+hyphen-separated.
+
+## Examples
+
+**Good — single intent:**
+
+```
+feat: add refresh token rotation on /auth/refresh
+
+Atomically revokes the old refresh token and issues a new pair so
+concurrent refresh attempts can't race and reuse the same session.
+```
+
+**Good — chore with clear scope:**
+
+```
+chore: pin postgres image to postgres:16-alpine in docker-compose
+```
+
+**Bad — bundled unrelated changes:**
+
+```
+feat: add login page and update CI and fix health check
+
+### Backend
+- JWT validation middleware
+### Frontend
+- login form with field errors
+### CI
+- add integration test job
+```
+
+Should be three commits: backend auth middleware, frontend login, CI job.

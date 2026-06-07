@@ -59,8 +59,8 @@ Workflow rules use verb phrases: `plan-feature`, `document-module`, `audit-bugs`
 - **Glob-triggered** for domain rules (fires when editing matching files)
 - **Description-triggered** for workflow rules (fires when the task matches)
 - **alwaysApply** only for universal guardrails — every line costs context on
-  every interaction, so this is reserved for codebase-standards and
-  parallel-subagents
+  every interaction, so this is reserved for the always-on trio:
+  `codebase-standards`, `parallel-subagents`, and `git-commits`
 
 ## Size
 
