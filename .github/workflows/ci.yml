@@ -94,12 +94,16 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - run: |
+      - name: Check for spec drift
+        run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             scripts/check_spec_drift.sh origin/${{ github.base_ref }}
           else
             scripts/check_spec_drift.sh HEAD~1
           fi
+
+      - name: Check citation freshness
+        run: scripts/check_citation_freshness.sh
 
   backend-unit:
     name: Backend Unit
