@@ -141,4 +141,157 @@ describe("MultiSelect", () => {
       expect(trigger).toHaveAttribute("aria-expanded", "false");
     });
   });
+
+  it("opens with Enter and ArrowUp focuses last option", async () => {
+    render(() => <MultiSelectHarness />);
+    const trigger = screen.getByRole("combobox");
+    trigger.focus();
+
+    await fireEvent.keyDown(trigger, { key: "Enter" });
+    await waitFor(() => {
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+    });
+
+    await fireEvent.keyDown(trigger, { key: "Escape" });
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+    });
+
+    await fireEvent.keyDown(trigger, { key: "ArrowUp" });
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Gamma" })).toHaveAttribute("tabindex", "0");
+    });
+  });
+
+  it("navigates options with ArrowDown and ArrowUp when open", async () => {
+    render(() => <MultiSelectHarness />);
+    const trigger = screen.getByRole("combobox");
+    await fireEvent.click(trigger);
+
+    await fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Alpha" })).toHaveAttribute("tabindex", "0");
+    });
+
+    await fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Beta" })).toHaveAttribute("tabindex", "0");
+    });
+
+    await fireEvent.keyDown(trigger, { key: "ArrowUp" });
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Alpha" })).toHaveAttribute("tabindex", "0");
+    });
+  });
+
+  it("jumps to first and last options with Home and End", async () => {
+    render(() => <MultiSelectHarness />);
+    const trigger = screen.getByRole("combobox");
+    await fireEvent.click(trigger);
+
+    await fireEvent.keyDown(trigger, { key: "End" });
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Gamma" })).toHaveAttribute("tabindex", "0");
+    });
+
+    await fireEvent.keyDown(trigger, { key: "Home" });
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Alpha" })).toHaveAttribute("tabindex", "0");
+    });
+  });
+
+  it("shows +N more chip when selections exceed maxChips", () => {
+    render(() => (
+      <MultiSelect value={["a", "b", "c", "d"]} maxChips={2} placeholder="Tags">
+        <MultiSelectItem value="a" label="A">
+          A
+        </MultiSelectItem>
+        <MultiSelectItem value="b" label="B">
+          B
+        </MultiSelectItem>
+        <MultiSelectItem value="c" label="C">
+          C
+        </MultiSelectItem>
+        <MultiSelectItem value="d" label="D">
+          D
+        </MultiSelectItem>
+      </MultiSelect>
+    ));
+
+    expect(screen.getByText("+2 more")).toBeInTheDocument();
+    expect(screen.getAllByText("A").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("B").length).toBeGreaterThan(0);
+  });
+
+  it("closes on outside mousedown", async () => {
+    render(() => (
+      <div>
+        <MultiSelectHarness />
+        <button type="button">Outside</button>
+      </div>
+    ));
+
+    const trigger = screen.getByRole("combobox");
+    await fireEvent.click(trigger);
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+    await fireEvent.mouseDown(screen.getByRole("button", { name: "Outside" }));
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+    });
+  });
+
+  it("opens upward when space below trigger is limited", async () => {
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+    HTMLElement.prototype.getBoundingClientRect = vi.fn(
+      () =>
+        ({
+          top: 720,
+          bottom: 760,
+          left: 0,
+          right: 200,
+          width: 200,
+          height: 40,
+          x: 0,
+          y: 720,
+          toJSON: () => ({}),
+        }) as DOMRect
+    );
+
+    render(() => <MultiSelectHarness />);
+    await fireEvent.click(screen.getByRole("combobox"));
+
+    const listbox = screen.getByRole("listbox");
+    expect(listbox.className).toContain("bottom-full");
+  });
+
+  it("renders size variants on trigger", () => {
+    const { container: sm } = render(() => (
+      <MultiSelect size="sm" placeholder="Small">
+        <MultiSelectItem value="a" label="A">
+          A
+        </MultiSelectItem>
+      </MultiSelect>
+    ));
+    expect(sm.querySelector("[role='combobox']")?.className).toContain("min-h-9");
+
+    const { container: lg } = render(() => (
+      <MultiSelect size="lg" placeholder="Large">
+        <MultiSelectItem value="a" label="A">
+          A
+        </MultiSelectItem>
+      </MultiSelect>
+    ));
+    expect(lg.querySelector("[role='combobox']")?.className).toContain("min-h-11");
+  });
+
+  it("selects option with Enter on item", async () => {
+    render(() => <MultiSelectHarness />);
+    await fireEvent.click(screen.getByRole("combobox"));
+    const alpha = screen.getByRole("option", { name: "Alpha" });
+    await fireEvent.keyDown(alpha, { key: "Enter" });
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-values")).toHaveTextContent("alpha");
+    });
+  });
 });

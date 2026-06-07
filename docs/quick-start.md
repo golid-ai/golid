@@ -100,8 +100,10 @@ All env vars are in `config/.env.local` (loaded automatically by the DevContaine
 ```bash
 # Backend (auto-started by DevContainer via Air)
 cd backend && go build ./...            # Build check
-cd backend && go test ./...             # Unit tests
-cd backend && go test -tags integration ./...  # Integration tests
+cd backend && go test ./...             # Unit tests (~351 cases)
+cd backend && go test -tags integration ./...  # Integration tests (needs TEST_DATABASE_URL)
+cd frontend && npm run test:coverage    # Vitest (~622 tests) + coverage floors
+cd frontend && npm run typecheck        # Required before push (CI enforces)
 
 # Frontend
 cd frontend && npm run dev              # Dev server (port 3000)

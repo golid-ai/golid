@@ -36,7 +36,7 @@
 | Email         | Mailgun (`IsConfigured()`)              | Job Queue      | asynq + Redis (goroutine fallback)    |
 | Observability | OpenTelemetry · Prometheus (opt-in)     | Feature Flags  | DB-backed with 30s cache              |
 | Hot Reload    | Air (Go) + Vite HMR                     | DevContainer   | One-click setup, zero config          |
-| Testing       | 831 tests (Go, Vitest, Playwright)      | AI Rules       | 38 Cursor rules (auto-activate)       |
+| Testing       | 993 tests (351 Go + 622 Vitest + 20 E2E) | AI Rules       | 38 Cursor rules (auto-activate)       |
 
 ---
 
@@ -119,7 +119,7 @@ golid/
 │   ├── plans/                   # Active feature plans
 │   ├── architecture.md          # Layers, auth, SSE, wire
 │   └── patterns/                # Stack quick references (Go, SolidJS, …)
-├── .cursor/rules/               # 37 AI coding rules
+├── .cursor/rules/               # 38 AI coding rules
 ├── config/                      # Environment files
 ├── scripts/                     # Deploy, drift checks, init-test-db, teardown
 └── infra/                       # Cloud Run, Cloud Build configs
@@ -223,6 +223,7 @@ The rename tool updates 20+ file categories (imports, Docker, CI, Cursor rules, 
 | Auth           | TOCTOU-safe refresh, selector/verifier                  | SSR redirects, reactive 401 logout           |
 | Linting        | golangci-lint (see `backend/.golangci.yml`)             | ESLint + `eslint-plugin-solid`               |
 | Testing        | Unit + integration (real DB), race tests                | Vitest 4 + axe-core + Playwright E2E         |
+| Coverage       | Codecov sharded backend/frontend flags                  | Vitest floors **75/54/78/75** (included files); recovery plan in `docs/plans/coverage-and-eslint.md` |
 | CI             | Path filters, spec-drift, rule-health, sharded coverage | lint, typecheck, build, audit (non-blocking) |
 
 ---
@@ -246,7 +247,7 @@ The rename tool updates 20+ file categories (imports, Docker, CI, Cursor rules, 
 | [Changelog](CHANGELOG.md)                           | Release history (0.3.0 breaking changes)                              |
 | [Full Index](docs/README.md)                        | Complete documentation map                                            |
 
-**Cursor rules:** 37 rules in `.cursor/rules/` — full index with thesis lines and globs in [cursor-rules.md](docs/cursor-rules.md). Examples: `go-service` (business logic), `go-handler` (HTTP + spec consumption), `solidjs-pages` (data fetching patterns).
+**Cursor rules:** 38 rules in `.cursor/rules/` — full index with thesis lines and globs in [cursor-rules.md](docs/cursor-rules.md). Examples: `go-service` (business logic), `go-handler` (HTTP + spec consumption), `solidjs-pages` (data fetching patterns), `plan-execution-loop` (implement → audit → fix per plan slice).
 
 ---
 

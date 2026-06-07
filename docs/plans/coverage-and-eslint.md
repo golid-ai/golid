@@ -1,13 +1,19 @@
 # Coverage Recovery + TypeScript-ESLint 8
 
-> **Status:** Ready (execution readiness ~93/100 after audit 2026-06-07)  
+> **Status:** B4 complete (local); **B3b pending** CI upload confirming project ≥79.5%  
 > **Risk tier:** T2 — toolchain and test expansion, no auth/schema/migration changes  
-> **Thesis:** Close the gap between honest Codecov reporting (~68% project) and
+> **Thesis:** Close the gap between honest Codecov reporting (~68% project at start) and
 > documented quality bars (~80%) by testing uncovered backend wiring/observability,
 > aligning Codecov paths with Vitest excludes, and upgrading `@typescript-eslint`
 > v8 (on existing ESLint 8) to clear dev-tooling audit noise.
 
-## Verified baseline (2026-06-07, branch `steve-dev`, commit `f0a1dc1`)
+## Verified baseline (2026-06-07, branch `steve-dev`)
+
+**Pre-B4d CI (commit `f5fcb34`):** project **78.68%**, frontend **77%**, backend **81.44%**, 4,720 tracked lines.
+
+**Post-B4d local (`npm run test:coverage`):** **622** Vitest tests; **91.54%** stmts / **74.12%** branches / **93.72%** lines (included files). **993** total tests (351 Go + 622 Vitest + 20 E2E).
+
+## Original baseline (2026-06-07, commit `f0a1dc1`)
 
 Record new numbers in **Progress** when re-running after slices land.
 
@@ -33,29 +39,32 @@ excluded paths that never appear in `lcov.info` as covered → drags flag averag
 integration shards (`ci.yml:208-215`) add coverage unit tests never hit. B1 targets must
 use **merged CI profile**, not `go test ./...` alone.
 
-### Stale documentation (fixed in A3)
+### Stale documentation (fixed in A3; counts refreshed post-B4d)
 
 | Doc | Was | Fixed |
 |-----|-----|-------|
-| `docs/decisions/002-deferred-capabilities.md` | "82%+ test coverage" | `784 tests; Codecov ~68% project (0.3 baseline)` |
-| `docs/patterns/testing/1-Page.md` | 80/75/80% pyramid + "Coverage > 80%" DoD | Vitest floors 75/54/78/75 + plan link |
+| `docs/decisions/002-deferred-capabilities.md` | "82%+ test coverage" | `993 tests; Codecov ~78% recovering toward 80%+` |
+| `docs/patterns/testing/1-Page.md` | 80/75/80% pyramid + "Coverage > 80%" DoD | Vitest floors 75/54/78/75 + plan link + post-B4d local % |
+| `README.md` / `CHANGELOG.md` | 831 tests | **993** tests (351 Go + 622 Vitest + 20 E2E) |
+| `write-tests-frontend.mdc` | 68/47/73/68 thresholds | 75/54/78/75 + plan link |
 
-Not stale: `README.md` (784 tests, no % claim), `vitest.config.ts` (matches measured floors).
-
-### Reproducible output (`f0a1dc1`, local)
+### Reproducible output (post-B4d, local)
 
 ```text
 # frontend — npm run test:coverage (tail)
-Statements   : 73.83% ( 2802/3795 )
-Branches     : 52.03% ( 919/1766 )
-Functions    : 78.11% ( 1017/1302 )
-Lines        : 73.68% ( 2078/2820 )
+Statements   : 91.54% ( 3474/3795 )
+Branches     : 74.12% ( 1309/1766 )
+Functions    : 91.47% ( 1191/1302 )
+Lines        : 93.72% ( 2643/2820 )
+Tests        : 622 passed
 
-# backend — CI unit merge only (no integration DB locally)
-total: (statements) 56.1%
+# totals
+Go unit      : 351 test cases (go test ./... -json RUN events)
+Playwright   : 20 E2E (frontend/tests/e2e/)
+Combined     : 993
 
 # frontend — npm audit --audit-level=high
-11 vulnerabilities (4 moderate, 7 high)
+0 high (h3@1.15.9 override)
 ```
 
 ## Context
@@ -82,11 +91,11 @@ Dependabot PR #14 failed on TS-eslint 8 because `eslint-plugin-solid@0.13` pins
 
 | Metric | Baseline | Target | Gate |
 |--------|----------|--------|------|
-| Codecov **project** | 73.17% (CI `steve-dev`) | **≥80%** (stretch **82%**) | `codecov.yml` `target: 80%` in B3b after B4 |
+| Codecov **project** | **78.68%** (CI pre-B4d) → **~80%** (expected post-B4d) | **≥80%** (stretch **82%**) | `codecov.yml` `target: 80%` in **B3b** after CI upload |
 | Codecov **backend** flag | **81.44%** (CI) | **≥80%** | **Met** — hold, don't chase |
-| Codecov **frontend** flag | **68.11%** (CI) | **≥79%** (stretch **82%**) | B4 component branch tests |
-| Vitest included statements | 73.83% | **≥75%** | Optional raise in B3 |
-| Vitest branches | 55.43% | **≥55%** | Primary frontend quality lever |
+| Codecov **frontend** flag | **77%** (CI pre-B4d) | **≥79%** (stretch **82%**) | **B4 done** — await upload |
+| Vitest included statements | **91.54%** (local post-B4d) | **≥75%** | **Met** (B3 floors) |
+| Vitest branches | **74.12%** (local post-B4d) | **≥55%** | **Met** |
 | `npm run lint` | pass | pass | TS-eslint 8 + plugin-solid 0.14 |
 | npm audit high (informational) | 7 | **≤2** | TS-eslint chain cleared; h3 may remain |
 | Stale coverage docs | 2 files | 0 | ADR 002 + testing 1-pager |
@@ -487,26 +496,27 @@ B0 → A1 → A2 → B1 ─┐
 | B1 | Done | CI backend flag **81.44%** ✓. Wire **100%**, handler error branches, `InitTracer` **90.5%** |
 | B2 | Done | Vitest included: **76.57%** stmts / **55.43%** branches (was 74.28% / 52.94%); branch tests in `validation.ts` (`validate`, `getFirstError`), `auth.ts`/`auth.initialize.test.ts` (error paths, initialize, session-expired), `api.ts` (401 refresh, `getErrorMessage`, parseError), `settings.test.tsx` (explicit expects, save retry/success), `format.ts`, `ui.ts`, `use-breakpoint.ts`; Vitest branches gate **≥55% met** |
 | B3 | Done (Vitest floors) | Thresholds **75 / 54 / 78 / 75**. Codecov `target: auto` — deferred to **B3b** after B4 |
-| B4 | In progress | CI baseline: project **73.17%**, frontend **68.11%**, backend **81.44%**. Target: project **80%** commit / **82%** stretch |
+| B4 | Done (local) | CI pre-B4d: project **78.68%**, frontend **77%**, backend **81.44%**. Local post-B4d: Vitest **91.54%** stmts / **74.12%** branches / **93.72%** lines; **622** Vitest tests (**993** total). Await CI upload for Codecov project gate |
 | B4a | Done | `Sidebar.test.tsx` + `Navbar.auth.test.tsx`: mobile overlay/close, collapsed opacity, non-admin hides Components, nested `isActive`, `displayName` fallback, auth drawer branches. **+16 tests** (522 total). Vitest **77.65%** stmts / **56.62%** branches; `Sidebar.tsx` **95.87%** / **93.87%**; `Navbar.tsx` **78.12%** / **66.66%** |
 | B4b | Done | `Menu.test.tsx`: Submenu/SubmenuTrigger/SubmenuContent, keyboard (ArrowDown/Up/Escape/ArrowLeft), item onClick, SubmenuTrigger `aria-expanded` toggle, outside mousedown close, `aria-controls` open-state link. **+15 tests** (554 total). Vitest **85.84%** stmts / **65.91%** branches; `Menu.tsx` **86.62%** / **57.55%** |
 | B4c | Done | `Select.test.tsx` + `MultiSelect.test.tsx` + `Combobox.test.tsx`: select/deselect, chip clear, keyboard nav (Arrow/Enter/Escape/Home/End), disabled trigger, filter/typeahead, empty filter. **+17 tests** (554 total). Vitest **85.53%** stmts / **65.4%** branches; `Select.tsx` **88.48%** / **63.88%**; `MultiSelect.tsx` **84.97%** / **61.2%**; `Combobox.tsx` **83.72%** / **58.16%** |
-| B3b | Pending | `codecov.yml` `target: 80%` after B4 upload ≥79.5% |
+| B4d | Done | Stretch offenders: new `LoadingOverlay.test.tsx`; extended `Tooltip`, `Textarea`, `RadioGroup`, `Tabs`, `Menu`, `MultiSelect`, `sse.test.ts`. **+68 tests** (622 Vitest / 993 total). Offender lines (local): `LoadingOverlay` **100%**, `Textarea` **100%**, `RadioGroup` **100%**, `Tabs` **100%**, `Tooltip` **~94%**, `sse` **~94%**, `MultiSelect` **~95%**, `Menu` **~92%** |
+| B3b | Pending | `codecov.yml` `target: 80%` after CI upload confirms project ≥79.5% |
 
 ## Execution readiness audit (2026-06-07)
 
 | Dimension | Grade | Notes |
 |-----------|-------|-------|
-| Completeness | 92 | B0 harness, TEST_MIGRATIONS_PATH, wire sketch, B3 gate |
-| Accuracy | 93 | Codecov top-level `ignore`; B1 scope corrected |
+| Completeness | 95 | B0–B4d complete; B3b gated on CI upload |
+| Accuracy | 94 | Codecov scope reconciled; docs refreshed post-B4d |
 | Actionability | 91 | Copy-paste commands; per-slice acceptance |
-| Slice independence | 90 | B0 docs deduped → A3 only |
-| Verification | 92 | validate API + Codecov file tree |
-| **Overall** | **~93** | **GO** — start B0 |
+| Slice independence | 90 | B4a–d split validated |
+| Verification | 95 | 622 Vitest + typecheck pass; await Codecov upload |
+| **Overall** | **~94** | **B3b only** — lock `target: 80%` after CI ≥79.5% |
 
 ## Retro hook (fill when complete)
 
-One lesson for the next plan: _TBD after execution._
+One lesson for the next plan: _Vitest line % and Codecov headline % diverge when partial branches count as uncovered — test keyboard/viewport branches for Codecov lift, not just render paths._
 
 ## Related
 

@@ -99,7 +99,7 @@ function createUser(overrides = {}) {
 
 ## Coverage Targets
 
-Enforced floors match `frontend/vitest.config.ts` (included files only). Codecov project baseline ~68% — recovery tracked in [coverage-and-eslint plan](../../plans/coverage-and-eslint.md).
+Enforced floors match `frontend/vitest.config.ts` (included files only). After B4d (local): **~91%** statements / **~74%** branches / **~94%** lines on included files; Codecov project **~79%** (CI upload pending) — recovery tracked in [coverage-and-eslint plan](../../plans/coverage-and-eslint.md).
 
 | Metric | Vitest floor (included files) |
 |--------|-------------------------------|

@@ -85,7 +85,7 @@ we adopt wire/subpackages?"). Do not delete.
 
 ## Active plans
 
-- [coverage-and-eslint.md](coverage-and-eslint.md) — recover Codecov to 80%+ (B4 component tests), TS-eslint 8 done (post-0.3)
+- [coverage-and-eslint.md](coverage-and-eslint.md) — B0–B4d done locally (993 tests; Vitest **~91%** stmts on included files); **B3b** pending — lock Codecov `target: 80%` after CI confirms project ≥79.5%
 
 ## Example in this repo
 

@@ -79,13 +79,13 @@ Starter modules. Specs are the source of truth for implemented behavior; optiona
 
 ## Cursor Rules
 
-37 rules in `.cursor/rules/` that give the AI agent context about this codebase. Every rule opens with a thesis statement — one sentence stating what it enforces and why.
+38 rules in `.cursor/rules/` that give the AI agent context about this codebase. Every rule opens with a thesis statement — one sentence stating what it enforces and why.
 
 | Type | Count | Examples |
 |------|-------|---------|
 | Always active | 3 | `codebase-standards`, `git-commits`, `parallel-subagents` |
 | File-scoped (auto-activate via glob) | 24 | `go-service`, `go-handler`, `solidjs-pages`, `write-tests` |
-| Description-triggered (on-demand) | 10 | `plan-feature`, `slice-and-ship`, `audit-bugs`, `write-rules` |
+| Description-triggered (on-demand) | 11 | `plan-feature`, `slice-and-ship`, `plan-execution-loop`, `audit-bugs`, `write-rules` |
 
 **Full reference with thesis lines, globs, and design principles:** [Cursor Rules](cursor-rules.md)
 
