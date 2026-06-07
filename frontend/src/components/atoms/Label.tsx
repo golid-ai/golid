@@ -14,7 +14,18 @@ export interface LabelProps extends ParentProps<JSX.LabelHTMLAttributes<HTMLLabe
 // ============================================================================
 
 export const Label: Component<LabelProps> = (props) => {
-  const [local, rest] = splitProps(props, ["class", "children"]);
+  const [local, rest] = splitProps(props, ["class", "children", "onMouseDown"]);
+
+  const handleMouseDown: JSX.EventHandlerUnion<HTMLLabelElement, MouseEvent> = (e) => {
+    // Single-click focuses the linked control without placing a text caret in the label.
+    // Drag-to-select still works for copying label text when needed.
+    if (e.detail === 1) {
+      e.preventDefault();
+    }
+    if (typeof local.onMouseDown === "function") {
+      local.onMouseDown(e);
+    }
+  };
 
   return (
     <label
@@ -22,6 +33,7 @@ export const Label: Component<LabelProps> = (props) => {
         "text-sm font-medium text-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer",
         local.class
       )}
+      onMouseDown={handleMouseDown}
       {...rest}
     >
       {local.children}

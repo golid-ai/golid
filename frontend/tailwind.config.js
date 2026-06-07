@@ -45,10 +45,6 @@ const config = {
       xl: "1280px",
       "2xl": "1600px"
     },
-    container: {
-      center: true,
-      padding: "2rem"
-    },
     extend: {
       colors: {
         border: "hsl(var(--border) / <alpha-value>)",

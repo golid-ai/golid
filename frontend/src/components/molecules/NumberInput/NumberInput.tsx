@@ -124,7 +124,7 @@ export const NumberInput: Component<NumberInputProps> = (props) => {
 
       <div
         class={cn(
-          "flex items-center rounded-xs border bg-transparent transition-all overflow-hidden min-w-0",
+          "flex items-center rounded-sm border bg-transparent transition-all overflow-hidden min-w-0",
           "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background",
           local.error || local.errorMessage ? "border-danger" : "border-input hover:border-foreground/30",
           local.disabled && "opacity-50 cursor-not-allowed",

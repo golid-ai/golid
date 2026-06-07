@@ -96,9 +96,15 @@ function RootLayout(props: { children: JSX.Element }) {
     location.pathname;
     if (typeof window !== "undefined") {
       window.scrollTo(0, 0);
-      document.getElementById("main-content")?.focus();
     }
   });
+
+  const focusMainContent = (event: MouseEvent) => {
+    event.preventDefault();
+    const main = document.getElementById("main-content");
+    main?.focus();
+    main?.scrollIntoView();
+  };
 
   const canonicalPageUrl = createMemo(() => `${OG_SITE_BASE}${location.pathname}`);
 
@@ -158,7 +164,9 @@ function RootLayout(props: { children: JSX.Element }) {
       <Meta name="twitter:image" content={DEFAULT_OG_IMAGE_URL} />
 
       <div class="relative flex min-h-screen flex-col bg-background text-foreground overflow-x-hidden">
-        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <a href="#main-content" class="skip-link" onClick={focusMainContent}>
+          Skip to main content
+        </a>
 
         <Show when={import.meta.env.VITE_DEMO_MODE === "true"}>
           <div class="bg-primary text-primary-foreground text-center text-sm py-2 px-4 font-medium z-50">

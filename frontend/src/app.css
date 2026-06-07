@@ -6,7 +6,7 @@
 /* performance (no @import here).              */
 /* ============================================ */
 
-/* Import component-specific styles - MUST be before @tailwind for postcss-import */
+/* Import component-specific styles before Tailwind so base-layer rules apply correctly */
 @import './styles/components/index.css' layer(base);
 
 @import 'tailwindcss';
@@ -15,12 +15,9 @@
 @config '../tailwind.config.js';
 
 /*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
+  TW4 Preflight default border color is currentColor (was gray-200 in v3).
+  Use the design-system border token so bare border-* utilities match v3 intent.
+  See https://tailwindcss.com/docs/upgrade-guide#default-border-color
 */
 @layer base {
   *,
@@ -28,7 +25,7 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+    border-color: hsl(var(--border));
   }
 }
 
@@ -339,8 +336,16 @@
 }
 
 @layer base {
-	* {
-		@apply border-border;
+	/* TW4 preflight: buttons/links use default cursor — restore pointer (upgrade guide) */
+	button:not(:disabled),
+	[role="button"]:not([aria-disabled="true"]),
+	a[href] {
+		cursor: pointer;
+	}
+
+	button:disabled,
+	[role="button"][aria-disabled="true"] {
+		cursor: not-allowed;
 	}
 	html {
 		overflow-x: hidden;

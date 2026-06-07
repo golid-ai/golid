@@ -229,7 +229,7 @@ export const TimePicker: Component<TimePickerProps> = (props) => {
             onClick={toggle}
             disabled={props.disabled}
             class={cn(
-              "flex w-full items-center justify-between rounded-xs border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all tracking-tight",
+              "flex w-full items-center justify-between rounded-sm border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all tracking-tight",
               "hover:border-foreground/30 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
               sizeClasses[props.size || "default"],
@@ -254,7 +254,7 @@ export const TimePicker: Component<TimePickerProps> = (props) => {
       {/* Content - absolute positioning like Select/MultiSelect */}
       <div
         class={cn(
-          "absolute z-[60] p-5 w-[260px] rounded-xs border border-foreground/10 dark:border-white/10 bg-background dark:bg-card shadow-2xl",
+          "absolute z-[60] p-5 w-[260px] rounded-sm border border-foreground/10 dark:border-white/10 bg-background dark:bg-card shadow-2xl",
           direction() === "up" ? "bottom-full mb-2 origin-bottom" : "mt-2 origin-top",
           open() ? "animate-in fade-in-0 zoom-in-95" : "hidden"
         )}

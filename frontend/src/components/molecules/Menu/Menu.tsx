@@ -294,7 +294,7 @@ export function MenuContent(props: MenuContentProps) {
     <Show when={menu.open()}>
       <div
         class={cn(
-          "absolute z-[60] w-56 rounded-xs border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
+          "absolute z-[60] w-56 rounded-sm border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
           "bg-[#E8F0F4] dark:bg-[#1A2633]",
           "animate-in fade-in-0 zoom-in-95",
           positionClasses[activePosition()],
@@ -607,7 +607,7 @@ export function SubmenuContent(props: SubmenuContentProps) {
     <Show when={submenu.open()}>
       <div
         class={cn(
-          "absolute z-[65] w-56 rounded-xs border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
+          "absolute z-[65] w-56 rounded-sm border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
           "bg-[#E8F0F4] dark:bg-[#1A2633]",
           "animate-in fade-in-0 zoom-in-95",
           // Horizontal Positioning

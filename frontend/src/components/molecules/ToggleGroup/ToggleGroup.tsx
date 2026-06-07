@@ -105,7 +105,7 @@ export const ToggleGroup: Component<ToggleGroupProps> = (props) => {
     <ToggleGroupContext.Provider value={contextValue}>
       <div
         class={cn(
-          "inline-flex -space-x-px rounded-xs shadow-xs isolate overflow-x-auto max-w-full",
+          "inline-flex -space-x-px rounded-sm shadow-xs isolate overflow-x-auto max-w-full",
           props.class
         )}
         role="group"

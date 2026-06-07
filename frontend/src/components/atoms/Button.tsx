@@ -52,7 +52,7 @@ export const buttonVariants = tv({
     },
     rounded: {
       true: "rounded-full",
-      false: "rounded-xs",
+      false: "rounded-sm",
     },
     startIcon: {
       true: "",

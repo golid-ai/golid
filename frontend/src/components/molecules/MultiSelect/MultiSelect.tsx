@@ -271,7 +271,7 @@ export function MultiSelect<T extends string | number = string | number>(props: 
           onClick={toggle}
           onKeyDown={handleKeydown}
           class={cn(
-            "flex w-full items-center justify-between rounded-xs border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all",
+            "flex w-full items-center justify-between rounded-sm border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all",
             "hover:border-foreground/30 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             props.size === "sm" && "min-h-9 py-0.5",
@@ -299,7 +299,7 @@ export function MultiSelect<T extends string | number = string | number>(props: 
                       tabindex="-1"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={(e) => removeValue(e, itemValue)}
-                      class="flex items-center justify-center rounded-xs hover:bg-white/20 p-0.5 transition-colors"
+                      class="flex items-center justify-center rounded-sm hover:bg-white/20 p-0.5 transition-colors"
                     >
                       <Icon name="close" size={9} />
                     </button>
@@ -330,7 +330,7 @@ export function MultiSelect<T extends string | number = string | number>(props: 
         {/* Content - always render children for item registration, but only show visually when open */}
         <div
           class={cn(
-            "absolute z-[60] w-full rounded-xs border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 max-h-[244px] overflow-y-auto shadow-2xl",
+            "absolute z-[60] w-full rounded-sm border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 max-h-[244px] overflow-y-auto shadow-2xl",
             "bg-background/95 dark:bg-card/95",
             direction() === "up" ? "bottom-full mb-2 origin-bottom" : "mt-2 origin-top",
             open() ? "animate-in fade-in-0 zoom-in-95" : "hidden",
