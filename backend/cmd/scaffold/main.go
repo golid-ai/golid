@@ -55,12 +55,17 @@ func main() {
 	root := repoRoot()
 	writeTemplate(root+"backend/migrations/"+mod.MigrationNo+"_"+mod.Plural+".up.sql", migrationUp, mod)
 	writeTemplate(root+"backend/migrations/"+mod.MigrationNo+"_"+mod.Plural+".down.sql", migrationDown, mod)
-	writeTemplate(root+"backend/internal/service/"+mod.Singular+".go", serviceTemplate, mod)
+	serviceDir := root + "backend/internal/service/" + mod.Singular
+	if err := os.MkdirAll(serviceDir, 0o755); err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating directory %s: %v\n", serviceDir, err)
+		os.Exit(1)
+	}
+	writeTemplate(serviceDir+"/"+mod.Singular+".go", serviceTemplate, mod)
 	writeTemplate(root+"backend/internal/handler/"+mod.Singular+".go", handlerTemplate, mod)
 	writeTemplate(root+"backend/internal/handler/"+mod.Singular+"_test.go", handlerTestTemplate, mod)
 	appendInterface(root+"backend/internal/handler/interfaces.go", mod)
 
-	frontendDir := root + "frontend/src/routes/(private)/" + mod.Plural
+	frontendDir := root + "frontend/src/routes/(private)/" + toKebab(mod.Plural)
 	if err := os.MkdirAll(frontendDir, 0o755); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating directory %s: %v\n", frontendDir, err)
 		os.Exit(1)
@@ -182,43 +187,63 @@ func readModulePath() string {
 }
 
 func appendInterface(path string, mod Module) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading %s: %v\n", path, err)
+		os.Exit(1)
+	}
+	content := string(data)
+	importPath := mod.ModulePath + "/internal/service/" + mod.Singular
+	if !strings.Contains(content, importPath) {
+		importEnd := strings.Index(content, "\n)\n\ntype ")
+		if importEnd == -1 {
+			fmt.Fprintf(os.Stderr, "Error: could not find import block in %s\n", path)
+			os.Exit(1)
+		}
+		importLine := "\n\t\"" + importPath + "\""
+		content = content[:importEnd] + importLine + content[importEnd:]
+	}
+
 	t := template.Must(template.New("").Delims("[[", "]]").Parse(interfaceTemplate))
 	var buf strings.Builder
 	if err := t.Execute(&buf, mod); err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating interface: %v\n", err)
 		os.Exit(1)
 	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error opening %s: %v\n", path, err)
-		os.Exit(1)
-	}
-	defer f.Close() //nolint:errcheck // best-effort close
-	if _, err := f.WriteString(buf.String()); err != nil {
-		fmt.Fprintf(os.Stderr, "Error appending to %s: %v\n", path, err)
+	content += buf.String()
+
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", path, err)
 		os.Exit(1)
 	}
 	fmt.Printf("  Updated: %s (added %sServicer interface)\n", path, mod.Camel)
 }
 
+func toKebab(s string) string {
+	return strings.ReplaceAll(s, "_", "-")
+}
+
 func printWiring(m Module) {
 	fmt.Printf(`
-1. Add to backend/cmd/server/main.go:
+1. Add to backend/internal/wire/services.go (BuildServices):
 
-   // Services
-   %[1]sService := service.New%[2]sService(pool, cfg.PaginationDefault, cfg.PaginationMax)
+   %[1]sService := %[1]s.New%[2]sService(pool, cfg.PaginationDefault, cfg.PaginationMax)
+   // Add field to Services struct: %[2]s *%[1]s.%[2]sService
 
-   // Handlers
-   %[1]sHandler := handler.New%[2]sHandler(%[1]sService, cfg.PaginationDefault, cfg.PaginationMax)
+2. Add to backend/internal/wire/handlers.go (BuildHandlers):
 
-   // Routes (in the protected group)
-   protected.POST("/%[3]s", %[1]sHandler.Create)
-   protected.GET("/%[3]s", %[1]sHandler.List)
-   protected.GET("/%[3]s/:id", %[1]sHandler.GetByID)
-   protected.PUT("/%[3]s/:id", %[1]sHandler.Update)
-   protected.DELETE("/%[3]s/:id", %[1]sHandler.Delete)
+   %[1]sHandler := handler.New%[2]sHandler(svcs.%[2]s, cfg.PaginationDefault, cfg.PaginationMax)
+   // Add field to Handlers struct: %[2]s *handler.%[2]sHandler
 
-2. Add to frontend/src/lib/api.ts:
+3. Add to backend/internal/wire/routes.go (registerProtectedRoutes or appropriate group):
+
+   protected.POST("/%[3]s", h.%[2]s.Create)
+   protected.GET("/%[3]s", h.%[2]s.List)
+   protected.GET("/%[3]s/:id", h.%[2]s.GetByID)
+   protected.PUT("/%[3]s/:id", h.%[2]s.Update)
+   protected.DELETE("/%[3]s/:id", h.%[2]s.Delete)
+
+4. Add to frontend/src/lib/api.ts:
 
    export interface %[2]s {
      id: string;
@@ -289,7 +314,7 @@ var migrationDown = `DROP TRIGGER IF EXISTS set_[[.Plural]]_updated_at ON [[.Plu
 DROP TABLE IF EXISTS [[.Plural]];
 `
 
-var serviceTemplate = `package service
+var serviceTemplate = `package [[.Singular]]
 
 import (
 	"context"
@@ -301,6 +326,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"[[.ModulePath]]/internal/apperror"
+	"[[.ModulePath]]/internal/pagination"
 )
 
 type [[.Pascal]]Service struct {
@@ -363,7 +389,7 @@ func (s *[[.Pascal]]Service) Create(ctx context.Context, input *Create[[.Pascal]
 }
 
 func (s *[[.Pascal]]Service) List(ctx context.Context, userID string, page, perPage int, search string) (*[[.Pascal]]ListResult, error) {
-	page, perPage = NormalizePagination(page, perPage, s.paginationDefault, s.paginationMax)
+	page, perPage = pagination.NormalizePagination(page, perPage, s.paginationDefault, s.paginationMax)
 	offset := (page - 1) * perPage
 
 	var total int
@@ -505,7 +531,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"[[.ModulePath]]/internal/apperror"
-	"[[.ModulePath]]/internal/service"
+	"[[.ModulePath]]/internal/service/[[.Singular]]"
 )
 
 type [[.Pascal]]Handler struct {
@@ -514,7 +540,7 @@ type [[.Pascal]]Handler struct {
 	paginationMax     int
 }
 
-func New[[.Pascal]]Handler([[.Camel]]Service *service.[[.Pascal]]Service, paginationDefault, paginationMax int) *[[.Pascal]]Handler {
+func New[[.Pascal]]Handler([[.Camel]]Service *[[.Singular]].[[.Pascal]]Service, paginationDefault, paginationMax int) *[[.Pascal]]Handler {
 	return &[[.Pascal]]Handler{[[.Camel]]Service: [[.Camel]]Service, paginationDefault: paginationDefault, paginationMax: paginationMax}
 }
 
@@ -543,7 +569,7 @@ func (h *[[.Pascal]]Handler) Create(c echo.Context) error {
 		return err
 	}
 
-	item, err := h.[[.Camel]]Service.Create(c.Request().Context(), &service.Create[[.Pascal]]Input{
+	item, err := h.[[.Camel]]Service.Create(c.Request().Context(), &[[.Singular]].Create[[.Pascal]]Input{
 		UserID:  userID,
 		Title:   req.Title,
 		Content: req.Content,
@@ -601,7 +627,7 @@ func (h *[[.Pascal]]Handler) Update(c echo.Context) error {
 		return err
 	}
 
-	item, err := h.[[.Camel]]Service.Update(c.Request().Context(), &service.Update[[.Pascal]]Input{
+	item, err := h.[[.Camel]]Service.Update(c.Request().Context(), &[[.Singular]].Update[[.Pascal]]Input{
 		[[.Pascal]]ID: c.Param("id"),
 		UserID:       userID,
 		Title:        req.Title,
@@ -650,10 +676,10 @@ func validate[[.Pascal]](title, content string) error {
 
 var interfaceTemplate = `
 type [[.Camel]]Servicer interface {
-	Create(ctx context.Context, input *service.Create[[.Pascal]]Input) (*service.[[.Pascal]]Detail, error)
-	List(ctx context.Context, userID string, page, perPage int, search string) (*service.[[.Pascal]]ListResult, error)
-	GetByID(ctx context.Context, [[.Camel]]ID, userID string) (*service.[[.Pascal]]Detail, error)
-	Update(ctx context.Context, input *service.Update[[.Pascal]]Input) (*service.[[.Pascal]]Detail, error)
+	Create(ctx context.Context, input *[[.Singular]].Create[[.Pascal]]Input) (*[[.Singular]].[[.Pascal]]Detail, error)
+	List(ctx context.Context, userID string, page, perPage int, search string) (*[[.Singular]].[[.Pascal]]ListResult, error)
+	GetByID(ctx context.Context, [[.Camel]]ID, userID string) (*[[.Singular]].[[.Pascal]]Detail, error)
+	Update(ctx context.Context, input *[[.Singular]].Update[[.Pascal]]Input) (*[[.Singular]].[[.Pascal]]Detail, error)
 	Delete(ctx context.Context, [[.Camel]]ID, userID string) error
 }
 `
@@ -671,35 +697,35 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"[[.ModulePath]]/internal/apperror"
-	"[[.ModulePath]]/internal/service"
+	"[[.ModulePath]]/internal/service/[[.Singular]]"
 )
 
 type mock[[.Pascal]]Service struct {
-	createFn  func(ctx context.Context, input *service.Create[[.Pascal]]Input) (*service.[[.Pascal]]Detail, error)
-	listFn    func(ctx context.Context, userID string, page, perPage int, search string) (*service.[[.Pascal]]ListResult, error)
-	getByIDFn func(ctx context.Context, [[.Camel]]ID, userID string) (*service.[[.Pascal]]Detail, error)
-	updateFn  func(ctx context.Context, input *service.Update[[.Pascal]]Input) (*service.[[.Pascal]]Detail, error)
+	createFn  func(ctx context.Context, input *[[.Singular]].Create[[.Pascal]]Input) (*[[.Singular]].[[.Pascal]]Detail, error)
+	listFn    func(ctx context.Context, userID string, page, perPage int, search string) (*[[.Singular]].[[.Pascal]]ListResult, error)
+	getByIDFn func(ctx context.Context, [[.Camel]]ID, userID string) (*[[.Singular]].[[.Pascal]]Detail, error)
+	updateFn  func(ctx context.Context, input *[[.Singular]].Update[[.Pascal]]Input) (*[[.Singular]].[[.Pascal]]Detail, error)
 	deleteFn  func(ctx context.Context, [[.Camel]]ID, userID string) error
 }
 
-func (m *mock[[.Pascal]]Service) Create(ctx context.Context, input *service.Create[[.Pascal]]Input) (*service.[[.Pascal]]Detail, error) {
+func (m *mock[[.Pascal]]Service) Create(ctx context.Context, input *[[.Singular]].Create[[.Pascal]]Input) (*[[.Singular]].[[.Pascal]]Detail, error) {
 	return m.createFn(ctx, input)
 }
-func (m *mock[[.Pascal]]Service) List(ctx context.Context, userID string, page, perPage int, search string) (*service.[[.Pascal]]ListResult, error) {
+func (m *mock[[.Pascal]]Service) List(ctx context.Context, userID string, page, perPage int, search string) (*[[.Singular]].[[.Pascal]]ListResult, error) {
 	return m.listFn(ctx, userID, page, perPage, search)
 }
-func (m *mock[[.Pascal]]Service) GetByID(ctx context.Context, [[.Camel]]ID, userID string) (*service.[[.Pascal]]Detail, error) {
+func (m *mock[[.Pascal]]Service) GetByID(ctx context.Context, [[.Camel]]ID, userID string) (*[[.Singular]].[[.Pascal]]Detail, error) {
 	return m.getByIDFn(ctx, [[.Camel]]ID, userID)
 }
-func (m *mock[[.Pascal]]Service) Update(ctx context.Context, input *service.Update[[.Pascal]]Input) (*service.[[.Pascal]]Detail, error) {
+func (m *mock[[.Pascal]]Service) Update(ctx context.Context, input *[[.Singular]].Update[[.Pascal]]Input) (*[[.Singular]].[[.Pascal]]Detail, error) {
 	return m.updateFn(ctx, input)
 }
 func (m *mock[[.Pascal]]Service) Delete(ctx context.Context, [[.Camel]]ID, userID string) error {
 	return m.deleteFn(ctx, [[.Camel]]ID, userID)
 }
 
-func test[[.Pascal]]Detail() *service.[[.Pascal]]Detail {
-	return &service.[[.Pascal]]Detail{
+func test[[.Pascal]]Detail() *[[.Singular]].[[.Pascal]]Detail {
+	return &[[.Singular]].[[.Pascal]]Detail{
 		ID:        "test-id",
 		Title:     "Test [[.Pascal]]",
 		Content:   "Test content",
@@ -710,7 +736,7 @@ func test[[.Pascal]]Detail() *service.[[.Pascal]]Detail {
 
 func TestCreate[[.Pascal]]_Success(t *testing.T) {
 	mock := &mock[[.Pascal]]Service{
-		createFn: func(ctx context.Context, input *service.Create[[.Pascal]]Input) (*service.[[.Pascal]]Detail, error) {
+		createFn: func(ctx context.Context, input *[[.Singular]].Create[[.Pascal]]Input) (*[[.Singular]].[[.Pascal]]Detail, error) {
 			return test[[.Pascal]]Detail(), nil
 		},
 	}
@@ -731,7 +757,7 @@ func TestCreate[[.Pascal]]_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusCreated)
 	}
 
-	var result service.[[.Pascal]]Detail
+	var result [[.Singular]].[[.Pascal]]Detail
 	if err := json.Unmarshal(rec.Body.Bytes(), &result); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
@@ -762,9 +788,9 @@ func TestCreate[[.Pascal]]_ValidationError(t *testing.T) {
 
 func TestList[[.PascalPlur]]_Success(t *testing.T) {
 	mock := &mock[[.Pascal]]Service{
-		listFn: func(ctx context.Context, userID string, page, perPage int, search string) (*service.[[.Pascal]]ListResult, error) {
-			return &service.[[.Pascal]]ListResult{
-				[[.PascalPlur]]: []service.[[.Pascal]]Detail{*test[[.Pascal]]Detail()},
+		listFn: func(ctx context.Context, userID string, page, perPage int, search string) (*[[.Singular]].[[.Pascal]]ListResult, error) {
+			return &[[.Singular]].[[.Pascal]]ListResult{
+				[[.PascalPlur]]: [][[.Singular]].[[.Pascal]]Detail{*test[[.Pascal]]Detail()},
 				Total: 1, Page: 1, PerPage: 20, TotalPages: 1,
 			}, nil
 		},
@@ -787,7 +813,7 @@ func TestList[[.PascalPlur]]_Success(t *testing.T) {
 
 func TestGetByID[[.Pascal]]_NotFound(t *testing.T) {
 	mock := &mock[[.Pascal]]Service{
-		getByIDFn: func(ctx context.Context, [[.Camel]]ID, userID string) (*service.[[.Pascal]]Detail, error) {
+		getByIDFn: func(ctx context.Context, [[.Camel]]ID, userID string) (*[[.Singular]].[[.Pascal]]Detail, error) {
 			return nil, apperror.NotFound("[[.Pascal]] not found")
 		},
 	}

@@ -55,7 +55,7 @@ verify-scaffold: ## Verify scaffold-generated code compiles (used by CI)
 	@cd backend && go build ./...
 	@echo "=== Cleaning up generated files..."
 	@rm -f backend/migrations/*_scaffoldtests.up.sql backend/migrations/*_scaffoldtests.down.sql
-	@rm -f backend/internal/service/scaffoldtest.go
+	@rm -rf backend/internal/service/scaffoldtest
 	@rm -f backend/internal/handler/scaffoldtest.go backend/internal/handler/scaffoldtest_test.go
 	@rm -rf "frontend/src/routes/(private)/scaffoldtests"
 	@git checkout -- backend/internal/handler/interfaces.go

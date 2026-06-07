@@ -47,6 +47,7 @@ func main() {
 	changed += replaceInFile(root+"backend/go.mod", oldModule, newModule)
 
 	// 2. Update all Go imports and string literals (config defaults, error messages)
+	//    Covers internal/wire/, internal/service/* subpackages, and all other backend Go code.
 	goFiles := findFiles(root+"backend/", ".go")
 	for _, f := range goFiles {
 		changed += replaceInFile(f, oldModule, newModule)
