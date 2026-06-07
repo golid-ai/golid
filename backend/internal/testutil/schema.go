@@ -74,8 +74,17 @@ func quoteIdent(name string) string {
 func findMigrationsDir() (string, error) {
 	migrationsDirOnce.Do(func() {
 		if env := os.Getenv("TEST_MIGRATIONS_PATH"); env != "" {
-			migrationsDir, migrationsDirErr = filepath.Abs(env)
-			return
+			abs, err := filepath.Abs(env)
+			if err != nil {
+				migrationsDirErr = fmt.Errorf("resolve TEST_MIGRATIONS_PATH: %w", err)
+				return
+			}
+			if info, err := os.Stat(abs); err == nil && info.IsDir() {
+				migrationsDir = abs
+				return
+			}
+			// Relative paths like backend/migrations resolve from each package's
+			// cwd during go test — fall through to file-relative discovery.
 		}
 
 		// go test runs each package with cwd = that package's source dir, so
