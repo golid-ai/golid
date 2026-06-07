@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "vinxi dev",
+    "dev:watch": "node dev-watch.mjs",
     "build": "vinxi build",
     "start": "vinxi start",
     "lint": "eslint src --ext .ts,.tsx",

@@ -7,6 +7,10 @@
 # BACKEND:  Runs in Docker at http://localhost:8080
 # DATABASE: PostgreSQL at localhost:5432
 #
+# Health endpoints (see docs/cli-reference.md in Phase G):
+#   GET /health — liveness (devcontainer task wait, local debugging)
+#   GET /ready  — readiness with DB check (Compose backend healthcheck)
+#
 
 services:
   # VS Code attaches to this container
@@ -14,14 +18,22 @@ services:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
+    env_file:
+      - path: config/.env.local
+        required: false
     volumes:
       - .:/workspace:cached
       - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/home/vscode/.cache/go-build
+      # Keep node_modules (and its node_modules/.vite optimize cache) in a named
+      # volume so it survives rebuilds and shadows any host-arch install from the
+      # bind mount. This avoids the full reinstall + Vite re-optimize CPU spike.
+      - frontend-node-modules:/workspace/frontend/node_modules
     command: sleep infinity
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
 
   # Frontend runs as VS Code task, not as Docker container
   frontend:
@@ -30,3 +42,5 @@ services:
 
 volumes:
   go-mod-cache:
+  go-build-cache:
+  frontend-node-modules:
