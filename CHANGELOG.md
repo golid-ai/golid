@@ -57,6 +57,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - TypeScript types: added `vitest/globals` to tsconfig
 - ESLint: disabled crashing `solid/reactivity` rule (plugin 0.13 bug with TSAsExpression)
 
+## [0.3.0] - 2026-06-07
+
+Production hardening backport from uflex dogfood — wire/subpackages, parallel CI, integration harness, and toolchain upgrades.
+
+### Breaking
+
+- **Import paths** — flat `internal/service/*.go` moved to domain subpackages (`internal/service/auth/`, `user/`, `sse/`, etc.). Update imports after upgrading; run `go run ./cmd/rename` when forking.
+- **`internal/wire/`** — application wiring extracted from monolithic `main.go`. Entrypoints now compose dependencies via `wire.Build()`.
+- **`pagination` / `retry` paths** — helpers moved from `internal/service/` to top-level `internal/pagination/` and `internal/retry/`.
+- **Node 24 + Vitest 4** — frontend toolchain requires Node 24 (see `.nvmrc`) and Vitest 4.x. CI and devcontainer pin Node 24.
+- **`TEST_DATABASE_URL` required for integration tests** — integration tests no longer use the shared `public` schema or implicit defaults. Set `TEST_DATABASE_URL` (e.g. `postgres://dev:dev@localhost:5432/golid_test?sslmode=disable`) and run with `-tags integration`.
+- **Devcontainer HMR port pins** — frontend dev server binds to port 3000 with explicit HMR websocket config; reconnect without manual process kills.
+- **Per-package integration schemas** — testutil creates isolated `it_<pkg>_<pid>` schemas per package instead of migrating global `public`.
+- **CI sharding + path filters + spec-drift** — monolithic backend/frontend/E2E jobs replaced by path-filtered pipeline (change detection, spec-drift gate, sharded unit/integration/coverage, scaffold-verify). Docs-only PRs skip backend, frontend, and E2E.
+
 ## [0.1.0] - 2026-02-18
 
 ### Added
