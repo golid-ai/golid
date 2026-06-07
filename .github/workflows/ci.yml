@@ -33,6 +33,7 @@ jobs:
       run_backend: ${{ steps.run_flags.outputs.run_backend }}
       run_frontend: ${{ steps.run_flags.outputs.run_frontend }}
       run_e2e: ${{ steps.run_flags.outputs.run_e2e }}
+      changelog_only: ${{ steps.run_flags.outputs.changelog_only }}
     steps:
       - uses: actions/checkout@v6
 
@@ -51,6 +52,9 @@ jobs:
               - 'docs/**'
               - '.cursor/**'
               - '**/*.md'
+              - '!CHANGELOG.md'
+            changelog:
+              - 'CHANGELOG.md'
             workflow:
               - '.github/workflows/**'
 
@@ -61,8 +65,23 @@ jobs:
           FRONTEND: ${{ steps.filter.outputs.frontend }}
           OPENAPI: ${{ steps.filter.outputs.openapi }}
           DOCS: ${{ steps.filter.outputs.docs }}
+          CHANGELOG: ${{ steps.filter.outputs.changelog }}
           WORKFLOW: ${{ steps.filter.outputs.workflow }}
         run: |
+          changelog_only=false
+          if [ "$CHANGELOG" = "true" ] && [ "$BACKEND" != "true" ] && [ "$FRONTEND" != "true" ] && [ "$OPENAPI" != "true" ] && [ "$WORKFLOW" != "true" ] && [ "$DOCS" != "true" ]; then
+            changelog_only=true
+          fi
+          echo "changelog_only=$changelog_only" >> "$GITHUB_OUTPUT"
+
+          # Release commits: refresh Codecov without docs-only skip or E2E.
+          if [ "$changelog_only" = "true" ]; then
+            echo "run_backend=true" >> "$GITHUB_OUTPUT"
+            echo "run_frontend=true" >> "$GITHUB_OUTPUT"
+            echo "run_e2e=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           docs_only=false
           if [ "$DOCS" = "true" ] && [ "$BACKEND" != "true" ] && [ "$FRONTEND" != "true" ] && [ "$OPENAPI" != "true" ] && [ "$WORKFLOW" != "true" ]; then
             docs_only=true

@@ -20,7 +20,7 @@ globs:
 | `scaffold-verify` | `run_backend \|\| run_frontend` | `changes` |
 | `e2e` | `run_e2e` + integration + frontend OK | `changes`, `backend-integration`, `frontend` |
 
-`changes` uses `dorny/paths-filter@v4` to compute `run_backend`, `run_frontend`, `run_e2e`. Docs-only PRs (`docs/**` only) run `changes` + `spec-drift` only — backend, frontend, scaffold, and E2E are skipped.
+`changes` uses `dorny/paths-filter@v4` to compute `run_backend`, `run_frontend`, `run_e2e`. Docs-only PRs (`docs/**`, `**/*.md` except `CHANGELOG.md`) run `changes` + `spec-drift` only — backend, frontend, scaffold, and E2E are skipped. **CHANGELOG-only** commits run backend + frontend (Codecov refresh) without E2E. `codecov.yml` sets `flag_management.default_rules.carryforward: true` so docs-only pushes keep the last report on HEAD.
 
 Workflow needs `pull-requests: read` for paths-filter on PRs.
 

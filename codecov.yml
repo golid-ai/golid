@@ -27,6 +27,10 @@ coverage:
 fixes:
   - "github.com/golid-ai/golid/backend/::backend/"
 
+flag_management:
+  default_rules:
+    carryforward: true
+
 flags:
   backend:
     paths:

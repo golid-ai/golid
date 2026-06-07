@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Codecov on docs-only pushes** — `carryforward: true` in `codecov.yml`; CHANGELOG-only commits run backend + frontend CI (no E2E) so release tags get a fresh coverage upload
+
 ## [0.3.1] - 2026-06-07
 
 Post-0.3.0 hygiene, coverage recovery to ~83%, and README factory positioning.
