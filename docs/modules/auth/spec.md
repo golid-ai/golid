@@ -7,7 +7,7 @@
 | **Domain** | Core |
 | **Complexity** | Critical |
 | **Status** | Complete |
-| **Last Verified** | 2026-06-07 (commit: 9c7a12b) |
+| **Last Verified** | 2026-06-07 (commit: 4dcee8e) |
 
 ---
 
@@ -76,7 +76,7 @@ The Auth module handles the full authentication lifecycle: user registration (tr
 
 ## Tests
 
-- Unit: `backend/internal/service/auth/auth_test.go`, `auth_concurrency_test.go`
-- Integration: `backend/internal/service/auth/auth_integration_test.go`, `auth_verify_integration_test.go`
-- Handler HTTP: `backend/internal/handler/auth_integration_test.go` (register/login/me through Echo + wire)
-- Handler: `backend/internal/handler/auth_test.go`
+- Unit service: `backend/internal/service/auth/auth_test.go`, `auth_concurrency_test.go`
+- Integration service: `backend/internal/service/auth/auth_integration_test.go`, `auth_verify_integration_test.go`
+- Handler HTTP integration: `backend/internal/handler/auth_integration_test.go` (register/login/me through Echo + wire)
+- Handler unit: `backend/internal/handler/auth_test.go` — JSON bind/validation errors; `ForgotPassword` and `ResendVerification` return 200 on service error (enumeration-safe); queue enqueue failure returns 500; email send skipped when Mailgun not configured; email retry failure logged when configured; `VerifyEmail` propagates service internal errors

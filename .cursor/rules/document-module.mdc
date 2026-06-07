@@ -135,4 +135,41 @@ Derived from handler route registration in `backend/internal/wire/routes.go`:
 
 ## Output
 
-Save to `docs/modules/[module-name].md`. Create the directory if it doesn't exist.
+Save to `docs/modules/{module}/spec.md`. Create the directory if it doesn't exist.
+
+**After updating a spec,** check `docs/permissions.md` if endpoint auth logic changed.
+
+## After Writing
+
+Run `@audit-codebase` against the spec to verify:
+
+1. Every FK dependency has a Depends On entry
+2. Every Scope Includes item has matching content
+3. Business rules cite actual file paths
+4. No `[NEEDS VERIFICATION]` items that can be resolved from code
+
+## Same-Commit Spec Sync
+
+When code changes a documented contract (state machine transition, enum value, business rule, side effect, API shape), update the spec **in the same commit**. Spec drift is the single largest source of doc rot in this repo.
+
+What counts as "documented contract":
+
+- A row in the State Machine table.
+- An enum literal listed under Entities.
+- A bullet under Business Rules with `[Verified: ...]`.
+- A side effect listed under Side Effects (email, webhook, SSE event).
+- A row in the API Surface table.
+- A Tests entry describing handler/service coverage for a module endpoint.
+
+If the spec doesn't mention the thing you changed, update the **Tests** section when handler or service test files change — `check_spec_drift.sh` flags any handler/service edit without a matching spec touch.
+
+To verify before committing: `scripts/check_spec_drift.sh <base-ref>`. If the change legitimately does not affect module behavior, include `[skip-spec(<module>): <one-line reason>]` in the commit message, or `[skip-spec: <reason>]` to skip all modules. See `ci-workflow` "Spec-Drift Gate".
+
+## Anti-Rationalization
+
+| Excuse | Counter |
+|---|---|
+| "I'll update the spec in a follow-up doc commit" | CI `spec-drift` job fails the PR. Sync in the same commit costs 30 seconds. |
+| "The spec is auto-generated from code" | It isn't. Specs are hand-written narrative + `[Verified:]` annotations. |
+| "The change is too small to matter to the spec" | Handler/service file changes always require a spec touch or `[skip-spec(...)]` — the drift script is path-based, not semantic. |
+| "Someone will catch it in audit" | They will — that's the CI failure you're trying to avoid. |

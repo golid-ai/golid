@@ -77,6 +77,25 @@ Workflow needs `pull-requests: read` for paths-filter on PRs.
 - `config/.env.example` must be committed (check `.gitignore` exceptions) — CI copies it to `.env.local`
 - Needs `actions: write` permission for BuildKit GHA cache
 
+## Spec-Drift Gate
+
+`scripts/check_spec_drift.sh [base_ref]` reports `internal/handler/*.go` and `internal/service/*/*.go` files changed without a matching `docs/modules/<module>/spec.md` change. Default base is `origin/main`. Exit 0 = clean, exit 1 = drift.
+
+Module mapping (Golid):
+
+| Handler/service stem | Spec folder |
+|---------------------|-------------|
+| `auth`, `auth_password`, `auth_verify` | `auth` |
+| `user` | `users` |
+| `feature` | `feature` |
+| `sse`, `email`, `wire`, etc. | ignored (no module spec) |
+
+Escape hatch: `[skip-spec(<module>): <reason>]` or `[skip-spec: <reason>]` in any commit message in the range.
+
+**CI wiring** — the `spec-drift` job runs on every push and PR. Both `check_spec_drift.sh` and `check_citation_freshness.sh` fail the job on drift. No `continue-on-error`.
+
+Local usage: `scripts/check_spec_drift.sh origin/main` before opening a PR. Pairs with `slice-and-ship` contract closeout and `git-commits` pre-commit check.
+
 ## Common mistakes
 
 - **Missing `npm ci`** — any step that runs `npx` with a project dependency needs `npm ci` first. `npx` without node_modules downloads a standalone version that can't find project packages.
