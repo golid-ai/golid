@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@solidjs/testing-library";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { cleanup, render, screen, fireEvent, waitFor } from "@solidjs/testing-library";
 
 const mockNavigate = vi.fn();
 const mockLogout = vi.fn().mockResolvedValue(undefined);
@@ -26,6 +26,8 @@ vi.mock("~/lib/stores/ui", () => ({
 }));
 
 import { Navbar } from "./Navbar";
+
+afterEach(cleanup);
 
 describe("Navbar (authenticated)", () => {
   beforeEach(() => {
@@ -65,10 +67,60 @@ describe("Navbar (authenticated)", () => {
     expect(screen.getByLabelText("Menu")).toBeInTheDocument();
   });
 
-  it("opens mobile menu with Dashboard link", async () => {
-    render(() => <Navbar />);
-    await fireEvent.click(screen.getByLabelText("Menu"));
-    const dashButtons = screen.getAllByText("Dashboard");
-    expect(dashButtons.length).toBeGreaterThanOrEqual(2);
+  describe("mobile drawer (authenticated)", () => {
+    it("opens drawer with Dashboard and Logout menu items", async () => {
+      render(() => <Navbar />);
+      await fireEvent.click(screen.getByLabelText("Menu"));
+
+      const menu = screen.getByRole("menu");
+      expect(menu).toBeInTheDocument();
+      expect(screen.getAllByRole("menuitem")).toHaveLength(2);
+      expect(screen.getByRole("menuitem", { name: /dashboard/i })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: /logout/i })).toBeInTheDocument();
+    });
+
+    it("navigates to dashboard and closes drawer on Dashboard click", async () => {
+      render(() => <Navbar />);
+      await fireEvent.click(screen.getByLabelText("Menu"));
+      await fireEvent.click(screen.getByRole("menuitem", { name: /dashboard/i }));
+
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+      await waitFor(() => {
+        expect(screen.queryByRole("menu")).toBeNull();
+      });
+    });
+
+    it("logs out and navigates when Logout menu item clicked", async () => {
+      render(() => <Navbar />);
+      await fireEvent.click(screen.getByLabelText("Menu"));
+      await fireEvent.click(screen.getByRole("menuitem", { name: /logout/i }));
+
+      expect(mockLogout).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith("/");
+      });
+    });
+
+    it("closes drawer when backdrop clicked", async () => {
+      render(() => <Navbar />);
+      await fireEvent.click(screen.getByLabelText("Menu"));
+      expect(screen.getByRole("menu")).toBeInTheDocument();
+
+      await fireEvent.click(screen.getByLabelText("Close menu"));
+      await waitFor(() => {
+        expect(screen.queryByRole("menu")).toBeNull();
+      });
+    });
+
+    it("closes drawer on Escape key", async () => {
+      render(() => <Navbar />);
+      await fireEvent.click(screen.getByLabelText("Menu"));
+      const menu = screen.getByRole("menu");
+
+      fireEvent.keyDown(menu, { key: "Escape" });
+      await waitFor(() => {
+        expect(screen.queryByRole("menu")).toBeNull();
+      });
+    });
   });
 });
