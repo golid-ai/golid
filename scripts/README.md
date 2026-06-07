@@ -151,6 +151,19 @@ All resource names, service accounts, and bucket names derive from this value. T
 
 ---
 
+## CI environment variables
+
+Integration tests and E2E use these overrides (set in `.github/workflows/ci.yml`):
+
+| Variable | Default | CI value |
+|----------|---------|----------|
+| `TEST_DATABASE_URL` | `postgres://dev:dev@localhost:5432/golid?sslmode=disable` | `postgres://dev:dev@localhost:5432/golid_test?sslmode=disable` |
+| `TEST_MIGRATIONS_PATH` | auto-detect `backend/migrations` | `${{ github.workspace }}/backend/migrations` |
+
+After `make rename`, update docker-compose DB names and the CI workflow if they still reference the old project name.
+
+---
+
 ## Troubleshooting
 
 ### "Permission denied"
