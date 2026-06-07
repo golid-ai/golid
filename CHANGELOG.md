@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - **Coverage recovery + TS-eslint 8** — Codecov `ignore:` aligned with Vitest showcase excludes; backend `internal/wire/` tests; frontend branch coverage raised (Vitest floors **75/54/78/75**). `@typescript-eslint/*@8.60`, `eslint-plugin-solid@0.14.5` on ESLint 8 (clears minimatch audit chain). `npm overrides` pins `h3@1.15.9` (patched) until vinxi/@solidjs/start bump their dependency; do not `npm audit fix --force`
-- **Test counts** — 784 total (257 Go unit + 507 Vitest + 20 Playwright E2E)
+- **Test counts** — 831 total (257 Go unit + 554 Vitest + 20 Playwright E2E); B4 component branch tests (navigation, Menu, Select family)
 - **Tailwind CSS 4** — `@tailwindcss/vite` only (no PostCSS plugin), CSS `@import 'tailwindcss'` entry in `app.css`, `tailwind-variants` v1 (removed `withTV`), design-system border preflight, button cursor restore, v4 utility renames (`shadow-xs`, `outline-hidden`; custom radius scale keeps `rounded-sm`)
 
 ## [0.3.0] - 2026-06-07

@@ -36,7 +36,7 @@
 | Email         | Mailgun (`IsConfigured()`)              | Job Queue      | asynq + Redis (goroutine fallback)    |
 | Observability | OpenTelemetry · Prometheus (opt-in)     | Feature Flags  | DB-backed with 30s cache              |
 | Hot Reload    | Air (Go) + Vite HMR                     | DevContainer   | One-click setup, zero config          |
-| Testing       | 784 tests (Go, Vitest, Playwright)      | AI Rules       | 37 Cursor rules (auto-activate)       |
+| Testing       | 831 tests (Go, Vitest, Playwright)      | AI Rules       | 38 Cursor rules (auto-activate)       |
 
 ---
 

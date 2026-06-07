@@ -85,7 +85,7 @@ we adopt wire/subpackages?"). Do not delete.
 
 ## Active plans
 
-- [coverage-and-eslint.md](coverage-and-eslint.md) — recover Codecov to 80%+, upgrade TS-eslint 8 (post-0.3)
+- [coverage-and-eslint.md](coverage-and-eslint.md) — recover Codecov to 80%+ (B4 component tests), TS-eslint 8 done (post-0.3)
 
 ## Example in this repo
 

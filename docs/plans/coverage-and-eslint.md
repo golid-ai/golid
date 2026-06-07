@@ -82,27 +82,36 @@ Dependabot PR #14 failed on TS-eslint 8 because `eslint-plugin-solid@0.13` pins
 
 | Metric | Baseline | Target | Gate |
 |--------|----------|--------|------|
-| Codecov **project** | 68.24% | **≥80%** | `codecov.yml` `target: 80%` in B3 |
-| Codecov **backend** flag | 73.82% | **≥80%** | Merged `COVERPKG` profile in CI |
-| Codecov **frontend** flag | 64.83% | **≥72%** | After path alignment (B0) or targeted tests (B2) |
+| Codecov **project** | 73.17% (CI `steve-dev`) | **≥80%** (stretch **82%**) | `codecov.yml` `target: 80%` in B3b after B4 |
+| Codecov **backend** flag | **81.44%** (CI) | **≥80%** | **Met** — hold, don't chase |
+| Codecov **frontend** flag | **68.11%** (CI) | **≥79%** (stretch **82%**) | B4 component branch tests |
 | Vitest included statements | 73.83% | **≥75%** | Optional raise in B3 |
 | Vitest branches | 55.43% | **≥55%** | Primary frontend quality lever |
 | `npm run lint` | pass | pass | TS-eslint 8 + plugin-solid 0.14 |
 | npm audit high (informational) | 7 | **≤2** | TS-eslint chain cleared; h3 may remain |
 | Stale coverage docs | 2 files | 0 | ADR 002 + testing 1-pager |
 
-**80% project target — how we get there:**
+**80% project target — how we get there (updated post-CI upload):**
 
-1. **B0:** Top-level Codecov `ignore` aligned with Vitest excludes → frontend flag should rise
-   toward Vitest's **73.83%** (same files instrumented).
-2. **B1:** `internal/wire/` tests (+4–6 pts on backend flag) → backend **73.82% → ~80%**.
-3. **B2:** Branch tests — likely **required** for project ≥80%, not optional. Rough weighted
-   math from baselines: B0+B1 alone land ~**76–78% project**; B2 closes the gap.
-4. **B3:** Lock `codecov.yml` `target: 80%` only when an interim PR shows Codecov **project
-   ≥79.5%**; otherwise run more B2 before raising gates.
+1. **B0–B2:** Project **68.24% → 73.17%** (+4.9 pp). Backend **81.44%** ✓. Frontend **68.11%** — bottleneck.
+2. **B4:** Frontend component branch tests → frontend **~79–82%** → project **~80–82%**.
+3. **B3b:** Lock `codecov.yml` `target: 80%` when project **≥79.5%** on PR.
 
-Codecov project % is LOC-weighted across both flags — B0 records exact weights from the
-component tree in **Progress** before B3.
+**LOC weights (Codecov `steve-dev`, 4,720 tracked lines):**
+
+| Flag | Tracked | Weight | Coverage | Covered lines |
+|------|---------|--------|----------|---------------|
+| `backend/` | 1,794 | **38.0%** | 81.44% | ~1,461 |
+| `frontend/src/` | 2,928 | **62.0%** | 68.11% | ~1,993 |
+
+**To hit project targets (backend held at 81.44%):**
+
+| Project target | Frontend flag needed | +Covered lines (≈) |
+|----------------|---------------------|-------------------|
+| **80%** | **~79%** | **+320** |
+| **82%** (stretch) | **~82%** | **+420** |
+
+Backend gains are capped (~74 missed lines in `service/auth/*`); **B4 is frontend-only**.
 
 ## Track A — TypeScript-ESLint 8 (ESLint 8 unchanged)
 
@@ -352,19 +361,105 @@ If project is still below 79.5% after B0+B1, run B2 before touching gates.
 
 ---
 
+### Slice B4 — Frontend components 68% → 79–82% (project 80–82%)
+
+**Verified gap (Codecov `steve-dev`, commit `1476ded`):**
+
+| Path | Coverage | Missed | Notes |
+|------|----------|--------|-------|
+| `components/molecules/` (folder) | **56.75%** | **473** | Primary drag |
+| `components/organisms/navigation/` | **58.33%** | **45** | Tests exist, branches thin |
+| `components/atoms/` | 72.04% | 102 | Lower priority |
+
+**Tier 1 — highest LOC × gap (target ~+320 lines → project 80%):**
+
+| File | Codecov % | Missed | Tests to extend | Branch targets |
+|------|-----------|--------|-----------------|----------------|
+| `molecules/Menu/Menu.tsx` | **30%** | **157** | `Menu.test.tsx` | `Submenu`/`SubmenuTrigger`/`SubmenuContent`; keyboard (`ArrowDown`, `ArrowUp`, `Escape`, `ArrowLeft`); item `onClick`; close on outside click; `aria-expanded` toggle |
+| `molecules/MultiSelect/MultiSelect.tsx` | **47%** | **77** | `MultiSelect.test.tsx` | Select/deselect items; clear; keyboard nav; empty state |
+| `molecules/Select/Select.tsx` | **51%** | **62** | `Select.test.tsx` | Change handler; disabled option; placeholder vs value |
+| `molecules/Combobox/Combobox.tsx` | **49%** | **57** | `Combobox.test.tsx` (create if missing) | Filter/typeahead; select; clear input |
+| `organisms/navigation/Sidebar.tsx` | **50%** | **23** | `Sidebar.test.tsx` | Mobile overlay (`subscribeMobile` true); `collapsed` prop; non-admin hides admin items; `isActive` nested path; `displayName` fallback when no user |
+| `organisms/navigation/Navbar.tsx` | **62%** | **22** | `Navbar.auth.test.tsx` | Extend existing — mobile drawer open/close branches not hit |
+
+**Tier 2 — stretch to 82% (+~100 lines):**
+
+| File | Codecov % | Missed | Action |
+|------|-----------|--------|--------|
+| `molecules/LoadingOverlay/LoadingOverlay.tsx` | **5%** | **36** | New `LoadingOverlay.test.tsx` — show/hide, message prop |
+| `molecules/RadioGroup/RadioGroup.tsx` | 58% | 23 | Extend tests — controlled value change |
+| `molecules/Tabs/Tabs.tsx` | 67% | 23 | Tab switch, disabled tab |
+| `service/auth/auth_password.go` | 61% | 36 | Optional integration paths — low project weight (~0.5 pp) |
+
+**Do not test (showcase — already Codecov-ignored):** Charts, AgGrid, Canvas3D, GeoPlot, DatePicker, etc.
+
+**Do not rewrite:** existing happy-path tests in `Navbar.test.tsx`, `Footer.test.tsx`, `Menu.test.tsx` open/click cases.
+
+**Sub-slice split (parallel subagents OK):**
+
+```
+B4a (navigation) ─┐
+B4b (Menu)       ─┼→ re-measure Codecov → B3b
+B4c (Select family) ─┘
+B4d (stretch)    — optional if project < 80% after B4a–c
+```
+
+**B4a — Navigation** (~1 session)
+
+- `Sidebar.test.tsx`: mock `ui.subscribeMobile` → `true`; assert overlay + close buttons; `collapsed` opacity branch; mock `auth.isAdmin` false → no Components link; `useLocation` nested path for `isActive`
+- `Navbar.auth.test.tsx`: branches for drawer content after mobile menu click
+
+**B4b — Menu** (~1 session)
+
+- `Menu.test.tsx`: render `Submenu` + `SubmenuTrigger` + `SubmenuContent`; fire keyboard events on trigger/content; assert `Escape` closes; item click calls handler
+
+**B4c — Select family** (~1 session)
+
+- Extend `MultiSelect.test.tsx`, `Select.test.tsx`; add `Combobox.test.tsx` if absent
+- Pattern: `createSignal` harness, `fireEvent` + `waitFor` for portal content
+
+**Acceptance:**
+
+| Tier | Codecov project | Codecov frontend | Vitest |
+|------|-----------------|----------------|--------|
+| **Commit** | **≥80%** | **≥79%** | `npm run test:coverage` exit 0 |
+| **Stretch** | **≥82%** | **≥82%** | branches ≥58% (optional floor raise) |
+
+**Verification:** CI upload after B4a–c; file tree unchanged (no new ignores). Run `npm run test:coverage` locally before push.
+
+**Budget:** 2–3 sessions (B4a ∥ B4b ∥ B4c, then B4d if needed).
+
+---
+
+### Slice B3b — Codecov gate (after B4)
+
+Only when B4 upload shows Codecov **project ≥79.5%**:
+
+```yaml
+# codecov.yml
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+```
+
+**Acceptance:** Codecov project ≥80% green on PR.
+
+---
+
 ## Execution order
 
 ```
 B0 → A1 → A2 → B1 ─┐
-         ↘ B2 ─────┴→ (re-measure project %) → A3 → B3
+         ↘ B2 ─────┴→ A3 → B3 (Vitest floors)
+                              ↓
+                    B4a ∥ B4b ∥ B4c → (re-measure) → B4d? → B3b
 ```
 
-- **B0 first** — Codecov ignore + baseline (no doc edits).
-- **A1 → A2** — TS-eslint bump + rule cleanup.
-- **B1 ∥ B2** — backend wire + frontend branches (parallel subagents OK).
-- **Re-measure** — Codecov project % on PR before A3/B3.
-- **A3** — stale doc fixes + CHANGELOG (after metrics known).
-- **B3** — raise gates only if project ≥79.5% on interim PR.
+- **B4** — frontend component branches; backend on hold at 81%.
+- **B3b** — Codecov `target: 80%` only after B4 confirms ≥79.5% project.
 
 ## Risks and mitigations
 
@@ -375,7 +470,8 @@ B0 → A1 → A2 → B1 ─┐
 | Wire route tests brittle | Assert named routes via `e.Routes()`, not snapshots |
 | Codecov `ignore` nested under `coverage:` (silent no-op) | Top-level `ignore:` sibling of `coverage:`; validate + UI file-tree check |
 | Codecov path change hides real gaps | Document excluded paths; match `vitest.config.ts` list exactly |
-| 80% project unreachable after B0+B1 alone | B2 required; B3 gated on ≥79.5% interim PR |
+| 80% project unreachable after B0+B1 alone | B4 required; B3b gated on ≥79.5% after B4 |
+| Menu/portal tests flaky | `waitFor` + `fireEvent`; static wrapper per `write-tests-frontend` |
 | `h3` highs never clear | Accepted dev risk in CHANGELOG; revisit on `@solidjs/start` bump |
 | Threshold raise blocks PRs | B3 in isolated commit after metrics met |
 
@@ -383,14 +479,19 @@ B0 → A1 → A2 → B1 ─┐
 
 | Slice | Status | Measured result |
 |-------|--------|-----------------|
-| B0 | In progress — codecov.yml landed locally; post-upload validation pending CI/PR | Top-level `ignore:` (16 paths, mirrors `vitest.config.ts:14-40`); **LOC weight** (`find`/`wc` on `frontend/src`): ignored showcase **11,210 / 25,459** lines (**44.0%** of tree, **55.9%** included — B3 gate math); unit `COVERPKG` **60.3%** (2026-06-07); integration skipped (`TEST_DATABASE_URL` unset). Validate API: `notify` unknown field (pre-existing; CI `skip_validation: true`). **Post-upload verifies:** frontend flag → ~**73.83%**; Codecov file tree excludes showcase paths |
+| B0 | Done | Top-level `ignore:` (16 paths). CI upload: frontend showcase paths excluded; frontend flag **68.11%** (not 74% — remaining drag is real UI in `components/`, not showcase) |
 | A1 | Done | `eslint@8.57.1`, `@typescript-eslint/*@8.60.1`, `eslint-plugin-solid@0.14.5`; audit high **7 → 1** (minimatch/TS-eslint chain cleared; remaining: h3/vinxi); lint/typecheck/test:run pass; deps bump only — rule drift fixes in A2 |
 | A2 | Done | 8 TS-eslint 8 code fixes (empty interfaces → type aliases, void pathname track); `.eslintrc.cjs` rule comments documented; `solid/reactivity` stays off — 0.14.5 safe, 22 false-positive warns if enabled; lint/typecheck/test:run exit 0 |
 | A3 | Done | ADR 002 + testing 1-pager stale % claims replaced; CHANGELOG [Unreleased] TS-eslint 8 + accepted h3 risk; `rg '82%|Coverage > 80%' docs/` clean (plan + archive only) |
 | A4 | Skipped (optional) | — |
-| B1 | Done (impl) — backend flag ≥80% pending CI | Unit `COVERPKG` **66.9%**; wire/* **100%**; `InitTracer` **90.5%**; `ForgotPassword`/`ResendVerification` **95%**, `VerifyEmail` **100%** (+15 handler unit tests); `tracer.go` schemaless fix; integration skipped locally (host→docker DB EOF). **Impl tier met.** Metric tier: verify Codecov backend flag ≥80% on PR |
+| B1 | Done | CI backend flag **81.44%** ✓. Wire **100%**, handler error branches, `InitTracer` **90.5%** |
 | B2 | Done | Vitest included: **76.57%** stmts / **55.43%** branches (was 74.28% / 52.94%); branch tests in `validation.ts` (`validate`, `getFirstError`), `auth.ts`/`auth.initialize.test.ts` (error paths, initialize, session-expired), `api.ts` (401 refresh, `getErrorMessage`, parseError), `settings.test.tsx` (explicit expects, save retry/success), `format.ts`, `ui.ts`, `use-breakpoint.ts`; Vitest branches gate **≥55% met** |
-| B3 | Done (Vitest gates) — Codecov 80% pending CI | **Audit 2026-06-07:** `npm run test:coverage` exit 0 (507 tests). Thresholds **75 / 54 / 78 / 75** — margin **1.6 / 1.4 / 2.2 / 1.7** pts below measured **76.57% / 55.43% / 80.18% / 76.73%**. `codecov.yml` **`target: auto`** (not 80%) — correct deferral; project ≥79.5% unproven (baseline **68.24%**; B0 ignore + B1 backend flag pending CI upload). Next: interim PR → confirm project ≥79.5% → then `target: 80%` |
+| B3 | Done (Vitest floors) | Thresholds **75 / 54 / 78 / 75**. Codecov `target: auto` — deferred to **B3b** after B4 |
+| B4 | In progress | CI baseline: project **73.17%**, frontend **68.11%**, backend **81.44%**. Target: project **80%** commit / **82%** stretch |
+| B4a | Done | `Sidebar.test.tsx` + `Navbar.auth.test.tsx`: mobile overlay/close, collapsed opacity, non-admin hides Components, nested `isActive`, `displayName` fallback, auth drawer branches. **+16 tests** (522 total). Vitest **77.65%** stmts / **56.62%** branches; `Sidebar.tsx` **95.87%** / **93.87%**; `Navbar.tsx` **78.12%** / **66.66%** |
+| B4b | Done | `Menu.test.tsx`: Submenu/SubmenuTrigger/SubmenuContent, keyboard (ArrowDown/Up/Escape/ArrowLeft), item onClick, SubmenuTrigger `aria-expanded` toggle, outside mousedown close, `aria-controls` open-state link. **+15 tests** (554 total). Vitest **85.84%** stmts / **65.91%** branches; `Menu.tsx` **86.62%** / **57.55%** |
+| B4c | Done | `Select.test.tsx` + `MultiSelect.test.tsx` + `Combobox.test.tsx`: select/deselect, chip clear, keyboard nav (Arrow/Enter/Escape/Home/End), disabled trigger, filter/typeahead, empty filter. **+17 tests** (554 total). Vitest **85.53%** stmts / **65.4%** branches; `Select.tsx` **88.48%** / **63.88%**; `MultiSelect.tsx` **84.97%** / **61.2%**; `Combobox.tsx` **83.72%** / **58.16%** |
+| B3b | Pending | `codecov.yml` `target: 80%` after B4 upload ≥79.5% |
 
 ## Execution readiness audit (2026-06-07)
 
