@@ -97,19 +97,27 @@ return apperror.Forbidden("not allowed")
 
 ## Route Registration
 
-In `cmd/server/main.go`:
-1. Create service in the services block
-2. Create handler in the handlers block
-3. Register routes on the `protected` group
+Wire new modules through `internal/wire/` — not `main.go`. `main.go` only calls `wire.BuildServices`, `wire.BuildHandlers`, and `wire.RegisterRoutes`.
+
+1. **`wire/services.go` (`BuildServices`)** — construct the service from its subpackage:
 
 ```go
-// in main():
-xService := service.NewXService(pool)
-xHandler := handler.NewXHandler(xService)
-// ...
-protected.POST("/x", xHandler.Create)
-protected.GET("/x", xHandler.List)
-protected.GET("/x/:id", xHandler.GetByID)
+xService := x.NewXService(pool, cfg.PaginationDefault, cfg.PaginationMax)
+// Add field to Services struct: X *x.XService
+```
+
+2. **`wire/handlers.go` (`BuildHandlers`)** — construct the handler (constructor takes concrete subpackage types):
+
+```go
+X: handler.NewXHandler(svcs.X, cfg.PaginationDefault, cfg.PaginationMax),
+```
+
+3. **`wire/routes.go`** — register routes on the appropriate group (`registerProtectedRoutes`, `registerAdminRoutes`, etc.):
+
+```go
+protected.POST("/x", h.X.Create)
+protected.GET("/x", h.X.List)
+protected.GET("/x/:id", h.X.GetByID)
 ```
 
 ## Query Parameter Parsing

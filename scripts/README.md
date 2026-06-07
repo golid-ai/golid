@@ -157,7 +157,7 @@ Integration tests and E2E use these overrides (set in `.github/workflows/ci.yml`
 
 | Variable | Default | CI value |
 |----------|---------|----------|
-| `TEST_DATABASE_URL` | `postgres://dev:dev@localhost:5432/golid?sslmode=disable` | `postgres://dev:dev@localhost:5432/golid_test?sslmode=disable` |
+| `TEST_DATABASE_URL` | `postgres://dev:dev@localhost:5432/golid_test?sslmode=disable` | `postgres://test:test@localhost:5432/golid_test?sslmode=disable` |
 | `TEST_MIGRATIONS_PATH` | auto-detect `backend/migrations` | `${{ github.workspace }}/backend/migrations` |
 
 After `make rename`, update docker-compose DB names and the CI workflow if they still reference the old project name.

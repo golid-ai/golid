@@ -13,7 +13,7 @@ alwaysApply: false
 
 1. **Schema first** — read the migrations in `backend/migrations/` to understand tables, enums, relationships, indexes
 2. **Service logic** — read `backend/internal/service/<module>/*.go` for business rules, auth checks, transactions, status transitions
-3. **Handler surface** — read `backend/internal/handler/*.go` for request validation, response shapes, route registration in `cmd/server/main.go`
+3. **Handler surface** — read `backend/internal/handler/*.go` for request validation, response shapes, route registration in `backend/internal/wire/routes.go`
 4. **Frontend routes** — read `frontend/src/routes/(private)/*.tsx` for pages, modals, state management
 5. **Write the spec** — fill the template below
 
@@ -92,7 +92,7 @@ Derived from service methods. Mark each rule.
 
 ## API Surface
 
-Derived from handler route registration in `cmd/server/main.go`:
+Derived from handler route registration in `backend/internal/wire/routes.go`:
 
 | Method | Route | Handler | Auth | Description |
 |--------|-------|---------|------|-------------|

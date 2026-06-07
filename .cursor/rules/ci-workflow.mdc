@@ -38,7 +38,7 @@ Workflow needs `pull-requests: read` for paths-filter on PRs.
 - Matrix shard: `handler` | `service` — each shard runs on a separate runner
 - `go test -tags integration ./internal/${{ matrix.shard }}/... -race -count=1`
 - Handler shard exits 0 with no packages when no handler integration tests exist — do not add skip hacks
-- Set both `DATABASE_URL` and `TEST_DATABASE_URL` env vars
+- Set `TEST_DATABASE_URL` only — `testutil.SetupTestDB()` panics if unset (no `DATABASE_URL` fallback)
 - `TEST_MIGRATIONS_PATH: ${{ github.workspace }}/backend/migrations` — per-package schemas via testutil, no global migrate step
 - Upload per-shard `coverage-integration-{shard}.out` as artifacts
 
@@ -83,4 +83,4 @@ Workflow needs `pull-requests: read` for paths-filter on PRs.
 - **Database name** — CI uses a separate test database. Keep the name consistent with the project (`golid_test`). Update if the project is renamed.
 - **Stale generated types** — `npm run generate:types` produces `frontend/src/lib/api.generated.ts` from `backend/openapi.yaml`. Regenerate locally after any spec change; CI validates via typecheck after fresh generation.
 - **Tests pass but typecheck fails** — `vitest run` executes JavaScript at runtime and does not check TypeScript types. Always run `npm run typecheck` locally before pushing frontend test files. Bad imports (non-existent exports, type-only imports used as values) pass at runtime but fail `tsc`.
-- **testutil default DB URL** — `testutil.SetupTestDB()` defaults to `postgres://dev:dev@localhost:5432/golid?sslmode=disable`, matching docker-compose. CI overrides via `TEST_DATABASE_URL`. If you rename the project or change docker-compose credentials, update both.
+- **testutil requires TEST_DATABASE_URL** — `testutil.SetupTestDB()` panics if `TEST_DATABASE_URL` is unset (refuses `DATABASE_URL` fallback because `CleanAllTables` would wipe the dev DB). CI sets `TEST_DATABASE_URL=postgres://test:test@localhost:5432/golid_test?sslmode=disable`. Local integration tests need the same env var pointing at a safe-to-wipe DB (e.g. `golid_test`).
