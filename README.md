@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
-A production-ready **Go + SolidJS** starter. Auth, 70+ UI components, SSR, real-time events, and one-command deployment — skip the boilerplate week and start building.
+<p align="center">Production-ready <strong>Go + SolidJS</strong> starter — auth, 70+ components, SSR, SSE, scripted GCP deploy.</p>
 
 <p align="center"><strong><a href="https://golid.ai">golid.ai</a></strong> — Live demo featuring the full component library</p>
 
@@ -24,222 +24,240 @@ A production-ready **Go + SolidJS** starter. Auth, 70+ UI components, SSR, real-
   <img src="docs/images/showcase-components.png" alt="Interactive UI components" width="49%" />
 </p>
 
-## Why Golid?
+---
 
-Most starter templates give you a folder structure and leave you to wire everything yourself. Golid gives you a working production app on day one.
+## Tech Stack
 
-- **Zero to deployed in minutes** — `docker compose up` starts everything. `./scripts/deploy.sh` provisions Cloud Run, Cloud SQL, and secrets in a single command. No 200-step setup guide.
-- **Go + SolidJS > Node + React** — Go compiles to a single binary, starts in <100ms, handles 10x the concurrent connections of Node.js. SolidJS benchmarks faster than React in every metric. No vendor lock-in to Vercel.
-- **Opt-in complexity** — Email, job queues, tracing, and metrics are off by default. Set one env var to enable each. `docker compose up` works with zero configuration.
-- **AI-native development** — 37 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
-- **752 tests across three layers** — 277 Go tests (236 unit + 41 integration), 455 SolidJS component tests, and 20 Playwright E2E tests. Codecov regression tracking on backend and frontend. Not a scaffold — a starter that proves itself.
-- **No vendor lock-in** — Runs on Cloud Run, Fly.io, Railway, Render, or bare metal. PostgreSQL everywhere. No proprietary abstractions.
+| Layer         | Technology                              | Layer          | Technology                            |
+| ------------- | --------------------------------------- | -------------- | ------------------------------------- |
+| Backend       | Go 1.26 · Echo v4 · pgx/v5              | Frontend       | SolidJS · SolidStart · Tailwind CSS 4 |
+| Database      | PostgreSQL 16                           | Infrastructure | Cloud Run · Cloud SQL · GCS           |
+| Auth          | JWT rotation · selector/verifier tokens | Real-time      | SSE hub with ticket auth              |
+| Email         | Mailgun (`IsConfigured()`)              | Job Queue      | asynq + Redis (goroutine fallback)    |
+| Observability | OpenTelemetry · Prometheus (opt-in)     | Feature Flags  | DB-backed with 30s cache              |
+| Hot Reload    | Air (Go) + Vite HMR                     | DevContainer   | One-click setup, zero config          |
+| Testing       | 752 tests (Go, Vitest, Playwright)      | AI Rules       | 37 Cursor rules (auto-activate)       |
 
-| | Golid | Next.js + API | Go-only starters | Rails / Laravel |
-|---|---|---|---|---|
-| Full-stack type safety | Go + TypeScript ([OpenAPI spec](backend/openapi.yaml) with type generation pipeline) | TypeScript (tRPC/Zod) | Go only | Ruby/PHP |
-| Production UI library | 70+ components | BYO | None | Blade/Livewire |
-| SSR + real-time | SSE + SSR | Partial SSR | None | ActionCable |
-| Deployment automation | One command, any host | Best on Vercel | BYO | Heroku-centric |
-| Memory footprint | ~30MB | ~200MB+ | ~30MB | ~100MB+ |
+---
+
+## What's Inside
+
+Starter modules — extend with `make new-module` or follow [example-module.md](docs/example-module.md).
+
+| Module            | What it does                                                                  |
+| ----------------- | ----------------------------------------------------------------------------- |
+| **Auth**          | Registration, login, JWT refresh rotation, password reset, email verification |
+| **Users**         | Profile (`/me`), settings, admin `user_type` gates                            |
+| **Feature flags** | Public `GET /features`, admin CRUD, cached reads                              |
+| **SSE**           | Per-user channels, one-time ticket auth, reconnect + backpressure             |
+| **Components**    | 70+ atoms/molecules/organisms — charts, grids, date pickers, modals           |
+| **Opt-in infra**  | Email, queue, Redis rate limiting, tracing, metrics — off by default          |
+
+**Also included:** OpenAPI 3.1 + TypeScript codegen, sqlc queries, golang-migrate (with down migrations), CSRF + dual-tier rate limiting, scaffold generator, domain-safe rename tool, GCP deploy/teardown scripts.
+
+---
 
 ## Quick Start
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) 24+, [Node.js](https://nodejs.org/) 24+ (for frontend dev), [Go](https://go.dev/dl/) 1.26+ (for local backend dev outside Docker)
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) 24+, [Node.js](https://nodejs.org/) 24+, [Go](https://go.dev/dl/) 1.26+
+
+### DevContainer (recommended)
 
 ```bash
-# 1. Clone + setup (generates JWT secret, installs frontend deps)
-git clone https://github.com/golid-ai/golid.git my-project
-cd my-project
-make setup
-
-# 2. Start DB + backend
-docker compose up
-
-# 3. In another terminal: start frontend (not needed in DevContainer — starts automatically)
-cd frontend && npm run dev
-
-# 4. Open
-#    Frontend: http://localhost:3000
-#    Backend:  http://localhost:8080
+git clone https://github.com/golid-ai/golid.git my-project && cd my-project
+# Open in VS Code/Cursor → "Reopen in Container"
 ```
 
-**Test accounts** (seeded automatically):
-- `admin@example.com` / `Password123!` (admin — can access component showcase)
-- `user@example.com` / `Password123!` (regular user)
+Migrations and seed data run automatically (`entrypoint.dev.sh`). Backend starts on **8080**. Frontend starts as a VS Code task — open the **Terminal** tab and wait until the frontend dev server prints its local URL before opening **http://localhost:3000**.
 
-**DevContainer** (recommended): Open the repo in VS Code/Cursor → "Reopen in Container." It auto-provisions PostgreSQL, runs migrations, seeds dev data, and starts the backend via Air hot-reload. The frontend starts as a VS Code task — switch to the **Terminal** tab and wait for `"Frontend Dev Server"` to show `ready` before opening `localhost:3000`.
+### Docker Compose (local)
 
-## What's Included
+```bash
+git clone https://github.com/golid-ai/golid.git my-project && cd my-project
+make setup
 
-### Backend (Go 1.26 + Echo)
+# First run only — migrate + seed the dev database
+export DATABASE_URL=postgres://dev:dev@localhost:5432/golid?sslmode=disable
+make migrate-up seed
 
-- JWT auth with TOCTOU-safe refresh token rotation (atomic revoke + issue in a single transaction), password reset with selector/verifier pattern + constant-time comparison, email verification with SHA-256 hashed tokens
-- SSE real-time hub with per-user channels, one-time ticket auth (no JWT in URLs), backpressure, connection limits
-- Two-layer auth on every endpoint: handler extracts identity (authn), service verifies resource membership (authz)
-- Dual-tier rate limiting (strict on auth, general on API), CSRF protection (`X-Requested-With: golid-app`; set `CSRF_ENFORCE=true` in production — see `docs/runbooks/csrf-production-rollout.md`), security headers (configurable CSP, HSTS, X-Frame-Options), email enumeration prevention
-- Job queue (asynq + Redis, falls back to goroutines), Mailgun email with retry + graceful degradation
-- OpenTelemetry tracing + Prometheus metrics (both opt-in via env vars), feature flags (DB-backed with cache)
-- API versioning (`/api/v1` + `/api/v2`), OpenAPI 3.1 spec with TypeScript type generation pipeline
-- Graceful shutdown (drain HTTP → close SSE → release DB pool), transactions for all multi-write operations
-- sqlc code generation, golang-migrate migrations (all with down migrations), `rows.Err()` checked after every iteration
+docker compose up          # DB + backend on :8080
+cd frontend && npm run dev # frontend on :3000
+```
 
-### Frontend (SolidJS + SolidStart SSR)
+**Test accounts** (after seed): `admin@example.com` / `Password123!` (admin) · `user@example.com` / `Password123!` (user)
 
-- 70+ production-grade components (buttons, modals, charts, data grids, date pickers, accordions, tooltips, etc.)
-- Full auth UI: registration, login, password reset, email verification, settings
-- Zero `createResource`, zero `any` in production code — consistent `onMount` + signals + `alive` guard + `batch` pattern throughout
-- SSR with middleware auth redirects, dark mode, responsive layouts, reactive logout on token expiry
-- Atomic design (atoms/molecules/organisms), Tailwind CSS 4 (`@tailwindcss/vite`)
-- Accessibility: ARIA attributes, keyboard navigation, focus trapping, skip link, axe-core CI verification
+**Guides:** [Quick Start](docs/quick-start.md) · [Start Here](docs/start-here.md) · **Upgrading from 0.2?** [CHANGELOG 0.3.0](CHANGELOG.md#030---2026-06-07)
 
-### Testing (752 tests)
+---
 
-- 277 Go tests (236 unit + 41 integration with `-tags integration`) — per-package schemas via `TEST_DATABASE_URL`, handler HTTP integration tests, concurrency race tests, auth security edge cases
-- 455 frontend tests (Vitest 4 + @solidjs/testing-library + axe-core)
-- 20 Playwright E2E tests (auth flows, signup, settings, password reset, components)
-- Multi-job CI with path filters: change detection, spec-drift + rule-health gates, sharded backend unit/integration/coverage, frontend, scaffold-verify, and E2E (docs-only PRs skip heavy jobs)
-- govulncheck + npm audit + Codecov coverage tracking with regression thresholds
+## Project Structure
 
-### Infrastructure
+```
+golid/
+├── backend/
+│   ├── cmd/server/main.go       # Bootstrap, shutdown, background jobs
+│   ├── internal/
+│   │   ├── wire/                # BuildServices, BuildHandlers, RegisterRoutes
+│   │   ├── service/             # Business logic (auth, user, feature, sse, email)
+│   │   ├── handler/             # HTTP handlers
+│   │   ├── middleware/          # JWT, CSRF, rate limiting, security
+│   │   ├── pagination/          # Query normalization
+│   │   ├── retry/               # Exponential backoff for fire-and-forget
+│   │   └── apperror/            # Typed error responses
+│   ├── migrations/              # SQL migration pairs (up + down)
+│   ├── openapi.yaml             # REST API contract (OpenAPI 3.1)
+│   └── seeds/                   # Development seed data
+├── frontend/
+│   └── src/
+│       ├── components/          # 70+ components (atoms/molecules/organisms)
+│       ├── lib/                 # api.ts, auth.ts, constants, validation
+│       └── routes/
+│           ├── (public)/        # login, signup, forgot-password, verify-email
+│           └── (private)/       # dashboard, settings, component showcase
+├── docs/
+│   ├── modules/                 # Auth, users, feature specs (+ drift CI)
+│   ├── plans/                   # Active feature plans
+│   ├── architecture.md          # Layers, auth, SSE, wire
+│   └── patterns/                # Stack quick references (Go, SolidJS, …)
+├── .cursor/rules/               # 37 AI coding rules
+├── config/                      # Environment files
+├── scripts/                     # Deploy, drift checks, init-test-db, teardown
+└── infra/                       # Cloud Run, Cloud Build configs
+```
 
-- Multi-stage Docker builds with non-root users and minimal base images
-- Docker Compose dev environment with VS Code DevContainer
-- Cloud Run deploy/teardown scripts (provisions everything in one command)
-- Pre-commit hooks (husky + prettier + go vet)
-- Root Makefile with 21 targets (`make help` to discover all)
+---
+
+## Commands
+
+```bash
+# First run: make setup && migrate-up seed (see Quick Start)
+make dev                           # DB + backend (docker compose up)
+cd frontend && npm run dev         # Frontend dev server (port 3000)
+make test                          # Backend + frontend unit tests
+make check                         # lint + test + build (local CI parity)
+
+cd backend && go test -tags integration ./...   # Needs TEST_DATABASE_URL
+make new-module name=notes         # Scaffold CRUD module
+make rename name=myapp module=github.com/user/myapp/backend
+make help                          # All Makefile targets
+
+./scripts/deploy.sh                # Deploy to QA (Cloud Run)
+./scripts/deploy.sh check          # Validate config before deploy
+```
+
+Integration test setup: [CLI Reference](docs/cli-reference.md) (`init-test-db.sh`, `TEST_DATABASE_URL`).
+
+---
+
+## Why Golid?
+
+|                        | Golid                                       | Next.js + API         | Go-only starters |
+| ---------------------- | ------------------------------------------- | --------------------- | ---------------- |
+| Full-stack type safety | Go + TypeScript (OpenAPI → generated types) | TypeScript (tRPC/Zod) | Go only          |
+| Production UI          | 70+ components                              | BYO                   | None             |
+| SSR + real-time        | SolidStart SSR + SSE                        | Partial               | None             |
+| Deploy                 | One command, any host                       | Vercel-centric        | BYO              |
+| Memory                 | ~30MB binary                                | ~200MB+               | ~30MB            |
+
+Opt-in complexity: `docker compose up` works with zero Redis, Mailgun, or OTEL. Set one env var per module when you need it — see [Opt-In Modules](#opt-in-modules) below.
+
+---
 
 ## Opt-In Modules
 
-Every production module follows the `IsConfigured()` pattern: set an env var to enable, leave it unset for a zero-config fallback.
+| Module        | Trigger           | Zero-config        | Production         |
+| ------------- | ----------------- | ------------------ | ------------------ |
+| Email         | `MAILGUN_API_KEY` | Logs to stdout     | Mailgun delivery   |
+| Job Queue     | `REDIS_URL`       | Goroutine + Retry  | asynq + Redis      |
+| Rate Limiting | `REDIS_URL`       | In-memory          | Redis fixed-window |
+| Tracing       | `OTEL_ENDPOINT`   | No tracing         | OTLP export        |
+| Metrics       | `METRICS_ENABLED` | No `/metrics`      | Prometheus         |
+| Feature Flags | Always on         | PostgreSQL + cache | Same               |
 
-| Module | Trigger | Zero-config | Production |
-|--------|---------|-------------|------------|
-| Email | `MAILGUN_API_KEY` | Logs to stdout | Mailgun delivery |
-| Job Queue | `REDIS_URL` | Goroutine + Retry | asynq + Redis |
-| Rate Limiting | `REDIS_URL` | In-memory | Redis fixed-window |
-| Tracing | `OTEL_ENDPOINT` | No tracing | OTLP export |
-| Metrics | `METRICS_ENABLED` | No /metrics | Prometheus |
-| Feature Flags | Always on | PostgreSQL + cache | Same |
+`docker compose --profile production up` adds Redis + worker (see [CHANGELOG](CHANGELOG.md)).
+
+---
 
 ## Architecture
 
-Handlers (HTTP binding) → Middleware (auth, rate limiting, security) → Services (business logic) → PostgreSQL. Frontend uses SolidStart SSR with file-based routing. See [docs/architecture.md](docs/architecture.md) for the full layer breakdown, auth flow, SSE design, and project structure.
+Handlers → Middleware → Services → PostgreSQL. Wiring lives in `internal/wire/` (`BuildServices`, `BuildHandlers`, `RegisterRoutes`); business logic in `internal/service/<pkg>/`. Frontend uses SolidStart SSR with file-based routing.
 
-## Adding Your First Feature
+**API surface today:** `/api/v1` (versioning middleware + migration path in [api-versioning.md](docs/api-versioning.md)).
 
-The fastest way is the scaffolding command:
+Full breakdown: [architecture.md](docs/architecture.md) — auth flow, SSE ticket exchange, shutdown order, observability.
 
-```bash
-cd backend
-make new-module name=notes
-```
-
-This generates a complete CRUD module — migration (with down), service (with interface, pagination, `rows.Err()` checks), handler (with validation, ParsePagination), handler tests (5 test stubs with mock), and a frontend route (with toast notifications, reactive page refetch, proper Pagination props). The generated code follows every codebase pattern and compiles without modification.
-
-For a manual walkthrough of each layer, see [docs/example-module.md](docs/example-module.md).
+---
 
 ## Fork and Customize
 
-The rename tool updates 20+ file categories in one command: Go module paths, imports, config defaults, Docker, CI, infra templates, Cursor rules, frontend branding, CSS classes, env files, entrypoints, and the OpenAPI spec. It validates your project name, converts hyphens to PascalCase for identifiers (`my-app` → `MyApp`), handles ALL-CAPS for env vars (`MY_APP`), and protects URLs from corruption.
-
 ```bash
-# 1. Fork this repo on GitHub, then clone your fork
-git clone https://github.com/YOUR_USER/my-app.git
-cd my-app
-
-# 2. Rename everything
-cd backend
-go run ./cmd/rename myapp github.com/YOUR_USER/my-app/backend
-
-# 3. Review changes and verify
-git diff
-go build -buildvcs=false ./...
-cd ../frontend && npm run build
-
-# 4. Update entry-server.tsx og:url with your domain
-# 5. Update LICENSE copyright if needed
-# 6. Start building your features
+git clone https://github.com/YOUR_USER/my-app.git && cd my-app
+make rename name=myapp module=github.com/YOUR_USER/my-app/backend
+git diff && make check
 ```
+
+The rename tool updates 20+ file categories (imports, Docker, CI, Cursor rules, branding, OpenAPI) with domain-safe replacements. Details: [cmd/rename](backend/cmd/rename/).
+
+---
 
 ## Deployment
 
-The included `scripts/deploy.sh` is a battle-tested, idempotent deployment script that provisions and deploys to Google Cloud Run in a single command. Pre-flight validation (`deploy.sh check`), Secret Manager integration, production confirmation gates, and `set -euo pipefail` throughout.
-
-- Artifact Registry, Cloud SQL (private networking), VPC Connector, Cloud Run (backend + frontend), Secret Manager — all provisioned automatically
-
 ```bash
-# Deploy to QA (default)
-./scripts/deploy.sh
-
-# Deploy to production
-./scripts/deploy.sh prod
-
-# Deploy only the backend
-./scripts/deploy.sh qa api
-
-# Validate secrets and config before deploying
-./scripts/deploy.sh check
-
-# Teardown
-./scripts/teardown.sh
+./scripts/deploy.sh              # QA (default)
+./scripts/deploy.sh prod         # Production (confirmation gate)
+./scripts/deploy.sh qa api       # Backend only
+./scripts/teardown.sh            # Teardown QA resources
 ```
 
-See [scripts/README.md](scripts/README.md) for full details and [docs/deployment-options.md](docs/deployment-options.md) for Fly.io, Railway, Render, and bare metal alternatives.
+[scripts/README.md](scripts/README.md) · [deployment-options.md](docs/deployment-options.md) (Fly.io, Railway, Render, bare metal)
+
+---
 
 ## Code Quality
 
-| Pattern | Backend | Frontend |
-|---------|---------|----------|
-| **Error handling** | `apperror` for all errors, zero `_ = fn()`, internal errors never leak | `alive` guard on every async route, `batch()` on all signal updates |
-| **Content states** | — | `Switch/Match` for all mutually exclusive states, zero nested `<Show>` |
-| **SQL safety** | Parameterized queries only, `rows.Err()` after every loop, transactions for multi-write | — |
-| **Auth security** | TOCTOU-safe token refresh, selector/verifier pattern, constant-time comparison | Auth cookie Secure on HTTPS, reactive logout on 401 |
-| **Security defaults** | CORS deny-by-default, anti-enumeration (auth endpoints always return 200), startup rejects placeholder secrets | SSR auth redirects, `DestructiveModal` for all destructive actions |
-| **Linting** | golangci-lint (errcheck, govet, staticcheck) | ESLint + `eslint-plugin-solid` |
-| **Testing** | Unit + integration (real DB), concurrency race tests, error paths | Component + a11y (axe-core) + E2E |
+| Pattern        | Backend                                                 | Frontend                                     |
+| -------------- | ------------------------------------------------------- | -------------------------------------------- |
+| Error handling | `apperror`, no leaked internals                         | `alive` guard + `batch()` on async           |
+| Content states | —                                                       | `Switch/Match`, no nested `<Show>`           |
+| SQL            | Parameterized queries, `rows.Err()`, transactions       | —                                            |
+| Auth           | TOCTOU-safe refresh, selector/verifier                  | SSR redirects, reactive 401 logout           |
+| Linting        | golangci-lint (see `backend/.golangci.yml`)             | ESLint + `eslint-plugin-solid`               |
+| Testing        | Unit + integration (real DB), race tests                | Vitest 4 + axe-core + Playwright E2E         |
+| CI             | Path filters, spec-drift, rule-health, sharded coverage | lint, typecheck, build, audit (non-blocking) |
+
+---
 
 ## Documentation
 
-| Guide | What it covers |
-|-------|---------------|
-| [Architecture](docs/architecture.md) | Layers, auth flow, SSE, query strategy, observability |
-| [Example Module](docs/example-module.md) | Build your first feature in 20 minutes |
-| [Quick Start](docs/quick-start.md) | Setup in 5 minutes |
-| [Best Practices](docs/best-practices.md) | Coding standards with real bad/good examples |
-| [Components](docs/components.md) | 70+ UI components reference |
-| [Deployment Options](docs/deployment-options.md) | Cloud Run, Fly.io, Railway, Render, bare metal |
-| [API Reference](backend/openapi.yaml) | OpenAPI 3.1 spec |
-| [Changelog](CHANGELOG.md) | Release history |
-| [Full Index](docs/README.md) | Complete documentation map (module specs, organism pattern, CLI reference, 7 ADRs) |
+| Guide                                               | What it covers                                                        |
+| --------------------------------------------------- | --------------------------------------------------------------------- |
+| [Start Here](docs/start-here.md)                    | Orientation: app flow, directories, devcontainer, rules               |
+| [Architecture](docs/architecture.md)                | Layers, auth flow, SSE, wire, observability                           |
+| [Module Specs](docs/README.md#module-specs)         | Auth, users, feature — rules, API surface, test scenarios             |
+| [Quick Start](docs/quick-start.md)                  | Setup in 5 minutes                                                    |
+| [CLI Reference](docs/cli-reference.md)              | Make targets, health endpoints, `TEST_DATABASE_URL`                   |
+| [Example Module](docs/example-module.md)            | Build a feature end-to-end                                            |
+| [Best Practices](docs/best-practices.md)            | Coding standards with real examples                                   |
+| [Components](docs/components.md)                    | 70+ UI components reference                                           |
+| [Organism Pattern](docs/organism-pattern.md)        | How rules, specs, plans, and drift checks connect                     |
+| [GCP Networking](docs/infrastructure/networking.md) | Cloud Run frontend/API network diagram                                |
+| [Deployment Options](docs/deployment-options.md)    | Cloud Run, Fly.io, Railway, Render                                    |
+| [API Reference](backend/openapi.yaml)               | OpenAPI 3.1 — paste into [Swagger Editor](https://editor.swagger.io/) |
+| [Changelog](CHANGELOG.md)                           | Release history (0.3.0 breaking changes)                              |
+| [Full Index](docs/README.md)                        | Complete documentation map                                            |
 
-### Cursor AI Rules
+**Cursor rules:** 37 rules in `.cursor/rules/` — full index with thesis lines and globs in [cursor-rules.md](docs/cursor-rules.md). Examples: `go-service` (business logic), `go-handler` (HTTP + spec consumption), `solidjs-pages` (data fetching patterns).
 
-37 rules in `.cursor/rules/` auto-activate based on which file you're editing:
-
-| Rule | Activates on | What it does |
-|------|-------------|-------------|
-| `go-service.mdc` | `backend/internal/service/**/*.go` | Service patterns: retry, auth, transactions, pagination |
-| `go-handler.mdc` | `handler/**/*.go`, `middleware/**/*.go` | Handler patterns: interfaces, validation, module spec consumption, route registration |
-| `sse-realtime.mdc` | `service/sse/**/*.go`, `sse.ts` | SSE hub, ticket auth, keepalive, reconnect |
-| `write-tests.mdc` | `backend/**/*_test.go` | Backend integration and unit test patterns |
-| `solidjs-pages.mdc` | `routes/**/*.tsx` | Data fetching, alive guards, modals, Switch/Match |
-| `frontend-forms.mdc` | Description-triggered | Form submission, toast vs Alert, batch() in try/catch |
-| `ci-workflow.mdc` | `.github/workflows/*` | CI patterns, Codecov, common mistakes |
-| `rename-tool.mdc` | `cmd/rename/*` | Domain-safe replacement, file coverage, name validation |
-| `document-module.mdc` | Description-triggered | Template for documenting existing modules |
-| `common-commands.mdc` | Description-triggered | Quick reference for dev, deploy, and GCP CLI commands |
-| `write-rules.mdc` | Description-triggered | How to write, update, and maintain Cursor rules |
-| + 16 more | Various | Migrations, seeds, infrastructure, refactoring, planning |
+---
 
 ## License
 
-[MIT](LICENSE). Some frontend dependencies (AG Grid Community, Observable Plot, Three.js) have their own licenses — review `frontend/package.json` before deploying commercially.
+[MIT](LICENSE). Some frontend dependencies (AG Grid Community, Observable Plot, Three.js) have their own licenses — review `frontend/package.json` before commercial use.
 
 ## Troubleshooting
 
-If `docker compose up` or the DevContainer fails to start, open **Docker Desktop → Troubleshoot → Clean / Purge data**, then retry. This clears stale volumes, port conflicts, and corrupted containers.
+Docker or DevContainer won't start? **Docker Desktop → Troubleshoot → Clean / Purge data**, then retry.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md).

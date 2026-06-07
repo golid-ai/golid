@@ -8,10 +8,13 @@ Thanks for your interest in contributing! This document covers the basics.
 # Clone and start
 git clone https://github.com/golid-ai/golid.git
 cd golid
+make setup
+export DATABASE_URL=postgres://dev:dev@localhost:5432/golid?sslmode=disable
+make migrate-up seed   # first run only
 docker compose up
 
 # Backend: http://localhost:8080
-# Frontend: http://localhost:3000
+# Frontend: cd frontend && npm run dev → http://localhost:3000
 ```
 
 See [docs/quick-start.md](docs/quick-start.md) for detailed setup instructions.

@@ -37,6 +37,12 @@ The DevContainer will:
 ```bash
 git clone https://github.com/golid-ai/golid.git my-project
 cd my-project
+make setup
+
+# First run only — migrate + seed the dev database
+export DATABASE_URL=postgres://dev:dev@localhost:5432/golid?sslmode=disable
+make migrate-up seed
+
 docker compose up
 ```
 
