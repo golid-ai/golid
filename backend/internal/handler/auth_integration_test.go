@@ -83,7 +83,7 @@ func TestRegisterAndLogin_Integration(t *testing.T) {
 
 	registerBody := `{"email":"handler-int@example.com","password":"password123","first_name":"Handler","last_name":"Test"}`
 	rec := doJSONRequest(e, http.MethodPost, "/api/v1/auth/register", registerBody, nil)
-	if rec.Code != http.StatusOK {
+	if rec.Code != http.StatusCreated {
 		t.Fatalf("register status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 
@@ -108,7 +108,7 @@ func TestRegisterDuplicateEmail_Integration(t *testing.T) {
 
 	body := `{"email":"dupe-handler@example.com","password":"password123","first_name":"A","last_name":"B"}`
 	rec := doJSONRequest(e, http.MethodPost, "/api/v1/auth/register", body, nil)
-	if rec.Code != http.StatusOK {
+	if rec.Code != http.StatusCreated {
 		t.Fatalf("first register status = %d", rec.Code)
 	}
 
@@ -145,7 +145,7 @@ func TestMeWithJWT_Integration(t *testing.T) {
 
 	registerBody := `{"email":"me-handler@example.com","password":"password123","first_name":"Me","last_name":"User"}`
 	rec := doJSONRequest(e, http.MethodPost, "/api/v1/auth/register", registerBody, nil)
-	if rec.Code != http.StatusOK {
+	if rec.Code != http.StatusCreated {
 		t.Fatalf("register status = %d", rec.Code)
 	}
 

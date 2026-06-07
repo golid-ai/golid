@@ -337,12 +337,14 @@ jobs:
           verbose: true
           skip_validation: true
 
-      # Flags known vulnerabilities in dependencies.
-      # continue-on-error: transitive dep vulns are often unfixable
-      # without upstream patches — flag, don't block.
+      # Flags known vulnerabilities in dependencies (non-blocking).
+      # Transitive dep vulns in vinxi/@solidjs/start often need upstream patches.
       - name: Audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        run: |
+          npm audit --audit-level=high || {
+            echo "::warning::npm audit reported high-severity issues — see log above (non-blocking)"
+            exit 0
+          }
 
   scaffold-verify:
     name: Scaffold Verify
