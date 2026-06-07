@@ -2,6 +2,7 @@
 
 > **Status:** Complete (archived 2026-06-07) — Codecov project **82.98%**; `target: 80%` gate locked (B3b)  
 > **Risk tier:** T2 — toolchain and test expansion, no auth/schema/migration changes  
+> **Post-archive note (v0.3.2 shelf):** Headline counts are **995** (353 Go unit + 622 Vitest + 20 E2E); **42** integration tests run separately. B4d-era tables below record point-in-time numbers.
 > **Thesis:** Close the gap between honest Codecov reporting (~68% project at start) and
 > documented quality bars (~80%) by testing uncovered backend wiring/observability,
 > aligning Codecov paths with Vitest excludes, and upgrading `@typescript-eslint`
@@ -43,9 +44,9 @@ use **merged CI profile**, not `go test ./...` alone.
 
 | Doc | Was | Fixed |
 |-----|-----|-------|
-| `docs/decisions/002-deferred-capabilities.md` | "82%+ test coverage" | `993 tests; Codecov ~78% recovering toward 80%+` |
+| `docs/decisions/002-deferred-capabilities.md` | "82%+ test coverage" | **995** headline tests; Codecov **~83%** (`target: 80%` gate) |
 | `docs/patterns/testing/1-Page.md` | 80/75/80% pyramid + "Coverage > 80%" DoD | Vitest floors 75/54/78/75 + plan link + post-B4d local % |
-| `README.md` / `CHANGELOG.md` | 831 tests | **993** tests (351 Go + 622 Vitest + 20 E2E) |
+| `README.md` / `CHANGELOG.md` | 831 tests | **995** tests (353 Go unit + 622 Vitest + 20 E2E) |
 | `write-tests-frontend.mdc` | 68/47/73/68 thresholds | 75/54/78/75 + plan link |
 
 ### Reproducible output (post-B4d, local)
