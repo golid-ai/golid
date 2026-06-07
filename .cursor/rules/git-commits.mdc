@@ -39,7 +39,7 @@ only when it adds clarity.
 - No period at end of first line
 - Body separated from title by blank line
 - One logical change per commit — don't bundle unrelated changes
-- Run `scripts/check_spec_drift.sh` before commits touching module-owned handler/service files.
+- Before committing code that touches module-owned handler/service files, run `scripts/check_spec_drift.sh <base-ref>` and fix drift in the same commit (update `docs/modules/<module>/spec.md`, usually the Tests section). If the change legitimately does not affect module behavior, add `[skip-spec(<module>): <reason>]` to the commit message.
 - Use HEREDOC for multi-line: `git commit -m "$(cat <<'EOF' ... EOF)"`
 - Do NOT commit `.env`, credentials, or secret files
 - Do NOT amend commits that have been pushed

@@ -6,7 +6,7 @@
 
 ## Context
 
-After completing the V1 starter (auth, 70+ components, CI/CD, 82%+ test coverage, deployment infra), we evaluated what additional engineering capabilities a "rebuild Notion at Google level" project would need. Twenty-one capabilities were identified as gaps between "production starter" and "scaled production service," or flagged during the pre-launch audit as improvements that aren't worth the cost right now.
+After completing the V1 starter (auth, 70+ components, CI/CD, 993 tests; Codecov **82.98%** project per [coverage-and-eslint plan](../plans/archive/6-7-26/coverage-and-eslint.md), deployment infra), we evaluated what additional engineering capabilities a "rebuild Notion at Google level" project would need. Twenty-one capabilities were identified as gaps between "production starter" and "scaled production service," or flagged during the pre-launch audit as improvements that aren't worth the cost right now.
 
 ## Decision
 
@@ -187,7 +187,7 @@ After completing the V1 starter (auth, 70+ components, CI/CD, 82%+ test coverage
 The starter provides every engineering discipline needed for production:
 
 - **Auth:** Register through email verification, password reset, token refresh, session revocation
-- **Testing:** 82%+ coverage (unit + integration + component + E2E), CI-enforced thresholds
+- **Testing:** 993 tests (351 Go + 622 Vitest + 20 Playwright E2E); Codecov **82.98%** project (`target: 80%` gate); Vitest floors 75/54/78/75 on included files; CI-enforced thresholds
 - **Security:** 2-layer auth, rate limiting, CORS, parameterized queries, no leaked internals
 - **Observability:** Structured logging, optional OpenTelemetry + Prometheus
 - **Deployment:** Docker, Cloud Run infra, env-driven config

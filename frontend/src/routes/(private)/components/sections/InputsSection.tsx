@@ -14,7 +14,7 @@ import { TimePicker } from "~/components/molecules/TimePicker";
 // TYPES
 // ============================================================================
 
-export interface InputsSectionProps {}
+export type InputsSectionProps = Record<string, never>;
 
 // ============================================================================
 // MAIN COMPONENT

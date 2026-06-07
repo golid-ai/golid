@@ -47,4 +47,57 @@ describe("Textarea", () => {
     render(() => <Textarea placeholder="Read only" readOnly />);
     expect(screen.getByPlaceholderText("Read only")).toHaveAttribute("readonly");
   });
+
+  test("renders md size", () => {
+    const { container } = render(() => <Textarea size="md" placeholder="Medium" />);
+    const textarea = container.querySelector("textarea")!;
+    expect(textarea.className).toContain("min-h-[120px]");
+  });
+
+  test("autoGrow adjusts height on input", async () => {
+    const { container } = render(() => <Textarea autoGrow placeholder="Growing" />);
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    Object.defineProperty(textarea, "scrollHeight", { configurable: true, value: 120 });
+
+    await fireEvent.input(textarea, { target: { value: "Line one\nLine two" } });
+    expect(textarea.style.height).toBe("120px");
+    expect(textarea.className).toContain("resize-none");
+    expect(textarea.className).toContain("overflow-hidden");
+  });
+
+  test("autoGrow uses compact min height for sm size", () => {
+    const { container } = render(() => <Textarea autoGrow size="sm" placeholder="Compact" />);
+    const textarea = container.querySelector("textarea")!;
+    expect(textarea.className).toContain("min-h-[38px]");
+    expect(textarea).toHaveAttribute("rows", "1");
+  });
+
+  test("autoGrow uses lg min height", () => {
+    const { container } = render(() => <Textarea autoGrow size="lg" placeholder="Large grow" />);
+    const textarea = container.querySelector("textarea")!;
+    expect(textarea.className).toContain("min-h-[120px]");
+  });
+
+  test("shows mobile resize handle when autoGrow is disabled", () => {
+    const { container } = render(() => <Textarea placeholder="Resizable" />);
+    expect(container.querySelector(".textarea-resize")).toBeTruthy();
+    expect(container.querySelector("svg")).toBeTruthy();
+  });
+
+  test("touch resize updates textarea height", async () => {
+    const { container } = render(() => <Textarea placeholder="Touch resize" />);
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    Object.defineProperty(textarea, "offsetHeight", { configurable: true, value: 100 });
+
+    const handle = container.querySelector("[class*='cursor-ns-resize']") as HTMLElement;
+    await fireEvent.touchStart(handle, {
+      touches: [{ clientY: 100 } as Touch],
+    });
+    await fireEvent.touchMove(document, {
+      touches: [{ clientY: 140 } as Touch],
+    });
+    await fireEvent.touchEnd(document);
+
+    expect(textarea.style.height).toBe("140px");
+  });
 });

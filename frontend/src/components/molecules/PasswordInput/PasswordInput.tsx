@@ -7,7 +7,7 @@ import { Icon } from "~/components/atoms/Icon";
 // TYPES
 // ============================================================================
 
-export interface PasswordInputProps extends Omit<InputProps, "type" | "rightIcon"> {}
+export type PasswordInputProps = Omit<InputProps, "type" | "rightIcon">;
 
 // ============================================================================
 // COMPONENT

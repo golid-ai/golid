@@ -11,7 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from "~/components/molecules/ToggleGroup
 // TYPES
 // ============================================================================
 
-export interface ControlSectionProps {}
+export type ControlSectionProps = Record<string, never>;
 
 // ============================================================================
 // MAIN COMPONENT

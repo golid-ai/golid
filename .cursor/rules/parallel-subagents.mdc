@@ -9,6 +9,8 @@ alwaysApply: true
 
 When a task involves **auditing or editing 5+ independent files**, prefer parallel subagents over sequential tool calls. If changes have ordering dependencies, keep dependent steps sequential.
 
+Running **multiple plans** in parallel (each with its own implement → audit loop) requires **one worktree per plan** — see `plan-execution-loop` "Multiple plans in parallel".
+
 ## When to parallelize
 
 - **Audits**: searching for patterns, checking consistency, or reviewing code across 5+ files

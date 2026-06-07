@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { loginSchema, signupSchema, emailSchema, passwordSchema } from "./validation";
+import { z } from "zod";
+import {
+  loginSchema,
+  signupSchema,
+  emailSchema,
+  passwordSchema,
+  validate,
+  getFirstError,
+} from "./validation";
 
 describe("emailSchema", () => {
   it("accepts valid email", () => {
@@ -28,6 +36,10 @@ describe("passwordSchema", () => {
   it("rejects empty string", () => {
     expect(passwordSchema.safeParse("").success).toBe(false);
   });
+
+  it("rejects passwords over 72 characters", () => {
+    expect(passwordSchema.safeParse("a".repeat(73)).success).toBe(false);
+  });
 });
 
 describe("loginSchema", () => {
@@ -46,6 +58,14 @@ describe("loginSchema", () => {
 
   it("rejects missing password", () => {
     const result = loginSchema.safeParse({ email: "user@example.com" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid email format", () => {
+    const result = loginSchema.safeParse({
+      email: "not-an-email",
+      password: "password123",
+    });
     expect(result.success).toBe(false);
   });
 });
@@ -102,5 +122,55 @@ describe("signupSchema", () => {
       confirmPassword: "different456",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("validate", () => {
+  const schema = z.object({
+    email: z.string().email("Invalid email"),
+    name: z.string().min(1, "Name is required"),
+  });
+
+  it("returns parsed data on success", () => {
+    const result = validate(schema, { email: "a@b.com", name: "Alice" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBe("a@b.com");
+    }
+  });
+
+  it("returns field errors on failure", () => {
+    const result = validate(schema, { email: "bad", name: "" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.email).toBe("Invalid email");
+      expect(result.errors.name).toBe("Name is required");
+    }
+  });
+
+  it("keeps first error when multiple issues share a path", () => {
+    const dupSchema = z
+      .object({ field: z.string() })
+      .superRefine((_val, ctx) => {
+        ctx.addIssue({ code: "custom", message: "First error", path: ["field"] });
+        ctx.addIssue({ code: "custom", message: "Second error", path: ["field"] });
+      });
+    const result = validate(dupSchema, { field: "x" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.field).toBe("First error");
+    }
+  });
+});
+
+describe("getFirstError", () => {
+  it("returns first issue message", () => {
+    const error = loginSchema.safeParse({}).error!;
+    expect(getFirstError(error)).toBeTruthy();
+  });
+
+  it("returns fallback when no issues", () => {
+    const empty = new z.ZodError([]);
+    expect(getFirstError(empty)).toBe("Validation failed");
   });
 });

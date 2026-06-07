@@ -4,6 +4,7 @@ import { MetaProvider } from "@solidjs/meta";
 
 const mockLogin = vi.fn();
 const mockNavigate = vi.fn();
+let mockSearchParams: Record<string, string> = {};
 
 vi.mock("~/lib/auth", () => ({
   auth: {
@@ -13,7 +14,7 @@ vi.mock("~/lib/auth", () => ({
 
 vi.mock("@solidjs/router", () => ({
   useNavigate: () => mockNavigate,
-  useSearchParams: () => [{}],
+  useSearchParams: () => [mockSearchParams],
   A: (props: any) => <a href={props.href}>{props.children}</a>,
 }));
 
@@ -22,6 +23,7 @@ import Login from "./index";
 describe("Login Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParams = {};
   });
 
   const renderLogin = () =>
@@ -68,6 +70,25 @@ describe("Login Page", () => {
       password: "password123",
     });
     expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("navigates to redirectTo param after successful login", async () => {
+    mockSearchParams = { redirectTo: "%2Fsettings" };
+    mockLogin.mockResolvedValueOnce({});
+
+    renderLogin();
+
+    await fireEvent.input(screen.getByPlaceholderText("Email"), {
+      target: { value: "test@example.com" },
+    });
+    await fireEvent.input(screen.getByPlaceholderText("Password"), {
+      target: { value: "password123" },
+    });
+    await fireEvent.click(screen.getByText("Sign in"));
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/settings");
   });
 
   it("shows error on failed login", async () => {

@@ -1,6 +1,6 @@
 # Cursor Rules
 
-> 37 rules in `.cursor/rules/` that give the AI agent context about this codebase.
+> 38 rules in `.cursor/rules/` that give the AI agent context about this codebase.
 
 ## System Philosophy
 
@@ -66,6 +66,7 @@ These fire when the task description matches, or when explicitly invoked.
 | `workflow-routing` | Choosing plan/audit/review depth | Match process weight to blast radius so small changes stay light and high-risk work still gets full contract, audit, and rollback gates. |
 | `plan-feature` | Planning a new module | Plan the data model and permission model upfront. Everything else — API surface, frontend, tests — follows from those two decisions. |
 | `slice-and-ship` | Implementing a planned feature | Ship one acceptance criterion end-to-end before starting the next. The slice is the unit of audit and review. |
+| `plan-execution-loop` | Running `docs/plans/*.md` slices | One slice at a time: implement → audit (≥90/100) → fix → re-audit before the next slice. Parent orchestrates; subagents implement and audit. |
 | `plan-infra` | Planning deploy/env/ops work | Infra plans start from operator commands and environment boundaries; code changes follow from making those commands safe. |
 | `audit-bugs` | Bug/security review | Run this checklist against any file or module being reviewed. Each item references a real bug found in this codebase. |
 | `audit-codebase` | Release readiness | Score the codebase across 7 categories with exact file citations. Check ADRs before flagging documented design decisions. |

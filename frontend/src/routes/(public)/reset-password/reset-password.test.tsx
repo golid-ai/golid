@@ -64,6 +64,14 @@ describe("ResetPassword Page", () => {
     expect(screen.getByText("Link Expired")).toBeInTheDocument();
   });
 
+  it("shows expired state when token validation API fails", async () => {
+    mockSearchParams = { token: "bad-token" };
+    mockGet.mockRejectedValueOnce(new Error("Network error"));
+    renderPage();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.getByText("Link Expired")).toBeInTheDocument();
+  });
+
   it("validates password mismatch", async () => {
     mockSearchParams = { token: "valid-token" };
     mockGet.mockResolvedValueOnce({ valid: true });
@@ -117,5 +125,45 @@ describe("ResetPassword Page", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(screen.getByText("Password Reset!")).toBeInTheDocument();
+  });
+
+  it("shows error when reset API fails", async () => {
+    mockSearchParams = { token: "valid-token" };
+    mockGet.mockResolvedValueOnce({ valid: true });
+    mockPost.mockRejectedValueOnce({ message: "Token has expired" });
+    renderPage();
+    await new Promise((r) => setTimeout(r, 50));
+
+    await fireEvent.input(screen.getByLabelText("New password"), {
+      target: { value: "newpassword123" },
+    });
+    await fireEvent.input(screen.getByLabelText("Confirm new password"), {
+      target: { value: "newpassword123" },
+    });
+    await fireEvent.click(screen.getByText("Reset password"));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(screen.getByText("Token has expired")).toBeInTheDocument();
+  });
+
+  it("shows generic error when reset API fails without message", async () => {
+    mockSearchParams = { token: "valid-token" };
+    mockGet.mockResolvedValueOnce({ valid: true });
+    mockPost.mockRejectedValueOnce({});
+    renderPage();
+    await new Promise((r) => setTimeout(r, 50));
+
+    await fireEvent.input(screen.getByLabelText("New password"), {
+      target: { value: "newpassword123" },
+    });
+    await fireEvent.input(screen.getByLabelText("Confirm new password"), {
+      target: { value: "newpassword123" },
+    });
+    await fireEvent.click(screen.getByText("Reset password"));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(
+      screen.getByText("Something went wrong. Please try again."),
+    ).toBeInTheDocument();
   });
 });

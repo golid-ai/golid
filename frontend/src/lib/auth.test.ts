@@ -52,11 +52,14 @@ describe("auth store", () => {
       mockLogin.mockResolvedValueOnce({ access_token: "at", refresh_token: "rt" } as any);
       mockMe.mockResolvedValueOnce(mockUser as any);
 
-      const user = await auth.login({ email: "test@example.com", password: "pass123" });
+      const userPromise = auth.login({ email: "test@example.com", password: "pass123" });
+      expect(auth.loading).toBe(true);
+      const user = await userPromise;
 
       expect(mockLogin).toHaveBeenCalledWith("test@example.com", "pass123");
       expect(mockTokens.set).toHaveBeenCalledWith("at", "rt");
       expect(user.email).toBe("test@example.com");
+      expect(auth.loading).toBe(false);
     });
 
     it("throws and sets error on failed login", async () => {
@@ -99,6 +102,27 @@ describe("auth store", () => {
       })).rejects.toBeDefined();
       expect(auth.error).toBe("Email taken");
     });
+
+    it("uses default error message when none provided", async () => {
+      mockRegister.mockRejectedValueOnce({});
+
+      await expect(auth.signup({
+        email: "x@y.com", password: "pass12345",
+        first_name: "A", last_name: "B",
+      })).rejects.toBeDefined();
+      expect(auth.error).toBe("Signup failed");
+    });
+  });
+
+  describe("initialize", () => {
+    it("skips re-fetch when already initialized", async () => {
+      mockMe.mockClear();
+      await auth.initialize();
+      const callsBefore = mockMe.mock.calls.length;
+      mockTokens.access = "another-token";
+      await auth.initialize();
+      expect(mockMe.mock.calls.length).toBe(callsBefore);
+    });
   });
 
   describe("logout", () => {
@@ -115,6 +139,26 @@ describe("auth store", () => {
       await auth.logout();
       expect(mockTokens.clear).toHaveBeenCalled();
       expect(auth.user).toBeNull();
+    });
+  });
+
+  describe("getters", () => {
+    it("isAdmin returns true for admin user", () => {
+      auth.updateUser({ id: "1", email: "a@test.com", type: "admin" } as any);
+      expect(auth.isAdmin).toBe(true);
+      expect(auth.isAuthenticated).toBe(true);
+    });
+
+    it("isAdmin returns false for regular user", () => {
+      auth.updateUser({ id: "1", email: "u@test.com", type: "user" } as any);
+      expect(auth.isAdmin).toBe(false);
+    });
+
+    it("clears user on auth:session-expired event", () => {
+      auth.updateUser({ id: "1", email: "u@test.com", type: "user" } as any);
+      window.dispatchEvent(new Event("auth:session-expired"));
+      expect(auth.user).toBeNull();
+      expect(auth.initialized).toBe(true);
     });
   });
 

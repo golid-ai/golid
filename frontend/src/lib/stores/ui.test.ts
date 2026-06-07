@@ -61,6 +61,18 @@ describe("ui.setTheme", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(mockStorage["theme"]).toBe("light");
   });
+
+  it("updates favicon href when theme changes", () => {
+    const link = document.createElement("link");
+    link.id = "favicon";
+    link.href = "/images/favicon-light/favicon.svg";
+    document.head.appendChild(link);
+
+    ui.setTheme("dark");
+    expect(link.href).toContain("favicon-dark");
+
+    link.remove();
+  });
 });
 
 describe("ui.sidebar", () => {
@@ -90,6 +102,12 @@ describe("ui.mobile", () => {
 
   it("auto-collapses sidebar when entering mobile", () => {
     ui.setSidebarCollapsed(false);
+    ui.setIsMobile(true);
+    expect(ui.sidebarCollapsed).toBe(true);
+  });
+
+  it("leaves collapsed sidebar unchanged when entering mobile", () => {
+    ui.setSidebarCollapsed(true);
     ui.setIsMobile(true);
     expect(ui.sidebarCollapsed).toBe(true);
   });

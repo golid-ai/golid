@@ -13,7 +13,7 @@ import { ui } from "~/lib/stores/ui";
 // TYPES
 // ============================================================================
 
-export interface AlertsSectionProps {}
+export type AlertsSectionProps = Record<string, never>;
 
 // ============================================================================
 // MAIN COMPONENT
