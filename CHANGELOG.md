@@ -6,17 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-07
+
+Post-0.3.0 hygiene, coverage recovery to ~83%, and README factory positioning.
+
 ### Fixed
 
 - **v0.3.0 backport audit hygiene** — frontend Dockerfiles on Node 24 (aligned with `.nvmrc`/CI); `make rename` updates `scripts/init-test-db.sh`; `iteration-surface` example uses Golid `/components` showcase; `ci-workflow` documents `check_rule_health.sh`; integration-test commands in README/quick-start/start-here/`write-tests` include `TEST_MIGRATIONS_PATH` and scoped shards; `TestTEST_MIGRATIONS_PATHEnv`; manual QA checklists use `curl` for `/ready` and SSE reconnect
 
 ### Changed
 
-- **README positioning** — hero and “How the factory works” lead with AI-native harness; plan-first (`planning-standards`) then execution loop; “Why Golid?” adds factory vs blank-repo+AI comparison
-- **Coverage recovery + TS-eslint 8** — Codecov `ignore:` aligned with Vitest showcase excludes; backend `internal/wire/` tests; frontend component branch tests through B4d. Codecov project **82.98%** on CI upload; `codecov.yml` `target: 80%` gate locked (removed deprecated `notify:`). Vitest floors **75/54/78/75**. `@typescript-eslint/*@8.60`, `eslint-plugin-solid@0.14.5` on ESLint 8 (clears minimatch audit chain). `npm overrides` pins `h3@1.15.9` (patched) until vinxi/@solidjs/start bump their dependency; do not `npm audit fix --force`
-- **Test counts** — **995** total (**353** Go unit + **622** Vitest + **20** Playwright E2E); **+2** Go unit (`TestTEST_MIGRATIONS_PATHEnv` audit slice); integration tests run separately via `-tags integration`
+- **README positioning** — hero and “How the factory works” lead with AI-native harness; `workflow-routing` → `planning-standards` → `slice-and-ship` / `plan-execution-loop`; “Why Golid?” adds factory vs blank-repo+AI comparison
+- **Coverage recovery + TS-eslint 8** — Codecov `ignore:` aligned with Vitest showcase excludes; backend `internal/wire/` tests; frontend component branch tests through B4d. Codecov project **~83%** on CI upload; `codecov.yml` `target: 80%` gate locked (removed deprecated `notify:`). Vitest floors **75/54/78/75**. `@typescript-eslint/*@8.60`, `eslint-plugin-solid@0.14.5` on ESLint 8. `npm overrides` pins `h3@1.15.9` (patched) until vinxi/@solidjs/start bump their dependency
+- **Test counts** — **995** total (**353** Go unit + **622** Vitest + **20** Playwright E2E); integration tests run separately via `-tags integration`
 - **Cursor rules** — `plan-execution-loop` (implement → audit ≥90 → fix per plan slice); **38 rules** total
-- **Tailwind CSS 4** — `@tailwindcss/vite` only (no PostCSS plugin), CSS `@import 'tailwindcss'` entry in `app.css`, `tailwind-variants` v1 (removed `withTV`), design-system border preflight, button cursor restore, v4 utility renames (`shadow-xs`, `outline-hidden`; custom radius scale keeps `rounded-sm`)
+- **Tailwind CSS 4** — `@tailwindcss/vite` only (no PostCSS plugin), CSS `@import 'tailwindcss'` entry in `app.css`, `tailwind-variants` v1 (removed `withTV`), design-system border preflight, button cursor restore, v4 utility renames (`shadow-xs`, `outline-hidden`)
 
 ## [0.3.0] - 2026-06-07
 
