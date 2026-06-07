@@ -1,0 +1,36 @@
+---
+description: "Plan deployment, environment, and operations changes"
+alwaysApply: false
+---
+
+# Plan Infrastructure
+
+> **Thesis:** Infra plans start from operator commands and environment boundaries; code changes follow from making those commands safe.
+
+Use this rule for deploy, environment, DNS, reset, secrets, database operations, and runbook plans.
+
+## Checklist
+
+- Define operator commands first, e.g. `./scripts/deploy.sh demo --reset`.
+- Verify current infra paths: deploy scripts, Cloud Build files, Dockerfiles, env files, Secret Manager names, DNS/custom domains, migrations, and seed files.
+- Trace every env var across the chain: config file, deploy script, Cloud Run env/secrets, Docker build args for `VITE_*`, and runtime code.
+- Separate environments by purpose, data, reset policy, third-party credentials, buckets, and auth-cookie posture.
+- State whether custom domains are manual operator steps or script-managed.
+- Name reset/rollback commands and the minimum safety gates required.
+- Include cost/scaling assumptions, especially always-on resources like Cloud SQL.
+- Document the runbook in `docs/`, not just the plan.
+
+## Safety Calibration
+
+- Match safeguards to the failure mode. Manual demo reset needs fewer gates than scheduled prod data mutation.
+- Prefer simple gates first: explicit env, DB/instance pattern, and DB marker.
+- Add scheduler/concurrency/advisory-lock complexity only when scheduled or concurrent operations actually exist.
+
+## Anti-Rationalization
+
+| Excuse | Counter |
+| --- | --- |
+| "We'll wire the env var during deploy" | Env vars fail at the weakest link. Specify config, build, deploy, and runtime plumbing. |
+| "It's only demo data" | Demo data is part of the product surface. Seed it around the walkthrough, not convenience. |
+| "The reset script is obviously safe" | A tired operator will run the wrong command. Add explicit env and DB guards. |
+| "Costs are small" | Cloud Run can scale to zero; Cloud SQL usually cannot. Price always-on resources. |

@@ -1,0 +1,143 @@
+---
+description: Patterns for frontend E2E tests — Playwright selectors, SPA waits, serial workers, and full-stack setup
+globs: frontend/tests/e2e/*.spec.ts
+alwaysApply: false
+---
+
+# Writing E2E Tests
+
+> **Thesis:** E2E tests verify browser-visible user journeys against the full
+> stack, so they wait for rendered UI, use stable role selectors, and run
+> serially against shared state.
+
+E2E tests live in `frontend/tests/e2e/`. They require the full stack running
+(backend + DB + frontend).
+
+## SPA Navigation: Wait for Page Content
+
+SolidJS uses client-side routing (`pushState`). Playwright's `waitForURL` waits
+for a browser `load` event that never fires during SPA navigation. Always wait
+for page content instead.
+
+```typescript
+// BAD: hangs forever on SPA navigation
+await page.click('button[type="submit"]');
+await page.waitForURL("**/dashboard", { timeout: 15000 });
+
+// GOOD: waits for actual rendered content
+await page.click('button[type="submit"]');
+await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
+  timeout: 15000,
+});
+```
+
+## Login Verification
+
+The login page shows "Welcome back" as its heading. Never use `/welcome/i` to
+verify login succeeded because it matches the login page before login completes.
+
+```typescript
+// BAD: matches the login page itself
+await expect(page.getByText(/welcome/i)).toBeVisible();
+
+// GOOD: "Dashboard" h1 only exists after successful login
+await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
+  timeout: 15000,
+});
+```
+
+## Selectors
+
+When text appears in multiple elements, use role-based selectors:
+
+```typescript
+// BAD: "Golid" appears in navbar, h1, and footer
+await expect(page.getByText("Golid")).toBeVisible();
+
+// GOOD: targets the specific heading
+await expect(page.getByRole("heading", { name: "Golid" })).toBeVisible();
+```
+
+When a heading and button share text, target the button role:
+
+```typescript
+// BAD: may click the h2 heading instead of the button
+await page.click("text=Change Password");
+
+// GOOD
+await page.getByRole("button", { name: "Change Password" }).click();
+```
+
+Playwright has no `getByDisplayValue`. Use `locator` + `toHaveValue`:
+
+```typescript
+await expect(page.locator("#email")).toHaveValue("user@example.com");
+```
+
+## Form Validation
+
+SolidJS signals may not settle instantly after `fill()`. Wait for the submit
+button to be enabled before clicking:
+
+```typescript
+await page.fill('[placeholder="Create a password"]', "password123");
+await page.fill('[placeholder="Confirm your password"]', "password123");
+await expect(page.locator('button[type="submit"]')).toBeEnabled({
+  timeout: 5000,
+});
+await page.click('button[type="submit"]');
+```
+
+When client-side validation disables submit, assert `toBeDisabled()` rather than
+clicking a disabled button:
+
+```typescript
+await expect(page.locator('button[type="submit"]')).toBeDisabled();
+```
+
+The signup form uses `type="text"` with `inputmode="email"` rather than
+`type="email"`. Use placeholder selectors:
+
+```typescript
+page.locator('[placeholder="you@example.com"]');
+```
+
+## Prefer Client-Side Navigation
+
+For authenticated pages, use sidebar links instead of `page.goto()`. `page.goto()`
+triggers a full SSR request which can fail if the page has SSR-unsafe imports.
+
+```typescript
+// BAD — triggers SSR, may show blank page if component uses window/document
+await page.goto("/settings");
+
+// GOOD — client-side navigation, no SSR
+await page.locator('a[href="/settings"]').first().click();
+await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+```
+
+## Duplicate Elements (Desktop + Mobile)
+
+Responsive layouts often render the same link/button twice. Use `.first()`:
+
+```typescript
+await expect(page.getByRole("link", { name: "Sign Up" }).first()).toBeVisible();
+```
+
+## Serial Execution
+
+E2E tests run with serial workers: `workers: 1` and `fullyParallel: false`.
+Auth endpoints use strict rate limiting (`AUTH_RATE_LIMIT`, default 5 req/min).
+Parallel workers exhaust the limit instantly, and tests share a mutable database.
+
+## E2E Test Credentials
+
+E2E tests use seeded users from `backend/seeds/dev_seed.sql`. If you change seed
+data credentials, update ALL E2E test files in `frontend/tests/e2e/`.
+
+## Running Tests
+
+```bash
+cd frontend && npx playwright install chromium  # first time only
+cd frontend && npx playwright test
+```

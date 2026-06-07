@@ -85,3 +85,19 @@ if t != nil { s := t.Format(time.RFC3339); result.Field = &s }
 - **Verify before marking done** — run tests, typecheck, and build after every change. Diff behavior against what you expect. A change isn't done until it's proven correct, not just "looks right."
 
 Full details with code examples in the project documentation.
+
+## Rule Index
+
+Domain rules fire automatically via file globs. For workflow tasks, invoke by name:
+
+- **Workflow routing:** `workflow-routing` (classify T0–T3 before choosing plan, slice, audit, or review depth)
+- **Common commands:** `common-commands` (known-good local/dev/test/deploy commands)
+- **Git conventions:** `git-commits` (commit messages, branch naming, change sizing)
+- **Any repo plan:** `planning-standards` (quality bar for `docs/plans/**/*.md`)
+- **Plan a new feature:** `plan-feature` → `slice-and-ship` → domain rules → `write-tests` → `audit-bugs`
+- **Plan infra/deploy/env work:** `plan-infra` → `deploy-infra` → `ci-workflow` as needed
+- **Implement a planned feature:** `slice-and-ship` (implement → test → sync → commit → audit, one criterion at a time)
+- **Document a module:** `document-module` → `audit-codebase` (verify)
+- **Module specs:** `docs/modules/{module}/spec.md` — auth, users, feature (extend as modules land)
+- **Frontend routing:** `solidstart-routing` — `(private)` / `(public)` groups and `PRIVATE_ROUTES`
+- **Frontend tests:** `write-tests-frontend`; **E2E:** `write-tests-e2e`; **backend tests:** `write-tests`
