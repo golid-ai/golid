@@ -1,6 +1,6 @@
 ---
 description: SSE and real-time event patterns — hub, ticket auth, keepalive, reconnect
-globs: backend/internal/service/sse*.go,backend/internal/handler/sse*.go,frontend/src/lib/sse.ts
+globs: backend/internal/service/sse/**/*.go,backend/internal/handler/sse*.go,frontend/src/lib/sse.ts
 alwaysApply: false
 ---
 
@@ -8,12 +8,15 @@ alwaysApply: false
 
 ## Hub Architecture
 
-`SSEHub` is a singleton created in `main.go`. Per-user channel sets with buffered channels (16). Non-blocking sends — if a client's buffer is full, the event is dropped (logged as warning). Max 5 connections per user prevents resource exhaustion.
+`SSEHub` is a singleton created in `wire.BuildServices` (`internal/wire/services.go`). Per-user channel sets with buffered channels (16). Non-blocking sends — if a client's buffer is full, the event is dropped (logged as warning). Max 5 connections per user prevents resource exhaustion.
 
 ```go
-sseHub := service.NewSSEHub(cfg.SSETicketTTL)
+// in wire.BuildServices:
+sseHub := sse.NewSSEHub(cfg.SSETicketTTL)
 // Pass to handler and any service that needs to push events
 ```
+
+`main.go` shuts down the hub after HTTP drain: `svcs.SSEHub.Shutdown()`.
 
 ## Ticket Auth (not JWT in URL)
 
@@ -42,7 +45,7 @@ The hub is in-memory — all connected clients must be on the same instance. For
 Backend — publish from any service:
 
 ```go
-sseHub.Send(userID, service.SSEEvent{
+sseHub.Send(userID, sse.SSEEvent{
     Event: "order_updated",
     Data:  map[string]any{"order_id": orderID, "status": newStatus},
 })

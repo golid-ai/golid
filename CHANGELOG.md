@@ -64,7 +64,7 @@ Production hardening backport from uflex dogfood — wire/subpackages, parallel 
 ### Breaking
 
 - **Import paths** — flat `internal/service/*.go` moved to domain subpackages (`internal/service/auth/`, `user/`, `sse/`, etc.). Update imports after upgrading; run `go run ./cmd/rename` when forking.
-- **`internal/wire/`** — application wiring extracted from monolithic `main.go`. Entrypoints now compose dependencies via `wire.Build()`.
+- **`internal/wire/`** — application wiring extracted from monolithic `main.go`. Entrypoints now compose dependencies via `wire.BuildServices`, `wire.BuildHandlers`, and `wire.RegisterRoutes`.
 - **`pagination` / `retry` paths** — helpers moved from `internal/service/` to top-level `internal/pagination/` and `internal/retry/`.
 - **Node 24 + Vitest 4** — frontend toolchain requires Node 24 (see `.nvmrc`) and Vitest 4.x. CI and devcontainer pin Node 24.
 - **`TEST_DATABASE_URL` required for integration tests** — integration tests no longer use the shared `public` schema or implicit defaults. Set `TEST_DATABASE_URL` (e.g. `postgres://dev:dev@localhost:5432/golid_test?sslmode=disable`) and run with `-tags integration`.

@@ -18,26 +18,28 @@ Test real SQL against a real PostgreSQL instance using `testutil.WithTestDB`.
 ```go
 //go:build integration
 
-package service_test
+package note
 
 import (
     "testing"
-    "github.com/golid-ai/golid/backend/internal/service"
+
+    "github.com/jackc/pgx/v5/pgxpool"
+
     "github.com/golid-ai/golid/backend/internal/testutil"
 )
 
-func TestItemService_Create(t *testing.T) {
+func TestNoteService_Create(t *testing.T) {
     testutil.WithTestDB(t, func(pool *pgxpool.Pool) {
-        svc := service.NewItemService(pool, 20, 100)
+        svc := NewNoteService(pool, 20, 100)
 
         // Seed prerequisite data with raw SQL
         _, err := pool.Exec(ctx, `INSERT INTO users (...) VALUES (...)`)
         // ...
 
         // Test the service method
-        result, err := svc.Create(ctx, &service.CreateItemInput{...})
+        result, err := svc.Create(ctx, &CreateNoteInput{...})
         if err != nil { t.Fatalf("expected no error, got %v", err) }
-        if result.Title != "Test Item" { t.Errorf("expected title 'Test Item', got %s", result.Title) }
+        if result.Title != "Test Note" { t.Errorf("expected title 'Test Note', got %s", result.Title) }
     })
 }
 ```
@@ -59,14 +61,14 @@ func TestItemService_Create(t *testing.T) {
 - **Conflict**: Duplicate entries. Expect `CONFLICT`.
 - **Edge cases**: Empty arrays, null optional fields, boundary values.
 
-Reference: existing `_integration_test.go` files in `backend/internal/service/`
+Reference: existing `*_integration_test.go` files in `backend/internal/service/<pkg>/`
 
 ## Unit Tests (Pure Logic)
 
 For validation helpers, parsing functions, and other pure logic — no build tag needed.
 
 ```go
-package service
+package pagination
 
 import "testing"
 
@@ -96,7 +98,7 @@ func TestNormalizePagination(t *testing.T) {
 - **Table-driven tests** — use `[]struct` pattern for multiple cases.
 - **File naming**: `x_test.go` in the same directory as the code.
 
-Reference: existing `_test.go` files in `backend/internal/service/`
+Reference: existing `_test.go` files in `backend/internal/pagination/`, `backend/internal/service/<pkg>/`, and other pure-logic packages
 
 ## Mock-based Handler Tests
 

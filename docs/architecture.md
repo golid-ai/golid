@@ -251,7 +251,7 @@ The backend uses two query approaches side by side:
 
 **sqlc** (`internal/db/`, `queries/*.sql`) — type-safe generated code for standard CRUD queries. The `queries/users.sql` and `queries/refresh_tokens.sql` files define SQL with sqlc annotations, and `sqlc generate` produces Go code with typed parameters and results. Use sqlc for straightforward single-table queries where the SQL is static.
 
-**Raw SQL in services** (`internal/service/*.go`) — for complex queries with dynamic WHERE clauses, multi-table joins, subqueries, and computed fields. Services use `pool.QueryRow` / `pool.Query` / `pool.Exec` directly with parameterized `$N` placeholders. Use raw SQL when sqlc's static analysis would require multiple query variants for what's logically one operation.
+**Raw SQL in services** (`internal/service/<pkg>/*.go`) — for complex queries with dynamic WHERE clauses, multi-table joins, subqueries, and computed fields. Services use `pool.QueryRow` / `pool.Query` / `pool.Exec` directly with parameterized `$N` placeholders. Use raw SQL when sqlc's static analysis would require multiple query variants for what's logically one operation.
 
 **When to use which:** If your query is a static single-table CRUD operation, add it to `queries/*.sql` and run `sqlc generate`. If it has dynamic WHERE clauses, joins, or complex aggregations, write raw SQL in the service with `$N` placeholders. Golid uses both — this is intentional, not inconsistent. Never `fmt.Sprintf` with user values into SQL.
 

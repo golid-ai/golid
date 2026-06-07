@@ -12,7 +12,7 @@ alwaysApply: false
 ## Order of Operations
 
 1. **Schema first** — read the migrations in `backend/migrations/` to understand tables, enums, relationships, indexes
-2. **Service logic** — read `backend/internal/service/*.go` for business rules, auth checks, transactions, status transitions
+2. **Service logic** — read `backend/internal/service/<module>/*.go` for business rules, auth checks, transactions, status transitions
 3. **Handler surface** — read `backend/internal/handler/*.go` for request validation, response shapes, route registration in `cmd/server/main.go`
 4. **Frontend routes** — read `frontend/src/routes/(private)/*.tsx` for pages, modals, state management
 5. **Write the spec** — fill the template below
@@ -117,7 +117,7 @@ Derived from handler route registration in `cmd/server/main.go`:
 | Layer | Files |
 |-------|-------|
 | Handler | `backend/internal/handler/x.go` |
-| Service | `backend/internal/service/x.go` |
+| Service | `backend/internal/service/x/x.go` |
 | Migration | `backend/migrations/000XXX_*.up.sql` |
 | Frontend | `frontend/src/routes/(private)/x/` |
 | Tests | `backend/internal/handler/x_test.go` |

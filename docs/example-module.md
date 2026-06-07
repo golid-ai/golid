@@ -11,7 +11,7 @@ None of these files exist in the repo — this is a reference spec. Copy the cod
 We'll build a "notes" module: authenticated users can create, list, view, update, and delete personal notes. This touches every layer of the stack:
 
 ```
-Migration → Query → Service → Handler → main.go → API client → Frontend route → Seed data
+Migration → Service → Handler → wire → API client → Frontend route → Seed data
 ```
 
 ---
@@ -49,10 +49,10 @@ Run: `migrate -path migrations -database "$DATABASE_URL" up`
 
 ## 2. Service
 
-Create `backend/internal/service/note.go`:
+Create `backend/internal/service/note/note.go`:
 
 ```go
-package service
+package note
 
 import (
 	"context"
@@ -64,6 +64,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/golid-ai/golid/backend/internal/apperror"
+	"github.com/golid-ai/golid/backend/internal/pagination"
 )
 
 type NoteService struct {
@@ -130,7 +131,7 @@ func (s *NoteService) Create(ctx context.Context, input *CreateNoteInput) (*Note
 
 // List returns paginated notes for a user.
 func (s *NoteService) List(ctx context.Context, userID string, page, perPage int, search string) (*NoteListResult, error) {
-	page, perPage = NormalizePagination(page, perPage, s.paginationDefault, s.paginationMax)
+	page, perPage = pagination.NormalizePagination(page, perPage, s.paginationDefault, s.paginationMax)
 	offset := (page - 1) * perPage
 
 	// Count total (with optional search filter)
@@ -293,7 +294,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/golid-ai/golid/backend/internal/apperror"
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/note"
 )
 
 type NoteHandler struct {
@@ -302,7 +303,7 @@ type NoteHandler struct {
 	paginationMax     int
 }
 
-func NewNoteHandler(noteService *service.NoteService, paginationDefault, paginationMax int) *NoteHandler {
+func NewNoteHandler(noteService *note.NoteService, paginationDefault, paginationMax int) *NoteHandler {
 	return &NoteHandler{noteService: noteService, paginationDefault: paginationDefault, paginationMax: paginationMax}
 }
 
@@ -332,7 +333,7 @@ func (h *NoteHandler) Create(c echo.Context) error {
 		return err
 	}
 
-	note, err := h.noteService.Create(c.Request().Context(), &service.CreateNoteInput{
+	item, err := h.noteService.Create(c.Request().Context(), &note.CreateNoteInput{
 		UserID:  userID,
 		Title:   req.Title,
 		Content: req.Content,
@@ -341,7 +342,7 @@ func (h *NoteHandler) Create(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusCreated, note)
+	return c.JSON(http.StatusCreated, item)
 }
 
 // List handles GET /api/v1/notes
@@ -369,12 +370,12 @@ func (h *NoteHandler) GetByID(c echo.Context) error {
 		return err
 	}
 
-	note, err := h.noteService.GetByID(c.Request().Context(), c.Param("id"), userID)
+	item, err := h.noteService.GetByID(c.Request().Context(), c.Param("id"), userID)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, note)
+	return c.JSON(http.StatusOK, item)
 }
 
 // Update handles PUT /api/v1/notes/:id
@@ -393,7 +394,7 @@ func (h *NoteHandler) Update(c echo.Context) error {
 		return err
 	}
 
-	note, err := h.noteService.Update(c.Request().Context(), &service.UpdateNoteInput{
+	item, err := h.noteService.Update(c.Request().Context(), &note.UpdateNoteInput{
 		NoteID:  c.Param("id"),
 		UserID:  userID,
 		Title:   req.Title,
@@ -403,7 +404,7 @@ func (h *NoteHandler) Update(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, note)
+	return c.JSON(http.StatusOK, item)
 }
 
 // Delete handles DELETE /api/v1/notes/:id
@@ -450,24 +451,35 @@ Key patterns used:
 
 ---
 
-## 4. Wire in main.go
+## 4. Wire in internal/wire/
 
-Add these lines to `backend/cmd/server/main.go`:
+`make new-module` prints the exact wiring checklist. Add these to the wire package (same pattern as scaffold output):
+
+**`backend/internal/wire/services.go` (`BuildServices`):**
 
 ```go
-// In the services block:
-noteService := service.NewNoteService(pool, cfg.PaginationDefault, cfg.PaginationMax)
-
-// In the handlers block:
-noteHandler := handler.NewNoteHandler(noteService, cfg.PaginationDefault, cfg.PaginationMax)
-
-// In the protected routes block:
-protected.POST("/notes", noteHandler.Create)
-protected.GET("/notes", noteHandler.List)
-protected.GET("/notes/:id", noteHandler.GetByID)
-protected.PUT("/notes/:id", noteHandler.Update)
-protected.DELETE("/notes/:id", noteHandler.Delete)
+noteService := note.NewNoteService(pool, cfg.PaginationDefault, cfg.PaginationMax)
+// Add field to Services struct: Note *note.NoteService
 ```
+
+**`backend/internal/wire/handlers.go` (`BuildHandlers`):**
+
+```go
+noteHandler := handler.NewNoteHandler(svcs.Note, cfg.PaginationDefault, cfg.PaginationMax)
+// Add field to Handlers struct: Note *handler.NoteHandler
+```
+
+**`backend/internal/wire/routes.go` (`registerProtectedRoutes`):**
+
+```go
+protected.POST("/notes", h.Note.Create)
+protected.GET("/notes", h.Note.List)
+protected.GET("/notes/:id", h.Note.GetByID)
+protected.PUT("/notes/:id", h.Note.Update)
+protected.DELETE("/notes/:id", h.Note.Delete)
+```
+
+Add `import "github.com/golid-ai/golid/backend/internal/service/note"` to `services.go` when constructing the service.
 
 ---
 

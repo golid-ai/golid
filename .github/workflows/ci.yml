@@ -211,7 +211,6 @@ jobs:
             -coverprofile=coverage-integration-${{ matrix.shard }}.out \
             -coverpkg=${{ env.COVERPKG }}
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/golid_test?sslmode=disable
           TEST_DATABASE_URL: postgres://test:test@localhost:5432/golid_test?sslmode=disable
           TEST_MIGRATIONS_PATH: ${{ github.workspace }}/backend/migrations
 
