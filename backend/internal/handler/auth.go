@@ -10,7 +10,9 @@ import (
 	"github.com/golid-ai/golid/backend/internal/apperror"
 	"github.com/golid-ai/golid/backend/internal/logger"
 	"github.com/golid-ai/golid/backend/internal/queue"
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/retry"
+	"github.com/golid-ai/golid/backend/internal/service/auth"
+	"github.com/golid-ai/golid/backend/internal/service/email"
 )
 
 // AuthHandler handles authentication endpoints.
@@ -23,7 +25,7 @@ type AuthHandler struct {
 }
 
 // NewAuthHandler creates a new auth handler.
-func NewAuthHandler(authService *service.AuthService, emailService *service.EmailService, q queuer, retryAttempts int, retryDelay time.Duration) *AuthHandler {
+func NewAuthHandler(authService *auth.AuthService, emailService *email.EmailService, q queuer, retryAttempts int, retryDelay time.Duration) *AuthHandler {
 	return &AuthHandler{authService: authService, emailService: emailService, queue: q, retryAttempts: retryAttempts, retryDelay: retryDelay}
 }
 
@@ -49,7 +51,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		})
 	}
 
-	result, err := h.authService.Register(c.Request().Context(), &service.RegisterInput{
+	result, err := h.authService.Register(c.Request().Context(), &auth.RegisterInput{
 		Email:     req.Email,
 		Password:  req.Password,
 		FirstName: req.FirstName,
@@ -79,7 +81,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 			}
 		} else {
 			go func() {
-			if err := service.Retry(h.retryAttempts, h.retryDelay, func() error {
+			if err := retry.Retry(h.retryAttempts, h.retryDelay, func() error {
 				return h.emailService.SendVerificationEmail(email, token)
 			}); err != nil {
 					logger.Error("failed to send verification email after retries",
@@ -112,7 +114,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return apperror.BadRequest("Email and password are required")
 	}
 
-	result, err := h.authService.Login(c.Request().Context(), &service.LoginInput{
+	result, err := h.authService.Login(c.Request().Context(), &auth.LoginInput{
 		Email:    req.Email,
 		Password: req.Password,
 	})
@@ -139,7 +141,7 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 		return apperror.BadRequest("Refresh token is required")
 	}
 
-	result, err := h.authService.Refresh(c.Request().Context(), &service.RefreshInput{
+	result, err := h.authService.Refresh(c.Request().Context(), &auth.RefreshInput{
 		RefreshToken: req.RefreshToken,
 	})
 	if err != nil {
@@ -187,7 +189,7 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 		return apperror.BadRequest("Current password and new password are required")
 	}
 
-	err = h.authService.ChangePassword(c.Request().Context(), &service.ChangePasswordInput{
+	err = h.authService.ChangePassword(c.Request().Context(), &auth.ChangePasswordInput{
 		UserID:          userID,
 		CurrentPassword: req.CurrentPassword,
 		NewPassword:     req.NewPassword,
@@ -220,7 +222,7 @@ func (h *AuthHandler) ForgotPassword(c echo.Context) error {
 	}
 
 	// Error logged but we still return 200 to prevent email enumeration
-	token, err := h.authService.ForgotPassword(c.Request().Context(), &service.ForgotPasswordInput{
+	token, err := h.authService.ForgotPassword(c.Request().Context(), &auth.ForgotPasswordInput{
 		Email: req.Email,
 	})
 	if err != nil {
@@ -244,7 +246,7 @@ func (h *AuthHandler) ForgotPassword(c echo.Context) error {
 			}
 		} else {
 			go func() {
-				if err := service.Retry(h.retryAttempts, h.retryDelay, func() error {
+				if err := retry.Retry(h.retryAttempts, h.retryDelay, func() error {
 				return h.emailService.SendPasswordResetEmail(req.Email, token)
 				}); err != nil {
 					logger.Error("failed to send password reset email after retries",
@@ -269,7 +271,7 @@ func (h *AuthHandler) VerifyResetToken(c echo.Context) error {
 		return apperror.BadRequest("Token is required")
 	}
 
-	result, err := h.authService.VerifyResetToken(c.Request().Context(), &service.VerifyResetTokenInput{
+	result, err := h.authService.VerifyResetToken(c.Request().Context(), &auth.VerifyResetTokenInput{
 		Token: token,
 	})
 	if err != nil {
@@ -299,7 +301,7 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 		})
 	}
 
-	err := h.authService.ResetPassword(c.Request().Context(), &service.ResetPasswordInput{
+	err := h.authService.ResetPassword(c.Request().Context(), &auth.ResetPasswordInput{
 		Token:       req.Token,
 		NewPassword: req.Password,
 	})
@@ -319,7 +321,7 @@ func (h *AuthHandler) VerifyEmail(c echo.Context) error {
 		return apperror.BadRequest("Token is required")
 	}
 
-	err := h.authService.VerifyEmail(c.Request().Context(), &service.VerifyEmailInput{
+	err := h.authService.VerifyEmail(c.Request().Context(), &auth.VerifyEmailInput{
 		Token: token,
 	})
 	if err != nil {
@@ -350,7 +352,7 @@ func (h *AuthHandler) ResendVerification(c echo.Context) error {
 	}
 
 	// Error logged but we still return 200 to prevent email enumeration
-	token, err := h.authService.ResendVerification(c.Request().Context(), &service.ResendVerificationInput{
+	token, err := h.authService.ResendVerification(c.Request().Context(), &auth.ResendVerificationInput{
 		Email: req.Email,
 	})
 	if err != nil {
@@ -374,7 +376,7 @@ func (h *AuthHandler) ResendVerification(c echo.Context) error {
 			}
 		} else {
 			go func() {
-				if err := service.Retry(h.retryAttempts, h.retryDelay, func() error {
+				if err := retry.Retry(h.retryAttempts, h.retryDelay, func() error {
 				return h.emailService.SendVerificationEmail(req.Email, token)
 				}); err != nil {
 					logger.Error("failed to send verification email after retries",

@@ -1,6 +1,6 @@
 //go:build integration
 
-package service
+package auth
 
 import (
 	"context"

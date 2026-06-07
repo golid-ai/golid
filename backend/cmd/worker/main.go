@@ -9,7 +9,7 @@ import (
 	"github.com/golid-ai/golid/backend/internal/config"
 	"github.com/golid-ai/golid/backend/internal/logger"
 	"github.com/golid-ai/golid/backend/internal/queue"
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/email"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	emailService := service.NewEmailService(service.EmailConfig{
+	emailService := email.NewEmailService(email.EmailConfig{
 		APIKey:           cfg.MailgunAPIKey,
 		Domain:           cfg.MailgunDomain,
 		BaseURL:          cfg.MailgunBaseURL,

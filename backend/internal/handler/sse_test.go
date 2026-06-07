@@ -11,7 +11,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/sse"
 )
 
 // =============================================================================
@@ -21,24 +21,24 @@ import (
 type mockSSEHub struct {
 	createTicketFn   func(userID string) (string, error)
 	validateTicketFn func(ticket string) (string, error)
-	subscribeFn      func(userID string) (chan service.SSEEvent, error)
-	unsubscribeFn    func(userID string, ch chan service.SSEEvent)
-	sendFn           func(userID string, event service.SSEEvent)
+	subscribeFn      func(userID string) (chan sse.SSEEvent, error)
+	unsubscribeFn    func(userID string, ch chan sse.SSEEvent)
+	sendFn           func(userID string, event sse.SSEEvent)
 }
 
 func (m *mockSSEHub) CreateTicket(userID string) (string, error) { return m.createTicketFn(userID) }
 func (m *mockSSEHub) ValidateTicket(ticket string) (string, error) {
 	return m.validateTicketFn(ticket)
 }
-func (m *mockSSEHub) Subscribe(userID string) (chan service.SSEEvent, error) {
+func (m *mockSSEHub) Subscribe(userID string) (chan sse.SSEEvent, error) {
 	return m.subscribeFn(userID)
 }
-func (m *mockSSEHub) Unsubscribe(userID string, ch chan service.SSEEvent) {
+func (m *mockSSEHub) Unsubscribe(userID string, ch chan sse.SSEEvent) {
 	if m.unsubscribeFn != nil {
 		m.unsubscribeFn(userID, ch)
 	}
 }
-func (m *mockSSEHub) Send(userID string, event service.SSEEvent) {
+func (m *mockSSEHub) Send(userID string, event sse.SSEEvent) {
 	if m.sendFn != nil {
 		m.sendFn(userID, event)
 	}
@@ -96,9 +96,9 @@ func TestTicket_NoAuth(t *testing.T) {
 // =============================================================================
 
 func TestDemo_Success(t *testing.T) {
-	var sentEvent service.SSEEvent
+	var sentEvent sse.SSEEvent
 	hub := &mockSSEHub{
-		sendFn: func(userID string, event service.SSEEvent) {
+		sendFn: func(userID string, event sse.SSEEvent) {
 			sentEvent = event
 		},
 	}
@@ -177,14 +177,14 @@ func TestStream_MissingTicket(t *testing.T) {
 }
 
 func TestStream_ReceivesEvent(t *testing.T) {
-	ch := make(chan service.SSEEvent, 1)
+	ch := make(chan sse.SSEEvent, 1)
 	hub := &mockSSEHub{
 		validateTicketFn: func(ticket string) (string, error) { return "user-1", nil },
-		subscribeFn:      func(userID string) (chan service.SSEEvent, error) { return ch, nil },
+		subscribeFn:      func(userID string) (chan sse.SSEEvent, error) { return ch, nil },
 	}
 	h := &SSEHandler{hub: hub, keepaliveInterval: 30 * time.Second}
 
-	ch <- service.SSEEvent{Event: "notification", Data: map[string]string{"msg": "hello"}}
+	ch <- sse.SSEEvent{Event: "notification", Data: map[string]string{"msg": "hello"}}
 	close(ch)
 
 	e := echo.New()

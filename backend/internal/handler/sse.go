@@ -10,7 +10,7 @@ import (
 
 	"github.com/golid-ai/golid/backend/internal/apperror"
 	"github.com/golid-ai/golid/backend/internal/logger"
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/sse"
 )
 
 // SSEHandler handles Server-Sent Events endpoints.
@@ -20,7 +20,7 @@ type SSEHandler struct {
 }
 
 // NewSSEHandler creates a new SSE handler.
-func NewSSEHandler(hub *service.SSEHub, keepaliveInterval time.Duration) *SSEHandler {
+func NewSSEHandler(hub *sse.SSEHub, keepaliveInterval time.Duration) *SSEHandler {
 	return &SSEHandler{hub: hub, keepaliveInterval: keepaliveInterval}
 }
 
@@ -122,7 +122,7 @@ func (h *SSEHandler) Demo(c echo.Context) error {
 		return err
 	}
 
-	h.hub.Send(userID, service.SSEEvent{
+	h.hub.Send(userID, sse.SSEEvent{
 		Event: "notification",
 		Data: map[string]any{
 			"message":   "This is a demo notification",

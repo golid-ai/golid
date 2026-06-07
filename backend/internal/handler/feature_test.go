@@ -9,17 +9,17 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/feature"
 )
 
 type mockFeatureService struct {
-	flags   []service.FeatureFlag
+	flags   []feature.FeatureFlag
 	enabled map[string]bool
 	setKey  string
 	setVal  bool
 }
 
-func (m *mockFeatureService) List(ctx context.Context) ([]service.FeatureFlag, error) {
+func (m *mockFeatureService) List(ctx context.Context) ([]feature.FeatureFlag, error) {
 	return m.flags, nil
 }
 
@@ -35,7 +35,7 @@ func (m *mockFeatureService) Set(ctx context.Context, key string, enabled bool) 
 
 func TestFeature_List_Admin(t *testing.T) {
 	mock := &mockFeatureService{
-		flags: []service.FeatureFlag{
+		flags: []feature.FeatureFlag{
 			{Key: "test_flag", Enabled: true, Description: "A test flag"},
 		},
 	}

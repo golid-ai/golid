@@ -9,7 +9,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/user"
 )
 
 func TestDerefStr(t *testing.T) {
@@ -36,10 +36,10 @@ func TestDerefStr(t *testing.T) {
 
 func TestUpdateProfile_Success(t *testing.T) {
 	mock := &mockUserService{
-		getByIDFn: func(ctx context.Context, userID string) (*service.UserProfile, error) {
+		getByIDFn: func(ctx context.Context, userID string) (*user.UserProfile, error) {
 			return testUserProfile("John"), nil
 		},
-		updateProfileFn: func(ctx context.Context, userID string, update *service.ProfileUpdate) (*service.UserProfile, error) {
+		updateProfileFn: func(ctx context.Context, userID string, update *user.ProfileUpdate) (*user.UserProfile, error) {
 			return testUserProfile(update.FirstName), nil
 		},
 	}
@@ -62,12 +62,12 @@ func TestUpdateProfile_Success(t *testing.T) {
 }
 
 func TestUpdateProfile_WithAvatarURL(t *testing.T) {
-	var receivedUpdate *service.ProfileUpdate
+	var receivedUpdate *user.ProfileUpdate
 	mock := &mockUserService{
-		getByIDFn: func(ctx context.Context, userID string) (*service.UserProfile, error) {
+		getByIDFn: func(ctx context.Context, userID string) (*user.UserProfile, error) {
 			return testUserProfile("John"), nil
 		},
-		updateProfileFn: func(ctx context.Context, userID string, update *service.ProfileUpdate) (*service.UserProfile, error) {
+		updateProfileFn: func(ctx context.Context, userID string, update *user.ProfileUpdate) (*user.UserProfile, error) {
 			receivedUpdate = update
 			p := testUserProfile("John")
 			if update.AvatarURLSet {

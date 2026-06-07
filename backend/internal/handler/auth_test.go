@@ -15,7 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/golid-ai/golid/backend/internal/apperror"
-	"github.com/golid-ai/golid/backend/internal/service"
+	"github.com/golid-ai/golid/backend/internal/service/auth"
 )
 
 // =============================================================================
@@ -23,25 +23,25 @@ import (
 // =============================================================================
 
 type mockAuthService struct {
-	registerFn           func(ctx context.Context, input *service.RegisterInput) (*service.AuthResult, error)
-	loginFn              func(ctx context.Context, input *service.LoginInput) (*service.AuthResult, error)
-	changePasswordFn     func(ctx context.Context, input *service.ChangePasswordInput) error
+	registerFn           func(ctx context.Context, input *auth.RegisterInput) (*auth.AuthResult, error)
+	loginFn              func(ctx context.Context, input *auth.LoginInput) (*auth.AuthResult, error)
+	changePasswordFn     func(ctx context.Context, input *auth.ChangePasswordInput) error
 	logoutFn             func(ctx context.Context, userID string) error
-	refreshFn            func(ctx context.Context, input *service.RefreshInput) (*service.AuthResult, error)
-	forgotPasswordFn     func(ctx context.Context, input *service.ForgotPasswordInput) (string, error)
-	verifyResetTokenFn   func(ctx context.Context, input *service.VerifyResetTokenInput) (*service.VerifyResetTokenResult, error)
-	resetPasswordFn      func(ctx context.Context, input *service.ResetPasswordInput) error
-	verifyEmailFn        func(ctx context.Context, input *service.VerifyEmailInput) error
-	resendVerificationFn func(ctx context.Context, input *service.ResendVerificationInput) (string, error)
+	refreshFn            func(ctx context.Context, input *auth.RefreshInput) (*auth.AuthResult, error)
+	forgotPasswordFn     func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error)
+	verifyResetTokenFn   func(ctx context.Context, input *auth.VerifyResetTokenInput) (*auth.VerifyResetTokenResult, error)
+	resetPasswordFn      func(ctx context.Context, input *auth.ResetPasswordInput) error
+	verifyEmailFn        func(ctx context.Context, input *auth.VerifyEmailInput) error
+	resendVerificationFn func(ctx context.Context, input *auth.ResendVerificationInput) (string, error)
 }
 
-func (m *mockAuthService) Register(ctx context.Context, input *service.RegisterInput) (*service.AuthResult, error) {
+func (m *mockAuthService) Register(ctx context.Context, input *auth.RegisterInput) (*auth.AuthResult, error) {
 	return m.registerFn(ctx, input)
 }
-func (m *mockAuthService) Login(ctx context.Context, input *service.LoginInput) (*service.AuthResult, error) {
+func (m *mockAuthService) Login(ctx context.Context, input *auth.LoginInput) (*auth.AuthResult, error) {
 	return m.loginFn(ctx, input)
 }
-func (m *mockAuthService) ChangePassword(ctx context.Context, input *service.ChangePasswordInput) error {
+func (m *mockAuthService) ChangePassword(ctx context.Context, input *auth.ChangePasswordInput) error {
 	return m.changePasswordFn(ctx, input)
 }
 func (m *mockAuthService) Logout(ctx context.Context, userID string) error {
@@ -50,37 +50,37 @@ func (m *mockAuthService) Logout(ctx context.Context, userID string) error {
 	}
 	return nil
 }
-func (m *mockAuthService) Refresh(ctx context.Context, input *service.RefreshInput) (*service.AuthResult, error) {
+func (m *mockAuthService) Refresh(ctx context.Context, input *auth.RefreshInput) (*auth.AuthResult, error) {
 	if m.refreshFn != nil {
 		return m.refreshFn(ctx, input)
 	}
 	panic("unexpected Refresh")
 }
-func (m *mockAuthService) ForgotPassword(ctx context.Context, input *service.ForgotPasswordInput) (string, error) {
+func (m *mockAuthService) ForgotPassword(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
 	if m.forgotPasswordFn != nil {
 		return m.forgotPasswordFn(ctx, input)
 	}
 	panic("unexpected ForgotPassword")
 }
-func (m *mockAuthService) VerifyResetToken(ctx context.Context, input *service.VerifyResetTokenInput) (*service.VerifyResetTokenResult, error) {
+func (m *mockAuthService) VerifyResetToken(ctx context.Context, input *auth.VerifyResetTokenInput) (*auth.VerifyResetTokenResult, error) {
 	if m.verifyResetTokenFn != nil {
 		return m.verifyResetTokenFn(ctx, input)
 	}
 	panic("unexpected VerifyResetToken")
 }
-func (m *mockAuthService) ResetPassword(ctx context.Context, input *service.ResetPasswordInput) error {
+func (m *mockAuthService) ResetPassword(ctx context.Context, input *auth.ResetPasswordInput) error {
 	if m.resetPasswordFn != nil {
 		return m.resetPasswordFn(ctx, input)
 	}
 	panic("unexpected ResetPassword")
 }
-func (m *mockAuthService) VerifyEmail(ctx context.Context, input *service.VerifyEmailInput) error {
+func (m *mockAuthService) VerifyEmail(ctx context.Context, input *auth.VerifyEmailInput) error {
 	if m.verifyEmailFn != nil {
 		return m.verifyEmailFn(ctx, input)
 	}
 	panic("unexpected VerifyEmail")
 }
-func (m *mockAuthService) ResendVerification(ctx context.Context, input *service.ResendVerificationInput) (string, error) {
+func (m *mockAuthService) ResendVerification(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
 	if m.resendVerificationFn != nil {
 		return m.resendVerificationFn(ctx, input)
 	}
@@ -126,12 +126,12 @@ func (m *mockQueue) Enqueue(task *asynq.Task, opts ...asynq.Option) error {
 // HELPERS
 // =============================================================================
 
-func testAuthResult() *service.AuthResult {
-	return &service.AuthResult{
+func testAuthResult() *auth.AuthResult {
+	return &auth.AuthResult{
 		AccessToken:  "test-access-token",
 		RefreshToken: "test-refresh-token",
 		ExpiresIn:    900,
-		User: &service.User{
+		User: &auth.User{
 			ID:        "test-user-id",
 			Email:     "test@example.com",
 			Type:      "user",
@@ -321,7 +321,7 @@ func TestRefreshRequest_Binding(t *testing.T) {
 
 func TestRegister_Success(t *testing.T) {
 	mock := &mockAuthService{
-		registerFn: func(ctx context.Context, input *service.RegisterInput) (*service.AuthResult, error) {
+		registerFn: func(ctx context.Context, input *auth.RegisterInput) (*auth.AuthResult, error) {
 			return testAuthResult(), nil
 		},
 	}
@@ -353,7 +353,7 @@ func TestRegister_EnqueuesWhenQueueConfigured(t *testing.T) {
 	result := testAuthResult()
 	result.VerificationToken = "verify-token-123"
 	mock := &mockAuthService{
-		registerFn: func(ctx context.Context, input *service.RegisterInput) (*service.AuthResult, error) {
+		registerFn: func(ctx context.Context, input *auth.RegisterInput) (*auth.AuthResult, error) {
 			return result, nil
 		},
 	}
@@ -381,7 +381,7 @@ func TestRegister_EnqueuesWhenQueueConfigured(t *testing.T) {
 
 func TestRegister_Conflict(t *testing.T) {
 	mock := &mockAuthService{
-		registerFn: func(ctx context.Context, input *service.RegisterInput) (*service.AuthResult, error) {
+		registerFn: func(ctx context.Context, input *auth.RegisterInput) (*auth.AuthResult, error) {
 			return nil, apperror.Conflict("Email already registered")
 		},
 	}
@@ -410,7 +410,7 @@ func TestRegister_Conflict(t *testing.T) {
 
 func TestLogin_Success(t *testing.T) {
 	mock := &mockAuthService{
-		loginFn: func(ctx context.Context, input *service.LoginInput) (*service.AuthResult, error) {
+		loginFn: func(ctx context.Context, input *auth.LoginInput) (*auth.AuthResult, error) {
 			return testAuthResult(), nil
 		},
 	}
@@ -434,7 +434,7 @@ func TestLogin_Success(t *testing.T) {
 
 func TestLogin_Unauthorized(t *testing.T) {
 	mock := &mockAuthService{
-		loginFn: func(ctx context.Context, input *service.LoginInput) (*service.AuthResult, error) {
+		loginFn: func(ctx context.Context, input *auth.LoginInput) (*auth.AuthResult, error) {
 			return nil, apperror.Unauthorized("Invalid email or password")
 		},
 	}
@@ -463,7 +463,7 @@ func TestLogin_Unauthorized(t *testing.T) {
 
 func TestChangePassword_Success(t *testing.T) {
 	mock := &mockAuthService{
-		changePasswordFn: func(ctx context.Context, input *service.ChangePasswordInput) error {
+		changePasswordFn: func(ctx context.Context, input *auth.ChangePasswordInput) error {
 			return nil
 		},
 	}
@@ -534,7 +534,7 @@ func TestChangePassword_NoAuth(t *testing.T) {
 func TestRegister_SendsVerificationEmail(t *testing.T) {
 	emailMock := &mockEmailService{configured: true}
 	authMock := &mockAuthService{
-		registerFn: func(ctx context.Context, input *service.RegisterInput) (*service.AuthResult, error) {
+		registerFn: func(ctx context.Context, input *auth.RegisterInput) (*auth.AuthResult, error) {
 			result := testAuthResult()
 			result.VerificationToken = "verify-token-123"
 			return result, nil
@@ -564,7 +564,7 @@ func TestRegister_SendsVerificationEmail(t *testing.T) {
 func TestRegister_SkipsEmailWhenNotConfigured(t *testing.T) {
 	emailMock := &mockEmailService{configured: false}
 	authMock := &mockAuthService{
-		registerFn: func(ctx context.Context, input *service.RegisterInput) (*service.AuthResult, error) {
+		registerFn: func(ctx context.Context, input *auth.RegisterInput) (*auth.AuthResult, error) {
 			result := testAuthResult()
 			result.VerificationToken = "verify-token-123"
 			return result, nil
@@ -641,7 +641,7 @@ func TestLogout_NoAuth(t *testing.T) {
 
 func TestForgotPassword_Success(t *testing.T) {
 	mock := &mockAuthService{
-		forgotPasswordFn: func(ctx context.Context, input *service.ForgotPasswordInput) (string, error) {
+		forgotPasswordFn: func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
 			return "reset-token-abc", nil
 		},
 	}
@@ -670,7 +670,7 @@ func TestForgotPassword_Success(t *testing.T) {
 
 func TestForgotPassword_AlwaysReturns200(t *testing.T) {
 	mock := &mockAuthService{
-		forgotPasswordFn: func(ctx context.Context, input *service.ForgotPasswordInput) (string, error) {
+		forgotPasswordFn: func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
 			return "", nil
 		},
 	}
@@ -693,7 +693,7 @@ func TestForgotPassword_AlwaysReturns200(t *testing.T) {
 
 func TestForgotPassword_EnqueuesWhenQueueConfigured(t *testing.T) {
 	mock := &mockAuthService{
-		forgotPasswordFn: func(ctx context.Context, input *service.ForgotPasswordInput) (string, error) {
+		forgotPasswordFn: func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
 			return "reset-token", nil
 		},
 	}
@@ -721,8 +721,8 @@ func TestForgotPassword_EnqueuesWhenQueueConfigured(t *testing.T) {
 
 func TestVerifyResetToken_Success(t *testing.T) {
 	mock := &mockAuthService{
-		verifyResetTokenFn: func(ctx context.Context, input *service.VerifyResetTokenInput) (*service.VerifyResetTokenResult, error) {
-			return &service.VerifyResetTokenResult{Valid: true, Email: "user@example.com"}, nil
+		verifyResetTokenFn: func(ctx context.Context, input *auth.VerifyResetTokenInput) (*auth.VerifyResetTokenResult, error) {
+			return &auth.VerifyResetTokenResult{Valid: true, Email: "user@example.com"}, nil
 		},
 	}
 	h := &AuthHandler{authService: mock, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
@@ -762,7 +762,7 @@ func TestVerifyResetToken_MissingToken(t *testing.T) {
 
 func TestResetPassword_Success(t *testing.T) {
 	mock := &mockAuthService{
-		resetPasswordFn: func(ctx context.Context, input *service.ResetPasswordInput) error {
+		resetPasswordFn: func(ctx context.Context, input *auth.ResetPasswordInput) error {
 			return nil
 		},
 	}
@@ -785,7 +785,7 @@ func TestResetPassword_Success(t *testing.T) {
 
 func TestResetPassword_ServiceError(t *testing.T) {
 	mock := &mockAuthService{
-		resetPasswordFn: func(ctx context.Context, input *service.ResetPasswordInput) error {
+		resetPasswordFn: func(ctx context.Context, input *auth.ResetPasswordInput) error {
 			return apperror.BadRequest("Invalid or expired reset token")
 		},
 	}
@@ -810,7 +810,7 @@ func TestResetPassword_ServiceError(t *testing.T) {
 
 func TestVerifyEmail_Success(t *testing.T) {
 	mock := &mockAuthService{
-		verifyEmailFn: func(ctx context.Context, input *service.VerifyEmailInput) error {
+		verifyEmailFn: func(ctx context.Context, input *auth.VerifyEmailInput) error {
 			return nil
 		},
 	}
@@ -846,7 +846,7 @@ func TestVerifyEmail_MissingToken(t *testing.T) {
 
 func TestVerifyEmail_InvalidToken(t *testing.T) {
 	mock := &mockAuthService{
-		verifyEmailFn: func(ctx context.Context, input *service.VerifyEmailInput) error {
+		verifyEmailFn: func(ctx context.Context, input *auth.VerifyEmailInput) error {
 			return apperror.BadRequest("Invalid verification token")
 		},
 	}
@@ -870,7 +870,7 @@ func TestVerifyEmail_InvalidToken(t *testing.T) {
 
 func TestResendVerification_Success(t *testing.T) {
 	mock := &mockAuthService{
-		resendVerificationFn: func(ctx context.Context, input *service.ResendVerificationInput) (string, error) {
+		resendVerificationFn: func(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
 			return "new-verify-token", nil
 		},
 	}
@@ -899,7 +899,7 @@ func TestResendVerification_Success(t *testing.T) {
 
 func TestResendVerification_EnqueuesWhenQueueConfigured(t *testing.T) {
 	mock := &mockAuthService{
-		resendVerificationFn: func(ctx context.Context, input *service.ResendVerificationInput) (string, error) {
+		resendVerificationFn: func(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
 			return "verify-token", nil
 		},
 	}
@@ -923,7 +923,7 @@ func TestResendVerification_EnqueuesWhenQueueConfigured(t *testing.T) {
 
 func TestResendVerification_SkipsEmailWhenNotConfigured(t *testing.T) {
 	mock := &mockAuthService{
-		resendVerificationFn: func(ctx context.Context, input *service.ResendVerificationInput) (string, error) {
+		resendVerificationFn: func(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
 			return "verify-token", nil
 		},
 	}
@@ -952,7 +952,7 @@ func TestResendVerification_SkipsEmailWhenNotConfigured(t *testing.T) {
 
 func TestResendVerification_AlwaysReturns200(t *testing.T) {
 	mock := &mockAuthService{
-		resendVerificationFn: func(ctx context.Context, input *service.ResendVerificationInput) (string, error) {
+		resendVerificationFn: func(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
 			return "", nil
 		},
 	}
@@ -979,7 +979,7 @@ func TestResendVerification_AlwaysReturns200(t *testing.T) {
 
 func TestRefresh_Success(t *testing.T) {
 	mock := &mockAuthService{
-		refreshFn: func(ctx context.Context, input *service.RefreshInput) (*service.AuthResult, error) {
+		refreshFn: func(ctx context.Context, input *auth.RefreshInput) (*auth.AuthResult, error) {
 			return testAuthResult(), nil
 		},
 	}

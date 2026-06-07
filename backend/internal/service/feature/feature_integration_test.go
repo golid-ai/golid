@@ -1,6 +1,6 @@
 //go:build integration
 
-package service
+package feature
 
 import (
 	"context"
