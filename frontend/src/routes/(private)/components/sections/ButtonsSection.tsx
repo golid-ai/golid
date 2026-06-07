@@ -13,9 +13,7 @@ import {
   SubmenuContent,
 } from "~/components/molecules/Menu";
 
-export interface ButtonsSectionProps {
-  // No props needed for now
-}
+export type ButtonsSectionProps = Record<string, never>;
 
 export function ButtonsSection() {
   // Chip state for clickable demos

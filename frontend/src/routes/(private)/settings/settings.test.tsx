@@ -7,6 +7,20 @@ const mockUpdateProfile = vi.fn();
 const mockChangePassword = vi.fn();
 const mockUpdateUser = vi.fn();
 
+let mockAuthUser: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  type: string;
+  email_verified: boolean;
+} | null = {
+  first_name: "Test",
+  last_name: "User",
+  email: "test@example.com",
+  type: "user",
+  email_verified: true,
+};
+
 vi.mock("~/lib/api", () => ({
   usersApi: { updateProfile: (...args: any[]) => mockUpdateProfile(...args) },
   authApi: { changePassword: (...args: any[]) => mockChangePassword(...args) },
@@ -15,12 +29,8 @@ vi.mock("~/lib/api", () => ({
 
 vi.mock("~/lib/auth", () => ({
   auth: {
-    user: {
-      first_name: "Test",
-      last_name: "User",
-      email: "test@example.com",
-      type: "user",
-      email_verified: true,
+    get user() {
+      return mockAuthUser;
     },
     updateUser: (...args: any[]) => mockUpdateUser(...args),
   },
@@ -41,6 +51,13 @@ import Settings from "./index";
 describe("Settings Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthUser = {
+      first_name: "Test",
+      last_name: "User",
+      email: "test@example.com",
+      type: "user",
+      email_verified: true,
+    };
   });
 
   const renderSettings = () => render(() => <MetaProvider><Settings /></MetaProvider>);
@@ -84,6 +101,42 @@ describe("Settings Page", () => {
     });
   });
 
+  it("shows success toast and updates auth user on save", async () => {
+    const { toast } = await import("~/lib/stores");
+    mockUpdateProfile.mockResolvedValueOnce({
+      first_name: "Updated",
+      last_name: "Name",
+      email: "test@example.com",
+    });
+
+    renderSettings();
+    await fireEvent.click(screen.getByText("Save Changes"));
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(toast.success).toHaveBeenCalledWith("Profile updated");
+    expect(mockUpdateUser).toHaveBeenCalledWith({
+      first_name: "Updated",
+      last_name: "Name",
+      email: "test@example.com",
+    });
+  });
+
+  it("prefills empty names when user fields are missing", async () => {
+    mockAuthUser = {
+      first_name: "",
+      last_name: "",
+      email: "test@example.com",
+      type: "user",
+      email_verified: true,
+    };
+
+    renderSettings();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(screen.getByLabelText("First Name")).toHaveValue("");
+    expect(screen.getByLabelText("Last Name")).toHaveValue("");
+  });
+
   it("shows error state on save failure", async () => {
     mockUpdateProfile.mockRejectedValueOnce({ message: "Server error" });
 
@@ -95,33 +148,82 @@ describe("Settings Page", () => {
     expect(screen.getByText("Server error")).toBeInTheDocument();
     expect(screen.getByText("Retry")).toBeInTheDocument();
   });
+
+  it("retries profile save from error state", async () => {
+    mockUpdateProfile
+      .mockRejectedValueOnce({ message: "Server error" })
+      .mockResolvedValueOnce({
+        first_name: "Test",
+        last_name: "User",
+        email: "test@example.com",
+      });
+
+    renderSettings();
+    await fireEvent.click(screen.getByText("Save Changes"));
+    await new Promise((r) => setTimeout(r, 50));
+    await fireEvent.click(screen.getByText("Retry"));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockUpdateProfile).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText("Server error")).not.toBeInTheDocument();
+  });
+
+  it("leaves profile fields empty when auth user is absent", async () => {
+    mockAuthUser = null;
+
+    renderSettings();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(screen.getByLabelText("First Name")).toHaveValue("");
+    expect(screen.getByLabelText("Last Name")).toHaveValue("");
+    expect(screen.getByLabelText("Email")).toHaveValue("");
+  });
 });
 
 describe("Password Change", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthUser = {
+      first_name: "Test",
+      last_name: "User",
+      email: "test@example.com",
+      type: "user",
+      email_verified: true,
+    };
   });
 
   const renderSettings = () => render(() => <MetaProvider><Settings /></MetaProvider>);
+
+  const getPasswordInputs = () => {
+    const inputs = document.querySelectorAll('input[type="password"]');
+    expect(inputs.length).toBeGreaterThanOrEqual(3);
+    return inputs;
+  };
+
+  const clickChangePassword = async () => {
+    const buttons = screen.getAllByRole("button");
+    const changeBtn = buttons.find((b) => b.textContent?.includes("Change Password"));
+    expect(changeBtn).toBeTruthy();
+    await fireEvent.click(changeBtn!);
+  };
+
+  const fillPasswordForm = async (
+    current: string,
+    newPass: string,
+    confirm: string,
+  ) => {
+    const passwordInputs = getPasswordInputs();
+    await fireEvent.input(passwordInputs[0], { target: { value: current } });
+    await fireEvent.input(passwordInputs[1], { target: { value: newPass } });
+    await fireEvent.input(passwordInputs[2], { target: { value: confirm } });
+  };
 
   it("calls changePassword on submit", async () => {
     mockChangePassword.mockResolvedValueOnce({ message: "Password changed" });
 
     renderSettings();
-
-    // The password inputs use PasswordInput which renders type="password" inputs
-    const passwordInputs = document.querySelectorAll('input[type="password"]');
-    // Current, New, Confirm = 3 password inputs
-    if (passwordInputs.length >= 3) {
-      await fireEvent.input(passwordInputs[0], { target: { value: "oldpass123" } });
-      await fireEvent.input(passwordInputs[1], { target: { value: "newpass123" } });
-      await fireEvent.input(passwordInputs[2], { target: { value: "newpass123" } });
-    }
-
-    // Find and click Change Password button
-    const buttons = screen.getAllByRole("button");
-    const changeBtn = buttons.find((b) => b.textContent?.includes("Change Password"));
-    if (changeBtn) await fireEvent.click(changeBtn);
+    await fillPasswordForm("oldpass123", "newpass123", "newpass123");
+    await clickChangePassword();
 
     await new Promise((r) => setTimeout(r, 50));
     expect(mockChangePassword).toHaveBeenCalled();
@@ -131,17 +233,8 @@ describe("Password Change", () => {
     const { toast } = await import("~/lib/stores");
 
     renderSettings();
-
-    const passwordInputs = document.querySelectorAll('input[type="password"]');
-    if (passwordInputs.length >= 3) {
-      await fireEvent.input(passwordInputs[0], { target: { value: "oldpass123" } });
-      await fireEvent.input(passwordInputs[1], { target: { value: "newpass123" } });
-      await fireEvent.input(passwordInputs[2], { target: { value: "different456" } });
-    }
-
-    const buttons = screen.getAllByRole("button");
-    const changeBtn = buttons.find((b) => b.textContent?.includes("Change Password"));
-    if (changeBtn) await fireEvent.click(changeBtn);
+    await fillPasswordForm("oldpass123", "newpass123", "different456");
+    await clickChangePassword();
 
     await new Promise((r) => setTimeout(r, 50));
     expect(toast.error).toHaveBeenCalledWith("Passwords do not match");
@@ -152,17 +245,8 @@ describe("Password Change", () => {
     const { toast } = await import("~/lib/stores");
 
     renderSettings();
-
-    const passwordInputs = document.querySelectorAll('input[type="password"]');
-    if (passwordInputs.length >= 3) {
-      await fireEvent.input(passwordInputs[0], { target: { value: "oldpass123" } });
-      await fireEvent.input(passwordInputs[1], { target: { value: "short" } });
-      await fireEvent.input(passwordInputs[2], { target: { value: "short" } });
-    }
-
-    const buttons = screen.getAllByRole("button");
-    const changeBtn = buttons.find((b) => b.textContent?.includes("Change Password"));
-    if (changeBtn) await fireEvent.click(changeBtn);
+    await fillPasswordForm("oldpass123", "short", "short");
+    await clickChangePassword();
 
     await new Promise((r) => setTimeout(r, 50));
     expect(toast.error).toHaveBeenCalledWith("Password must be at least 8 characters");
@@ -173,19 +257,22 @@ describe("Password Change", () => {
     mockChangePassword.mockRejectedValueOnce({ message: "Current password is incorrect" });
 
     renderSettings();
-
-    const passwordInputs = document.querySelectorAll('input[type="password"]');
-    if (passwordInputs.length >= 3) {
-      await fireEvent.input(passwordInputs[0], { target: { value: "wrongpass" } });
-      await fireEvent.input(passwordInputs[1], { target: { value: "newpass123" } });
-      await fireEvent.input(passwordInputs[2], { target: { value: "newpass123" } });
-    }
-
-    const buttons = screen.getAllByRole("button");
-    const changeBtn = buttons.find((b) => b.textContent?.includes("Change Password"));
-    if (changeBtn) await fireEvent.click(changeBtn);
+    await fillPasswordForm("wrongpass", "newpass123", "newpass123");
+    await clickChangePassword();
 
     await new Promise((r) => setTimeout(r, 100));
     expect(screen.getByText("Current password is incorrect")).toBeInTheDocument();
+  });
+
+  it("shows success toast on password change", async () => {
+    const { toast } = await import("~/lib/stores");
+    mockChangePassword.mockResolvedValueOnce({ message: "Password changed" });
+
+    renderSettings();
+    await fillPasswordForm("oldpass123", "newpass123", "newpass123");
+    await clickChangePassword();
+
+    await new Promise((r) => setTimeout(r, 100));
+    expect(toast.success).toHaveBeenCalledWith("Password changed successfully");
   });
 });

@@ -382,7 +382,7 @@ export function MenuItem(props: MenuItemProps) {
 // SUBMENU
 // ============================================================================
 
-export interface SubmenuProps extends ParentProps {}
+export type SubmenuProps = ParentProps;
 
 export function Submenu(props: SubmenuProps) {
   const parentMenu = useMenu()!;

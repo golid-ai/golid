@@ -93,7 +93,7 @@ function RootLayout(props: { children: JSX.Element }) {
   });
 
   createEffect(() => {
-    location.pathname;
+    void location.pathname; // track route changes for scroll reset
     if (typeof window !== "undefined") {
       window.scrollTo(0, 0);
     }

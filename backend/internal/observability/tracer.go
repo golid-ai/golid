@@ -34,8 +34,7 @@ func InitTracer(endpoint, serviceName, environment string, sampleRatio float64) 
 
 	res, err := resource.Merge(
 		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
+		resource.NewSchemaless(
 			semconv.ServiceName(serviceName),
 			semconv.DeploymentEnvironment(environment),
 		),

@@ -6,7 +6,7 @@ import { Widget } from "~/components/molecules/Widget";
 // TYPES
 // ============================================================================
 
-export interface SurfaceSectionProps {}
+export type SurfaceSectionProps = Record<string, never>;
 
 // ============================================================================
 // COMPONENT

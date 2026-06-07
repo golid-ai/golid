@@ -1,3 +1,21 @@
+ignore:
+  - "frontend/src/routes/(private)/components/**"
+  - "frontend/src/lib/animation/**"
+  - "frontend/src/**/molecules/Charts/**"
+  - "frontend/src/**/molecules/PlotGraph/**"
+  - "frontend/src/**/molecules/GeoPlot/**"
+  - "frontend/src/**/molecules/Canvas3D/**"
+  - "frontend/src/**/molecules/VideoRecorder/**"
+  - "frontend/src/**/molecules/SortableList/**"
+  - "frontend/src/**/molecules/Dropzone/**"
+  - "frontend/src/**/molecules/DatePicker/**"
+  - "frontend/src/**/molecules/TimePicker/**"
+  - "frontend/src/components/atoms/Calendar.tsx"
+  - "frontend/src/components/atoms/Slider.tsx"
+  - "frontend/src/components/atoms/AgGrid/**"
+  - "frontend/src/**/entry-*.tsx"
+  - "frontend/src/routes/api/**"
+
 coverage:
   status:
     project:

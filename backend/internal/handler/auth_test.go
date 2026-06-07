@@ -92,18 +92,26 @@ func (m *mockAuthService) ResendVerification(ctx context.Context, input *auth.Re
 // =============================================================================
 
 type mockEmailService struct {
-	configured             bool
-	sendVerificationCalled atomic.Bool
-	sendResetCalled        atomic.Bool
+	configured              bool
+	sendVerificationCalled  atomic.Bool
+	sendResetCalled         atomic.Bool
+	sendVerificationErr     error
+	sendResetErr            error
 }
 
 func (m *mockEmailService) IsConfigured() bool { return m.configured }
 func (m *mockEmailService) SendVerificationEmail(toEmail, token string) error {
 	m.sendVerificationCalled.Store(true)
+	if m.sendVerificationErr != nil {
+		return m.sendVerificationErr
+	}
 	return nil
 }
 func (m *mockEmailService) SendPasswordResetEmail(toEmail, token string) error {
 	m.sendResetCalled.Store(true)
+	if m.sendResetErr != nil {
+		return m.sendResetErr
+	}
 	return nil
 }
 
@@ -114,10 +122,14 @@ func (m *mockEmailService) SendPasswordResetEmail(toEmail, token string) error {
 type mockQueue struct {
 	configured    bool
 	enqueuedTasks []string
+	enqueueErr    error
 }
 
 func (m *mockQueue) IsConfigured() bool { return m.configured }
 func (m *mockQueue) Enqueue(task *asynq.Task, opts ...asynq.Option) error {
+	if m.enqueueErr != nil {
+		return m.enqueueErr
+	}
 	m.enqueuedTasks = append(m.enqueuedTasks, task.Type())
 	return nil
 }
@@ -715,6 +727,143 @@ func TestForgotPassword_EnqueuesWhenQueueConfigured(t *testing.T) {
 	}
 }
 
+func TestForgotPassword_InvalidJSON(t *testing.T) {
+	h := &AuthHandler{authService: &mockAuthService{}, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader("not json"))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ForgotPassword(c); err == nil {
+		t.Error("ForgotPassword() expected error for invalid JSON")
+	}
+}
+
+func TestForgotPassword_EmptyEmail(t *testing.T) {
+	h := &AuthHandler{authService: &mockAuthService{}, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	body := `{"email":""}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ForgotPassword(c); err == nil {
+		t.Error("ForgotPassword() expected error for empty email")
+	}
+}
+
+func TestForgotPassword_ServiceErrorStillReturns200(t *testing.T) {
+	mock := &mockAuthService{
+		forgotPasswordFn: func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
+			return "", errors.New("database unavailable")
+		},
+	}
+	h := &AuthHandler{authService: mock, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	body := `{"email":"user@example.com"}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ForgotPassword(c); err != nil {
+		t.Fatalf("ForgotPassword() error = %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (prevents email enumeration)", rec.Code, http.StatusOK)
+	}
+}
+
+func TestForgotPassword_EnqueueErrorStillReturns200(t *testing.T) {
+	mock := &mockAuthService{
+		forgotPasswordFn: func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
+			return "reset-token", nil
+		},
+	}
+	q := &mockQueue{configured: true, enqueueErr: errors.New("redis unavailable")}
+	h := &AuthHandler{authService: mock, emailService: &mockEmailService{configured: true}, queue: q, retryAttempts: 3, retryDelay: time.Second}
+
+	body := `{"email":"user@example.com"}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ForgotPassword(c); err != nil {
+		t.Fatalf("ForgotPassword() error = %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if len(q.enqueuedTasks) != 0 {
+		t.Errorf("expected no enqueued tasks on enqueue error, got %v", q.enqueuedTasks)
+	}
+}
+
+func TestForgotPassword_SkipsEmailWhenNotConfigured(t *testing.T) {
+	mock := &mockAuthService{
+		forgotPasswordFn: func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
+			return "reset-token", nil
+		},
+	}
+	emailMock := &mockEmailService{configured: false}
+	h := &AuthHandler{authService: mock, emailService: emailMock, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	body := `{"email":"user@example.com"}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ForgotPassword(c); err != nil {
+		t.Fatalf("ForgotPassword() error = %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	time.Sleep(50 * time.Millisecond)
+	if emailMock.sendResetCalled.Load() {
+		t.Error("should not send email when email service is not configured")
+	}
+}
+
+func TestForgotPassword_EmailRetryFailureStillReturns200(t *testing.T) {
+	mock := &mockAuthService{
+		forgotPasswordFn: func(ctx context.Context, input *auth.ForgotPasswordInput) (string, error) {
+			return "reset-token", nil
+		},
+	}
+	emailMock := &mockEmailService{configured: true, sendResetErr: errors.New("mailgun down")}
+	h := &AuthHandler{authService: mock, emailService: emailMock, queue: &mockQueue{}, retryAttempts: 1, retryDelay: time.Millisecond}
+
+	body := `{"email":"user@example.com"}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ForgotPassword(c); err != nil {
+		t.Fatalf("ForgotPassword() error = %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	if !emailMock.sendResetCalled.Load() {
+		t.Error("expected SendPasswordResetEmail to be attempted")
+	}
+}
+
 // =============================================================================
 // VERIFY RESET TOKEN HANDLER TESTS
 // =============================================================================
@@ -864,6 +1013,25 @@ func TestVerifyEmail_InvalidToken(t *testing.T) {
 	}
 }
 
+func TestVerifyEmail_ServiceInternalError(t *testing.T) {
+	mock := &mockAuthService{
+		verifyEmailFn: func(ctx context.Context, input *auth.VerifyEmailInput) error {
+			return apperror.Internal(errors.New("verification lookup failed"))
+		},
+	}
+	h := &AuthHandler{authService: mock, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/verify-email?token=valid-token", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.QueryParams().Set("token", "valid-token")
+
+	if err := h.VerifyEmail(c); err == nil {
+		t.Error("VerifyEmail() expected error when service fails")
+	}
+}
+
 // =============================================================================
 // RESEND VERIFICATION HANDLER TESTS
 // =============================================================================
@@ -970,6 +1138,114 @@ func TestResendVerification_AlwaysReturns200(t *testing.T) {
 	}
 	if rec.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d (prevents email enumeration)", rec.Code, http.StatusOK)
+	}
+}
+
+func TestResendVerification_InvalidJSON(t *testing.T) {
+	h := &AuthHandler{authService: &mockAuthService{}, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/resend-verification", strings.NewReader("not json"))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ResendVerification(c); err == nil {
+		t.Error("ResendVerification() expected error for invalid JSON")
+	}
+}
+
+func TestResendVerification_EmptyEmail(t *testing.T) {
+	h := &AuthHandler{authService: &mockAuthService{}, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	body := `{"email":""}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/resend-verification", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ResendVerification(c); err == nil {
+		t.Error("ResendVerification() expected error for empty email")
+	}
+}
+
+func TestResendVerification_ServiceErrorStillReturns200(t *testing.T) {
+	mock := &mockAuthService{
+		resendVerificationFn: func(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
+			return "", errors.New("database unavailable")
+		},
+	}
+	h := &AuthHandler{authService: mock, emailService: &mockEmailService{}, queue: &mockQueue{}, retryAttempts: 3, retryDelay: time.Second}
+
+	body := `{"email":"user@example.com"}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/resend-verification", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ResendVerification(c); err != nil {
+		t.Fatalf("ResendVerification() error = %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (prevents email enumeration)", rec.Code, http.StatusOK)
+	}
+}
+
+func TestResendVerification_EnqueueErrorStillReturns200(t *testing.T) {
+	mock := &mockAuthService{
+		resendVerificationFn: func(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
+			return "verify-token", nil
+		},
+	}
+	q := &mockQueue{configured: true, enqueueErr: errors.New("redis unavailable")}
+	h := &AuthHandler{authService: mock, emailService: &mockEmailService{configured: true}, queue: q, retryAttempts: 3, retryDelay: time.Second}
+
+	body := `{"email":"user@example.com"}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/resend-verification", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ResendVerification(c); err != nil {
+		t.Fatalf("ResendVerification() error = %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if len(q.enqueuedTasks) != 0 {
+		t.Errorf("expected no enqueued tasks on enqueue error, got %v", q.enqueuedTasks)
+	}
+}
+
+func TestResendVerification_EmailRetryFailureStillReturns200(t *testing.T) {
+	mock := &mockAuthService{
+		resendVerificationFn: func(ctx context.Context, input *auth.ResendVerificationInput) (string, error) {
+			return "verify-token", nil
+		},
+	}
+	emailMock := &mockEmailService{configured: true, sendVerificationErr: errors.New("mailgun down")}
+	h := &AuthHandler{authService: mock, emailService: emailMock, queue: &mockQueue{}, retryAttempts: 1, retryDelay: time.Millisecond}
+
+	body := `{"email":"user@example.com"}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/resend-verification", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := h.ResendVerification(c); err != nil {
+		t.Fatalf("ResendVerification() error = %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	if !emailMock.sendVerificationCalled.Load() {
+		t.Error("expected SendVerificationEmail to be attempted")
 	}
 }
 

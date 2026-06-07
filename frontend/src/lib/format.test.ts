@@ -45,6 +45,12 @@ describe("formatShortDate", () => {
     expect(result).toContain("Dec");
     expect(result).toContain("25");
   });
+
+  it("handles Postgres text cast with space separator", () => {
+    const result = formatShortDate("2026-07-20 14:30:00+00");
+    expect(result).toContain("Jul");
+    expect(result).toContain("20");
+  });
 });
 
 describe("formatDateRange", () => {
@@ -75,6 +81,12 @@ describe("formatDateTime", () => {
   it("handles Postgres text cast", () => {
     const result = formatDateTime("2026-06-15 09:15:00+00");
     expect(result).toContain("Jun");
+    expect(result).toContain("at");
+  });
+
+  it("formats plain date without time component", () => {
+    const result = formatDateTime("2026-01-05");
+    expect(result).toContain("Jan");
     expect(result).toContain("at");
   });
 });

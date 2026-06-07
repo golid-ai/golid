@@ -138,4 +138,47 @@ describe("Signup Page", () => {
 
     expect(screen.getByText("Registration failed")).toBeInTheDocument();
   });
+
+  it("shows email error variant after blur with invalid email", async () => {
+    renderSignup();
+
+    const emailInput = screen.getByPlaceholderText("you@example.com");
+    await fireEvent.input(emailInput, { target: { value: "not-an-email" } });
+    await fireEvent.blur(emailInput);
+
+    expect(emailInput).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("shows valid email hint after blur with valid email", async () => {
+    renderSignup();
+
+    const emailInput = screen.getByPlaceholderText("you@example.com");
+    await fireEvent.input(emailInput, { target: { value: "jane@example.com" } });
+    await fireEvent.blur(emailInput);
+
+    expect(screen.getByText("Valid email address")).toBeInTheDocument();
+  });
+
+  it("shows password requirements hint after blur with valid password", async () => {
+    renderSignup();
+
+    const passwordInput = screen.getByPlaceholderText("Create a password");
+    await fireEvent.input(passwordInput, { target: { value: "password123" } });
+    await fireEvent.blur(passwordInput);
+
+    expect(screen.getByText("Password meets requirements")).toBeInTheDocument();
+  });
+
+  it("shows confirm password error variant when passwords differ", async () => {
+    renderSignup();
+
+    await fireEvent.input(screen.getByPlaceholderText("Create a password"), {
+      target: { value: "password123" },
+    });
+    const confirmInput = screen.getByPlaceholderText("Confirm your password");
+    await fireEvent.input(confirmInput, { target: { value: "different456" } });
+    await fireEvent.blur(confirmInput);
+
+    expect(confirmInput).toHaveAttribute("aria-invalid", "true");
+  });
 });

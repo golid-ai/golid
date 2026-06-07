@@ -99,11 +99,14 @@ function createUser(overrides = {}) {
 
 ## Coverage Targets
 
-| Metric | Target |
-|--------|--------|
-| Statements | 80% |
-| Branches | 75% |
-| Functions | 80% |
+Enforced floors match `frontend/vitest.config.ts` (included files only). Codecov project baseline ~68% — recovery tracked in [coverage-and-eslint plan](../../plans/coverage-and-eslint.md).
+
+| Metric | Vitest floor (included files) |
+|--------|-------------------------------|
+| Statements | 75% |
+| Branches | 54% |
+| Functions | 78% |
+| Lines | 75% |
 
 ## Anti-Patterns
 
@@ -120,7 +123,7 @@ function createUser(overrides = {}) {
 - [ ] Integration tests for API routes
 - [ ] Component tests for UI behavior
 - [ ] MSW for API mocking
-- [ ] Coverage > 80%
+- [ ] Coverage meets Vitest floors (`vitest.config.ts`) and Codecov CI status (see [coverage-and-eslint](../../plans/coverage-and-eslint.md))
 - [ ] Tests run in CI
 
 ---

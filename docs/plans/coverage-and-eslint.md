@@ -1,6 +1,6 @@
 # Coverage Recovery + TypeScript-ESLint 8
 
-> **Status:** Draft  
+> **Status:** Ready (execution readiness ~93/100 after audit 2026-06-07)  
 > **Risk tier:** T2 — toolchain and test expansion, no auth/schema/migration changes  
 > **Thesis:** Close the gap between honest Codecov reporting (~68% project) and
 > documented quality bars (~80%) by testing uncovered backend wiring/observability,
@@ -16,12 +16,12 @@ Record new numbers in **Progress** when re-running after slices land.
 | Codecov project (combined) | Codecov UI | PR #27 upload | **68.24%** |
 | Codecov backend flag | Codecov UI | `flags.backend` → `backend/` | **73.82%** |
 | Codecov frontend flag | Codecov UI | `flags.frontend` → `frontend/src/` | **64.83%** |
-| Vitest (included files only) | local | `cd frontend && npm run test:coverage` | **73.83%** stmts / **52.03%** branches / **78.11%** funcs |
-| Vitest CI floors | repo | `frontend/vitest.config.ts:41-45` | 68 / 47 / 73 / 68 |
+| Vitest (included files only) | local | `cd frontend && npm run test:coverage` | **76.57%** stmts / **55.43%** branches / **80.18%** funcs |
+| Vitest CI floors | repo | `frontend/vitest.config.ts:41-45` | **75 / 54 / 78 / 75** |
 | Backend unit (`COVERPKG`, CI merge) | local | See B0 commands | **56.1%** unit-only (see output below) |
 | Backend unit + integration | Codecov | CI merges unit + handler + service shards | **73.82%** (Codecov backend flag) |
-| `npm audit --audit-level=high` | local | `cd frontend && npm audit --audit-level=high` | **11** (4 moderate, **7 high**) |
-| ESLint stack | repo | `frontend/package.json:59-64` | `eslint@^8.56`, `@typescript-eslint/*@^6.13`, `eslint-plugin-solid@^0.13` |
+| `npm audit --audit-level=high` | local | `cd frontend && npm audit --audit-level=high` | **5** (4 moderate, **1 high** — h3 only after A1) |
+| ESLint stack | repo | `frontend/package.json:59-64` | `eslint@^8.57`, `@typescript-eslint/*@^8.60`, `eslint-plugin-solid@^0.14` |
 | npm audit CI gate | repo | `.github/workflows/ci.yml:340-347` | **Non-blocking** (warn + exit 0) |
 | Codecov project target | repo | `codecov.yml:4-7` | `target: auto`, `threshold: 2%` |
 
@@ -33,15 +33,14 @@ excluded paths that never appear in `lcov.info` as covered → drags flag averag
 integration shards (`ci.yml:208-215`) add coverage unit tests never hit. B1 targets must
 use **merged CI profile**, not `go test ./...` alone.
 
-### Stale documentation (fix in B0)
+### Stale documentation (fixed in A3)
 
-| Doc | Issue | Citation |
-|-----|-------|----------|
-| `docs/decisions/002-deferred-capabilities.md` | Claims "82%+ test coverage" | lines 9, 190 |
-| `docs/patterns/testing/1-Page.md` | Claims 80/75/80% pyramid + "Coverage > 80%" DoD | lines 102-106, 123 |
-| This plan's earlier draft | Wrong route paths (`register.tsx`) | superseded below |
+| Doc | Was | Fixed |
+|-----|-----|-------|
+| `docs/decisions/002-deferred-capabilities.md` | "82%+ test coverage" | `784 tests; Codecov ~68% project (0.3 baseline)` |
+| `docs/patterns/testing/1-Page.md` | 80/75/80% pyramid + "Coverage > 80%" DoD | Vitest floors 75/54/78/75 + plan link |
 
-Not stale: `README.md` (752 tests, no % claim), `vitest.config.ts` (matches measured floors).
+Not stale: `README.md` (784 tests, no % claim), `vitest.config.ts` (matches measured floors).
 
 ### Reproducible output (`f0a1dc1`, local)
 
@@ -87,21 +86,23 @@ Dependabot PR #14 failed on TS-eslint 8 because `eslint-plugin-solid@0.13` pins
 | Codecov **backend** flag | 73.82% | **≥80%** | Merged `COVERPKG` profile in CI |
 | Codecov **frontend** flag | 64.83% | **≥72%** | After path alignment (B0) or targeted tests (B2) |
 | Vitest included statements | 73.83% | **≥75%** | Optional raise in B3 |
-| Vitest branches | 52.03% | **≥55%** | Primary frontend quality lever |
+| Vitest branches | 55.43% | **≥55%** | Primary frontend quality lever |
 | `npm run lint` | pass | pass | TS-eslint 8 + plugin-solid 0.14 |
 | npm audit high (informational) | 7 | **≤2** | TS-eslint chain cleared; h3 may remain |
 | Stale coverage docs | 2 files | 0 | ADR 002 + testing 1-pager |
 
 **80% project target — how we get there:**
 
-1. **B0:** Align Codecov frontend `ignore` with Vitest excludes → frontend flag should rise
+1. **B0:** Top-level Codecov `ignore` aligned with Vitest excludes → frontend flag should rise
    toward Vitest's **73.83%** (same files instrumented).
 2. **B1:** `internal/wire/` tests (+4–6 pts on backend flag) → backend **73.82% → ~80%**.
-3. **B2:** Branch tests only where B0 re-measure shows gap (login `redirectTo`, settings errors).
-4. **B3:** Lock `codecov.yml` `target: 80%` only after B0+B1 upload confirms ≥80% on a PR.
+3. **B2:** Branch tests — likely **required** for project ≥80%, not optional. Rough weighted
+   math from baselines: B0+B1 alone land ~**76–78% project**; B2 closes the gap.
+4. **B3:** Lock `codecov.yml` `target: 80%` only when an interim PR shows Codecov **project
+   ≥79.5%**; otherwise run more B2 before raising gates.
 
-Codecov project % is LOC-weighted across both flags — B0 step records exact weights from the
-component tree before B3.
+Codecov project % is LOC-weighted across both flags — B0 records exact weights from the
+component tree in **Progress** before B3.
 
 ## Track A — TypeScript-ESLint 8 (ESLint 8 unchanged)
 
@@ -140,7 +141,7 @@ No new `eslint-disable` without justification comment.
 | File | Change |
 |------|--------|
 | `docs/patterns/testing/1-Page.md:102-123` | Replace 80/75/80% pyramid with measured floors + link here |
-| `docs/decisions/002-deferred-capabilities.md:9,190` | Replace "82%+" with "752 tests; Codecov ~68% project (0.3 baseline)" |
+| `docs/decisions/002-deferred-capabilities.md:9,190` | Replace "82%+" with "784 tests; Codecov ~68% project (0.3 baseline)" |
 | `CHANGELOG [Unreleased]` | TS-eslint 8; accepted `h3` dev-dep risk |
 
 **Verification:** `rg '82%|Coverage > 80%' docs/` returns only this plan or archive.
@@ -158,11 +159,15 @@ set target ≤2 highs, document accepted `h3` exceptions in runbook. **Default: 
 
 ### Slice B0 — Baseline and gate alignment
 
+**Scope:** Measure, align Codecov paths, fill **Progress** table. **Do not** edit ADR 002 or
+testing 1-pager here — doc rewrites are slice **A3** only (avoids merge conflicts).
+
 **1. Record CI-equivalent backend coverage** (matches `ci.yml:140-264`):
 
 ```bash
 cd backend
 export COVERPKG='./internal/apperror/...,./internal/config/...,./internal/handler/...,./internal/middleware/...,./internal/observability/...,./internal/pagination/...,./internal/queue/...,./internal/retry/...,./internal/service/...,./internal/validate/...,./internal/wire/...'
+export TEST_MIGRATIONS_PATH="$(pwd)/migrations"   # required — ci.yml:218, testutil/schema.go
 
 # Unit (two-pass merge)
 go test ./internal/apperror/... ./internal/config/... ./internal/pagination/... \
@@ -175,7 +180,8 @@ head -1 coverage-unit-norace.out > coverage-unit.out
 tail -n +2 coverage-unit-norace.out >> coverage-unit.out
 tail -n +2 coverage-unit-race.out >> coverage-unit.out
 
-# Integration (requires Postgres + TEST_DATABASE_URL)
+# Integration (requires Postgres + TEST_DATABASE_URL — see docs/cli-reference.md, scripts/init-test-db.sh)
+export TEST_DATABASE_URL='postgres://...'   # per local test DB
 go test -tags integration ./internal/handler/... -race -count=1 \
   -coverprofile=coverage-integration-handler.out -coverpkg=$COVERPKG
 go test -tags integration ./internal/service/... -race -count=1 \
@@ -189,37 +195,51 @@ tail -n +2 coverage-integration-service.out >> coverage.out
 go tool cover -func=coverage.out | tail -1
 ```
 
-**2. Align Codecov frontend flag** with Vitest intentional excludes — append to `codecov.yml`
-(mirror every path in `vitest.config.ts:14-40`):
+**2. Align Codecov frontend flag** with Vitest intentional excludes — add **top-level** `ignore:`
+to `codecov.yml` (sibling of `coverage:`, not nested — see Codecov "Ignoring Paths" docs).
+Mirror every path in `vitest.config.ts:14-40`:
 
 ```yaml
+# Top-level — NOT under coverage:
+ignore:
+  - "frontend/src/routes/(private)/components/**"
+  - "frontend/src/lib/animation/**"
+  - "frontend/src/**/molecules/Charts/**"
+  - "frontend/src/**/molecules/PlotGraph/**"
+  - "frontend/src/**/molecules/GeoPlot/**"
+  - "frontend/src/**/molecules/Canvas3D/**"
+  - "frontend/src/**/molecules/VideoRecorder/**"
+  - "frontend/src/**/molecules/SortableList/**"
+  - "frontend/src/**/molecules/Dropzone/**"
+  - "frontend/src/**/molecules/DatePicker/**"
+  - "frontend/src/**/molecules/TimePicker/**"
+  - "frontend/src/components/atoms/Calendar.tsx"
+  - "frontend/src/components/atoms/Slider.tsx"
+  - "frontend/src/components/atoms/AgGrid/**"
+  - "frontend/src/**/entry-*.tsx"
+  - "frontend/src/routes/api/**"
+
 coverage:
-  ignore:
-    - "frontend/src/routes/(private)/components/**"
-    - "frontend/src/lib/animation/**"
-    - "frontend/src/**/molecules/Charts/**"
-    - "frontend/src/**/molecules/PlotGraph/**"
-    - "frontend/src/**/molecules/GeoPlot/**"
-    - "frontend/src/**/molecules/Canvas3D/**"
-    - "frontend/src/**/molecules/VideoRecorder/**"
-    - "frontend/src/**/molecules/SortableList/**"
-    - "frontend/src/**/molecules/Dropzone/**"
-    - "frontend/src/**/molecules/DatePicker/**"
-    - "frontend/src/**/molecules/TimePicker/**"
-    - "frontend/src/components/atoms/Calendar.tsx"
-    - "frontend/src/components/atoms/Slider.tsx"
-    - "frontend/src/components/atoms/AgGrid/**"
-    - "frontend/src/**/entry-*.tsx"
-    - "frontend/src/routes/api/**"
+  status:
+    # ... existing project/patch blocks unchanged
 ```
 
-Validate in Codecov UI after upload — frontend flag should approach Vitest **73.83%**.
-Current `codecov.yml` is valid YAML; CI uses `skip_validation: true` (`ci.yml:278,338`).
-Do not chase external "YAML is invalid" banners without a cited Codecov error string.
+**Post-upload validation:** Open Codecov file tree on the B0 PR — excluded showcase paths
+must be absent. Frontend flag should approach Vitest **73.83%**. Validate locally:
 
-**3. Update stale docs** (ADR 002, testing 1-pager) with measured baselines + pointer to this plan.
+```bash
+cat codecov.yml | curl --data-binary @- https://codecov.io/validate
+```
 
-**Acceptance:** Progress table filled; Codecov path alignment PR uploaded; no doc claims 80%+ without caveat.
+CI uses `skip_validation: true` (`ci.yml:278,338`); still run validate before merge.
+
+**Acceptance:** Progress table filled; Codecov path alignment PR uploaded; file tree confirms
+ignores applied.
+
+**B0 post-upload checklist** (Codecov UI on B0 PR — closes slice):
+- Excluded showcase paths absent from file tree (`Charts/`, `AgGrid/`, `Canvas3D/`, `entry-*.tsx`, etc.)
+- Frontend flag ~**73.83%** (matches Vitest included stmts baseline)
+- Project % re-measured for B3 gate (uses LOC weights in Progress row)
 
 ---
 
@@ -237,16 +257,41 @@ Do not chase external "YAML is invalid" banners without a cited Codecov error st
 
 | File | Unit `COVERPKG` % | Gap |
 |------|-------------------|-----|
-| `observability/tracer.go` `InitTracer` | 14.3% | Extend `tracer_test.go`: OTEL endpoint set vs unset (`OTEL_ENDPOINT` empty → noop) |
-| `middleware/metrics.go` | partial | Request metrics middleware when `cfg.MetricsEnabled` true/false (`config.go:110`) |
+| `observability/tracer.go` `InitTracer` | low | Extend `tracer_test.go`: OTEL endpoint set vs unset (`OTEL_ENDPOINT` empty → noop) |
 | `service/auth/*.go` | ~13% unit | Covered by integration — extend handler tests for error branches, not duplicate service integration |
+
+**Out of scope:** `cmd/server/bootstrap.go` `MetricsEnabled` (`config.go:110`) — `cmd/server`
+is not in `COVERPKG`. `middleware/metrics.go` already has `metrics_test.go`.
 
 **Do not duplicate:** `auth_integration_test.go`, `queue_test.go`, `csrf_test.go`,
 `rate_limiter_redis_test.go`, `login.test.tsx` failed-login cases (`login.test.tsx:73-109`).
 
-**Acceptance:** `go tool cover -func` on **merged** `coverage.out` ≥80% for `COVERPKG`.
+**Wire test harness (no repo precedent — starter sketch):**
 
-**Budget:** ~1 session (wire tests + observability branches).
+```go
+// internal/wire/routes_test.go
+func TestRegisterRoutes_MountsV1Groups(t *testing.T) {
+    pool := testutil.WithTestDB(t) // or minimal mocks if integration-free
+    svcs := BuildServices(pool, testCfg())
+    h := BuildHandlers(svcs, testCfg())
+    e := echo.New()
+    wire.RegisterRoutes(e, h, svcs, testCfg(), stubJWTMW())
+    routes := e.Routes()
+    assertRoute(t, routes, "POST", "/api/v1/auth/register")
+    assertRoute(t, routes, "GET", "/api/v1/me")
+    // ... per routes.go:17-69; assert X-API-Version via httptest if needed
+}
+```
+
+**Acceptance (two-tier):**
+
+1. **Implementation (slice done locally):** `internal/wire/*` **100%**; `InitTracer` **≥90%**;
+   auth handler error branches (`ForgotPassword`, `ResendVerification`, `VerifyEmail`) **≥95%**.
+2. **Metric gate (CI):** Codecov **backend flag** ≥80% on PR upload — requires CI integration
+   merge + wire lift. Local unit-only `COVERPKG` (~67%) will not reach 80% because
+   `internal/service/*` is integration-covered in CI, not unit tests.
+
+**Budget:** ~1 session (wire tests + observability branches + handler error paths).
 
 ---
 
@@ -262,7 +307,7 @@ Do not chase external "YAML is invalid" banners without a cited Codecov error st
 
 | File | Stmts | Branches | Action |
 |------|-------|----------|--------|
-| `src/routes/(public)/login/index.tsx` | 95% | **50%** | Mock `useSearchParams` with `{ redirectTo: '/settings' }` (`login.test.tsx:16` currently `[{}]`) — assert `mockNavigate` receives encoded redirect |
+| `src/routes/(public)/login/index.tsx` | 95% | **50%** | Mock `useSearchParams` with `{ redirectTo: '%2Fsettings' }` (`login.test.tsx:16` currently `[{}]`) — assert `mockNavigate` receives decoded `/settings` (`index.tsx:29-31`) |
 | `src/routes/(private)/settings/index.tsx` | 95% | **59%** | Password-change API failure, avatar upload error branches |
 | `src/routes/(public)/reset-password/index.tsx` | 86% | 68% | Invalid/expired token path |
 | `src/routes/(public)/signup/index.tsx` | 87% | 64% | Validation error branches not covered |
@@ -272,23 +317,25 @@ display (`login.test.tsx:73-109`), `auth.test.ts`, `api.test.ts`, navigation org
 
 **Codecov path alignment (B0)** is the primary frontend lift — re-measure before adding tests.
 
-**Acceptance:** Codecov frontend flag ≥72% **or** Vitest branches ≥55% if flag alignment suffices.
+**Acceptance:** Codecov frontend flag ≥72% **and** Vitest branches ≥55%; re-measure after B0
+before scoping rows (skip any file already ≥60% branches).
 
-**Budget:** ~1 session (branch tests) + B0 path fix.
+**Budget:** ~1 session (branch tests). Treat as **required** for 80% project gate unless B0+B1
+upload already shows project ≥79.5%.
 
 ---
 
 ### Slice B3 — Raise gates (last)
 
-Only after B0–B2 measured on CI:
+Only after B0–B2 measured on CI **and** an interim PR shows Codecov **project ≥79.5%**:
 
 ```typescript
-// frontend/vitest.config.ts — example after recovery
+// frontend/vitest.config.ts — example after recovery (lines 41-46)
 thresholds: { statements: 75, branches: 55, functions: 78, lines: 75 }
 ```
 
 ```yaml
-# codecov.yml
+# codecov.yml — add to existing coverage.status block
 coverage:
   status:
     project:
@@ -296,6 +343,8 @@ coverage:
         target: 80%
         threshold: 2%
 ```
+
+If project is still below 79.5% after B0+B1, run B2 before touching gates.
 
 **Acceptance:** Full CI green including Codecov project ≥80%.
 
@@ -306,11 +355,16 @@ coverage:
 ## Execution order
 
 ```
-B0 → A1 → A2 → A3 → B1 ─┐
-              ↘ B2 ───────┴→ B3
+B0 → A1 → A2 → B1 ─┐
+         ↘ B2 ─────┴→ (re-measure project %) → A3 → B3
 ```
 
-A1/A2 parallel with B1 if separate subagents. B3 only when both flags meet interim targets.
+- **B0 first** — Codecov ignore + baseline (no doc edits).
+- **A1 → A2** — TS-eslint bump + rule cleanup.
+- **B1 ∥ B2** — backend wire + frontend branches (parallel subagents OK).
+- **Re-measure** — Codecov project % on PR before A3/B3.
+- **A3** — stale doc fixes + CHANGELOG (after metrics known).
+- **B3** — raise gates only if project ≥79.5% on interim PR.
 
 ## Risks and mitigations
 
@@ -319,7 +373,9 @@ A1/A2 parallel with B1 if separate subagents. B3 only when both flags meet inter
 | `eslint-plugin-solid` 0.14 still crashes charts | Keep `solid/reactivity: off`; file upstream issue |
 | TS-eslint 8 rule flood | Rollback A1; fix in batches |
 | Wire route tests brittle | Assert named routes via `e.Routes()`, not snapshots |
+| Codecov `ignore` nested under `coverage:` (silent no-op) | Top-level `ignore:` sibling of `coverage:`; validate + UI file-tree check |
 | Codecov path change hides real gaps | Document excluded paths; match `vitest.config.ts` list exactly |
+| 80% project unreachable after B0+B1 alone | B2 required; B3 gated on ≥79.5% interim PR |
 | `h3` highs never clear | Accepted dev risk in CHANGELOG; revisit on `@solidjs/start` bump |
 | Threshold raise blocks PRs | B3 in isolated commit after metrics met |
 
@@ -327,14 +383,25 @@ A1/A2 parallel with B1 if separate subagents. B3 only when both flags meet inter
 
 | Slice | Status | Measured result |
 |-------|--------|-----------------|
-| B0 | Pending | Baseline recorded above (2026-06-07, `f0a1dc1`) |
-| A1 | Pending | — |
-| A2 | Pending | — |
-| A3 | Pending | — |
+| B0 | In progress — codecov.yml landed locally; post-upload validation pending CI/PR | Top-level `ignore:` (16 paths, mirrors `vitest.config.ts:14-40`); **LOC weight** (`find`/`wc` on `frontend/src`): ignored showcase **11,210 / 25,459** lines (**44.0%** of tree, **55.9%** included — B3 gate math); unit `COVERPKG` **60.3%** (2026-06-07); integration skipped (`TEST_DATABASE_URL` unset). Validate API: `notify` unknown field (pre-existing; CI `skip_validation: true`). **Post-upload verifies:** frontend flag → ~**73.83%**; Codecov file tree excludes showcase paths |
+| A1 | Done | `eslint@8.57.1`, `@typescript-eslint/*@8.60.1`, `eslint-plugin-solid@0.14.5`; audit high **7 → 1** (minimatch/TS-eslint chain cleared; remaining: h3/vinxi); lint/typecheck/test:run pass; deps bump only — rule drift fixes in A2 |
+| A2 | Done | 8 TS-eslint 8 code fixes (empty interfaces → type aliases, void pathname track); `.eslintrc.cjs` rule comments documented; `solid/reactivity` stays off — 0.14.5 safe, 22 false-positive warns if enabled; lint/typecheck/test:run exit 0 |
+| A3 | Done | ADR 002 + testing 1-pager stale % claims replaced; CHANGELOG [Unreleased] TS-eslint 8 + accepted h3 risk; `rg '82%|Coverage > 80%' docs/` clean (plan + archive only) |
 | A4 | Skipped (optional) | — |
-| B1 | Pending | Unit-only `COVERPKG`: 56.1% (`f0a1dc1`) |
-| B2 | Pending | Vitest included: 73.83% stmts / 52.03% branches |
-| B3 | Pending | — |
+| B1 | Done (impl) — backend flag ≥80% pending CI | Unit `COVERPKG` **66.9%**; wire/* **100%**; `InitTracer` **90.5%**; `ForgotPassword`/`ResendVerification` **95%**, `VerifyEmail` **100%** (+15 handler unit tests); `tracer.go` schemaless fix; integration skipped locally (host→docker DB EOF). **Impl tier met.** Metric tier: verify Codecov backend flag ≥80% on PR |
+| B2 | Done | Vitest included: **76.57%** stmts / **55.43%** branches (was 74.28% / 52.94%); branch tests in `validation.ts` (`validate`, `getFirstError`), `auth.ts`/`auth.initialize.test.ts` (error paths, initialize, session-expired), `api.ts` (401 refresh, `getErrorMessage`, parseError), `settings.test.tsx` (explicit expects, save retry/success), `format.ts`, `ui.ts`, `use-breakpoint.ts`; Vitest branches gate **≥55% met** |
+| B3 | Done (Vitest gates) — Codecov 80% pending CI | **Audit 2026-06-07:** `npm run test:coverage` exit 0 (507 tests). Thresholds **75 / 54 / 78 / 75** — margin **1.6 / 1.4 / 2.2 / 1.7** pts below measured **76.57% / 55.43% / 80.18% / 76.73%**. `codecov.yml` **`target: auto`** (not 80%) — correct deferral; project ≥79.5% unproven (baseline **68.24%**; B0 ignore + B1 backend flag pending CI upload). Next: interim PR → confirm project ≥79.5% → then `target: 80%` |
+
+## Execution readiness audit (2026-06-07)
+
+| Dimension | Grade | Notes |
+|-----------|-------|-------|
+| Completeness | 92 | B0 harness, TEST_MIGRATIONS_PATH, wire sketch, B3 gate |
+| Accuracy | 93 | Codecov top-level `ignore`; B1 scope corrected |
+| Actionability | 91 | Copy-paste commands; per-slice acceptance |
+| Slice independence | 90 | B0 docs deduped → A3 only |
+| Verification | 92 | validate API + Codecov file tree |
+| **Overall** | **~93** | **GO** — start B0 |
 
 ## Retro hook (fill when complete)
 
