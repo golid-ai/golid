@@ -6,6 +6,8 @@ alwaysApply: false
 
 # External API Integration Patterns
 
+> **Thesis:** External services are wrapped with IsConfigured(), env-sourced credentials, and graceful degradation when unconfigured.
+
 ## Service Wrapper Structure
 
 ```go

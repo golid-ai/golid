@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Go Service Layer Patterns
 
+> **Thesis:** Services own business logic and data access. They are framework-agnostic, verify resource membership, and never trust the caller to have checked permissions.
+
 Follow the established patterns in `auth/auth.go` and `user/user.go`.
 
 ## Structure

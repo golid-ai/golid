@@ -5,6 +5,8 @@ globs: ["**/queue/*.go", "**/worker/**"]
 
 # Job Queue Patterns
 
+> **Thesis:** The queue is opt-in via Redis. Every enqueue site checks IsConfigured() and falls back to retry-wrapped goroutines when Redis is absent.
+
 Follow the established patterns in `queue/queue.go`, `queue/tasks.go`, and `queue/handlers.go`.
 
 ## IsConfigured() Gate

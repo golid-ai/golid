@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/golid-ai/golid/backend/internal/config"
+	"github.com/golid-ai/golid/backend/internal/logger"
 	"github.com/golid-ai/golid/backend/internal/middleware"
 )
 
@@ -16,6 +17,7 @@ import (
 func RegisterRoutes(e *echo.Echo, h *Handlers, _ *Services, cfg *config.Config, jwtMW echo.MiddlewareFunc) {
 	api := e.Group("/api/v1")
 	api.Use(middleware.APIVersion("v1"))
+	api.Use(middleware.CSRF(cfg.CSRFEnforce, logger.Logger()))
 	api.Use(middleware.RateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow))
 
 	registerPublicRoutes(api, h, cfg)

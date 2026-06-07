@@ -5,6 +5,8 @@ globs:
 ---
 # CI Workflow Patterns
 
+> **Thesis:** CI catches what developers forget: type errors, test regressions, stale generated types, and vulnerable dependencies. Jobs must not have cross-job dependencies.
+
 ## Job structure
 
 | Job | Gate | Depends on |

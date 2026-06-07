@@ -63,7 +63,7 @@
   // Runs on the HOST before docker compose — creates config/.env.local if missing
   "initializeCommand": "test -f config/.env.local || make setup",
 
-  "postCreateCommand": "sudo chown -R vscode:vscode /workspace/backend /workspace/frontend /home/vscode/.cache 2>/dev/null || true && cd /workspace/frontend && rm -f .npm-ready && npm install --no-audit --no-fund && touch .npm-ready",
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspace/backend /workspace/frontend /home/vscode/.cache 2>/dev/null || true && node -e \"const v=+process.versions.node.split('.')[0]; if(v<24){console.error('Node 24+ required (got '+process.versions.node+'). Rebuild devcontainer without cache.'); process.exit(1)}\" && cd /workspace/frontend && rm -f .npm-ready && npm install --no-audit --no-fund && touch .npm-ready",
   "postStartCommand": "cd /workspace/backend && bash entrypoint.dev.sh",
 
   "remoteUser": "vscode"

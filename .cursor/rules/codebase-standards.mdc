@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Codebase Standards
 
+> **Thesis:** Universal guardrails that apply regardless of which file you're editing — the principles that every other rule assumes you follow.
+
 ## Backend (Go)
 
 - **Parameterized queries only** — never `fmt.Sprintf` with values into SQL. Always use `$N` placeholders.

@@ -5,6 +5,8 @@ alwaysApply: false
 
 # Plan a Feature
 
+> **Thesis:** Plan the data model and permission model upfront. Everything else — API surface, frontend, tests — follows from those two decisions.
+
 Use this structure when planning a new feature module.
 
 ## Planning Checklist

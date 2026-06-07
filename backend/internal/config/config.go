@@ -27,6 +27,7 @@ type Config struct {
 	RateLimitRequests     int           // requests per window (general API)
 	RateLimitWindow       time.Duration // window duration
 	AuthRateLimitRequests int           // auth endpoint requests per minute (login, register, etc.)
+	CSRFEnforce           bool          // reject state-changing API requests without X-Requested-With header
 
 	// CORS
 	AllowedOrigins []string
@@ -92,6 +93,7 @@ func Load() (*Config, error) {
 		RateLimitRequests:     getInt("RATE_LIMIT_REQUESTS", 100),
 		RateLimitWindow:      getDuration("RATE_LIMIT_WINDOW", time.Minute),
 		AuthRateLimitRequests: getInt("AUTH_RATE_LIMIT", 5),
+		CSRFEnforce:           getBool("CSRF_ENFORCE", false),
 		RequestTimeout:    getDuration("REQUEST_TIMEOUT", 30*time.Second),
 		// Default CSP allows 'unsafe-inline' for scripts/styles because the SPA inlines
 		// critical CSS and some libraries inject script tags. Override via CSP_POLICY env
@@ -177,6 +179,15 @@ func getDuration(key string, fallback time.Duration) time.Duration {
 	if value := os.Getenv(key); value != "" {
 		if d, err := time.ParseDuration(value); err == nil {
 			return d
+		}
+	}
+	return fallback
+}
+
+func getBool(key string, fallback bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if b, err := strconv.ParseBool(value); err == nil {
+			return b
 		}
 	}
 	return fallback

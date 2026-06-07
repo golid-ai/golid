@@ -60,6 +60,8 @@ verify-scaffold: ## Verify scaffold-generated code compiles (used by CI)
 	@rm -f backend/internal/handler/scaffoldtest.go backend/internal/handler/scaffoldtest_test.go
 	@rm -rf "frontend/src/routes/(private)/scaffoldtests"
 	@git checkout -- backend/internal/handler/interfaces.go
+	@echo "=== Typechecking frontend..."
+	@cd frontend && npm run typecheck
 	@echo "✓ Scaffold output compiles"
 
 rename: ## Rename the project (usage: make rename name=myapp module=github.com/user/myapp/backend)

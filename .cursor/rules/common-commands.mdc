@@ -1,110 +1,53 @@
 ---
 description: Common CLI commands for development, deployment, debugging, and GCP operations
+globs: scripts/*,Makefile,config/.env*
 alwaysApply: false
 ---
 
 # Common Commands
 
-Quick reference for CLI commands that work in this project. Invoke this rule by name when needed.
+> **Thesis:** Shared commands should be discoverable, copy-safe, and tied to current project scripts so agents do not invent risky shell invocations.
 
-## Local Development
+This is an activation rule, not the command catalog. When a task needs a
+concrete command for local development, deployment, debugging, GCP, Git,
+tests, builds, migrations, or contract validation, read `docs/cli-reference.md`
+and use the project-specific command there instead of inventing an equivalent
+shell snippet.
 
-```bash
-# Frontend dev server (runs in devcontainer terminal task)
-cd frontend && PORT=3000 npm run dev -- --host
+## Command Selection Protocol
 
-# Backend (auto-starts via Air in devcontainer)
-cd backend && air -c .air.toml
+1. **Read the catalog first.** If the task is nontrivial shell work, check
+   `docs/cli-reference.md` before running commands.
+2. **Run the known-good command exactly, from the documented directory.** Do
+   not substitute nearby tools (`npx` package names, alternate test flags,
+   one-off scripts) unless the known command fails.
+3. **One failure → diagnose, don't probe.** If a known command fails, inspect
+   the concrete error and either fix that cause or report the blocker. Do not
+   try a chain of equivalent commands hoping one works.
+4. **Prefer compile/smoke checks when full commands are unsafe.** For example,
+   compile integration-tagged packages with `go test -tags=integration ... -run
+   '^$'` when `TEST_DATABASE_URL` is not confirmed safe.
+5. **Tell the user what was not run.** If a command is skipped because it is
+   destructive, unavailable, or environment-dependent, say so in the closeout.
 
-# Run frontend unit tests
-cd frontend && npx vitest run
+## When to Use
 
-# Run a specific test file
-cd frontend && npx vitest run src/routes/(private)/MODULE/MODULE.test.tsx
+- Starting or debugging local services.
+- Running tests, builds, migrations, or seed commands.
+- Inspecting GCP logs, secrets, deploy status, or storage.
+- Checking what needs to be pushed.
+- Validating generated contracts such as `backend/openapi.yaml`.
 
-# Run E2E tests (requires full stack running)
-cd frontend && npx playwright install chromium  # first time
-cd frontend && npx playwright test
-cd frontend && npx playwright test tests/e2e/auth.spec.ts  # specific file
+## Known Command Pitfalls
 
-# Build backend
-cd backend && go build ./...
+| Do Not Use | Use Instead | Why |
+|---|---|---|
+| `python` | `python3` | The dev container does not provide `python`; repeated probes waste time. |
+| `grep`, `find`, `cat`, `head`, `tail` | Cursor tools: `rg`, `Glob`, `Read` | Tooling rules already provide safer, faster search/read paths. |
+| `npx --yes @apidevtools/swagger-cli ...` | `npm run generate:types` from `frontend/`, or a repo-local parser if type generation is too heavy | `npx` can fail in Cursor's server path; generated API types are the contract smoke test this repo already uses. |
+| `go test -tags=integration ...` without checking env | Untagged `go test`, or `go test -tags=integration <pkg> -run '^$'` for compile-only, unless `TEST_DATABASE_URL` is confirmed safe | Integration tests can wipe the dev DB. |
+| `git add -A` | Stage explicit files | Avoid sweeping unrelated user changes into commits. |
 
-# Run backend tests
-cd backend && go test ./...
+## Reference
 
-# Run integration tests (requires running PostgreSQL)
-cd backend && go test -tags=integration ./...
-
-# Tidy Go modules
-cd backend && go mod tidy
-
-# Run database migrations
-migrate -path backend/migrations -database "$DATABASE_URL" up
-
-# Re-seed dev data
-psql "$DATABASE_URL" -f backend/seeds/dev_seed.sql
-
-# Scaffold a new module
-cd backend && make new-module name=notes
-
-# Rename the project
-cd backend && go run ./cmd/rename myapp github.com/user/myapp/backend
-```
-
-## GCP — Secrets
-
-```bash
-# List all secrets
-gcloud secrets list --project=YOUR_PROJECT --format="table(name)"
-
-# Read a secret value
-gcloud secrets versions access latest --secret=SECRET_NAME --project=YOUR_PROJECT
-
-# Create a new secret
-echo -n "VALUE" | gcloud secrets create SECRET_NAME --data-file=- --project=YOUR_PROJECT
-
-# Update an existing secret
-echo -n "NEW_VALUE" | gcloud secrets versions add SECRET_NAME --data-file=- --project=YOUR_PROJECT
-```
-
-## GCP — Cloud Run Logs
-
-```bash
-# Structured JSON logs
-gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="SERVICE" AND jsonPayload.msg=~"SEARCH_TERM"' \
-  --project=YOUR_PROJECT --limit=10 --format=json
-
-# All errors
-gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="SERVICE" AND jsonPayload.level="ERROR"' \
-  --project=YOUR_PROJECT --limit=10 --format=json
-```
-
-## GCP — Deployment
-
-```bash
-# Deploy to QA (both services)
-./scripts/deploy.sh qa
-
-# Deploy to QA (backend only)
-./scripts/deploy.sh qa api
-
-# Deploy to prod
-./scripts/deploy.sh prod
-
-# Pre-flight check
-./scripts/deploy.sh check
-
-# Check deployment URL
-gcloud run services describe SERVICE --region=us-central1 --project=YOUR_PROJECT --format="value(status.url)"
-```
-
-## Git
-
-```bash
-# Check what's ahead of remote
-git log --oneline origin/main..HEAD
-
-# Push from host (devcontainer may not have SSH keys)
-git push
-```
+Use `docs/cli-reference.md`.

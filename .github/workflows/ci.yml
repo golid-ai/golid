@@ -105,6 +105,9 @@ jobs:
       - name: Check citation freshness
         run: scripts/check_citation_freshness.sh
 
+      - name: Check rule health
+        run: scripts/check_rule_health.sh
+
   backend-unit:
     name: Backend Unit
     runs-on: ubuntu-latest

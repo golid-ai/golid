@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Infrastructure Change Patterns
 
+> **Thesis:** Every env var follows a full chain: config struct, env file, deploy script, service constructor. Secrets go through Secret Manager, never hardcoded.
+
 High-risk, low-frequency changes. Follow the full chain for every modification.
 
 ## Adding a New Environment Variable

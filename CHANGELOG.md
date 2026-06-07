@@ -6,10 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-
-- Nothing yet.
-
 ## [0.3.0] - 2026-06-07
 
 Production hardening backport from uflex dogfood — wire/subpackages, parallel CI, integration harness, and toolchain upgrades.
@@ -31,6 +27,16 @@ Production hardening backport from uflex dogfood — wire/subpackages, parallel 
 - Module spec stubs (`docs/modules/auth`, `users`, `feature`) with spec-drift and citation CI gates
 - `docs/organism-pattern.md`, `docs/cli-reference.md`, `docs/testing-checklist.md`, `docs/staleness.md`
 - ADRs 003–005 (selector/verifier, SSE, onMount+signals)
+- Cross-cutting docs: `permissions.md`, `golden-slices.md`, `routing-eval.md`, `rule-effectiveness.md`, `docs/plans/` (with archive example), `docs/runbooks/`
+- Starter cross-cutting docs: `flows.md`, `glossary.md`, `schema.md`, `docs/manual-qa/` checklists
+- Handler HTTP integration tests (`auth_integration_test.go`) for register/login/me through Echo
+- Devcontainer Node 24 fail-fast gate in `postCreateCommand`
+- `> **Thesis:**` lines on all Cursor rules; `check_rule_health.sh` in CI spec-drift job
+
+### Changed
+
+- README test counts (752 total: 277 Go + 455 Vitest + 20 E2E)
+- Production env template sets `CSRF_ENFORCE=true` with rollout runbook
 
 ## [0.2.0] - 2026-06-01
 

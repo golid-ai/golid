@@ -5,6 +5,8 @@ globs: ["**/observability/*.go", "**/metrics*.go"]
 
 # Observability Patterns
 
+> **Thesis:** Metrics and tracing are opt-in via env vars. Zero overhead when disabled. Label cardinality stays under 100 unique sets.
+
 Follow the established patterns in `observability/tracer.go` and `observability/metrics.go`.
 
 ## Opt-In via Environment Variables

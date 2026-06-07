@@ -78,4 +78,5 @@ The Auth module handles the full authentication lifecycle: user registration (tr
 
 - Unit: `backend/internal/service/auth/auth_test.go`, `auth_concurrency_test.go`
 - Integration: `backend/internal/service/auth/auth_integration_test.go`, `auth_verify_integration_test.go`
+- Handler HTTP: `backend/internal/handler/auth_integration_test.go` (register/login/me through Echo + wire)
 - Handler: `backend/internal/handler/auth_test.go`

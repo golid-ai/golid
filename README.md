@@ -32,7 +32,7 @@ Most starter templates give you a folder structure and leave you to wire everyth
 - **Go + SolidJS > Node + React** — Go compiles to a single binary, starts in <100ms, handles 10x the concurrent connections of Node.js. SolidJS benchmarks faster than React in every metric. No vendor lock-in to Vercel.
 - **Opt-in complexity** — Email, job queues, tracing, and metrics are off by default. Set one env var to enable each. `docker compose up` works with zero configuration.
 - **AI-native development** — 37 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
-- **742 tests across three layers** — 271 Go tests (235 unit + 36 integration), 451 SolidJS component tests, and 20 Playwright E2E tests. Codecov regression tracking on backend and frontend. Not a scaffold — a starter that proves itself.
+- **752 tests across three layers** — 277 Go tests (236 unit + 41 integration), 455 SolidJS component tests, and 20 Playwright E2E tests. Codecov regression tracking on backend and frontend. Not a scaffold — a starter that proves itself.
 - **No vendor lock-in** — Runs on Cloud Run, Fly.io, Railway, Render, or bare metal. PostgreSQL everywhere. No proprietary abstractions.
 
 | | Golid | Next.js + API | Go-only starters | Rails / Laravel |
@@ -77,7 +77,7 @@ cd frontend && npm run dev
 - JWT auth with TOCTOU-safe refresh token rotation (atomic revoke + issue in a single transaction), password reset with selector/verifier pattern + constant-time comparison, email verification with SHA-256 hashed tokens
 - SSE real-time hub with per-user channels, one-time ticket auth (no JWT in URLs), backpressure, connection limits
 - Two-layer auth on every endpoint: handler extracts identity (authn), service verifies resource membership (authz)
-- Dual-tier rate limiting (strict on auth, general on API), security headers (configurable CSP, HSTS, X-Frame-Options), email enumeration prevention
+- Dual-tier rate limiting (strict on auth, general on API), CSRF protection (`X-Requested-With: golid-app`; set `CSRF_ENFORCE=true` in production — see `docs/runbooks/csrf-production-rollout.md`), security headers (configurable CSP, HSTS, X-Frame-Options), email enumeration prevention
 - Job queue (asynq + Redis, falls back to goroutines), Mailgun email with retry + graceful degradation
 - OpenTelemetry tracing + Prometheus metrics (both opt-in via env vars), feature flags (DB-backed with cache)
 - API versioning (`/api/v1` + `/api/v2`), OpenAPI 3.1 spec with TypeScript type generation pipeline
@@ -93,10 +93,10 @@ cd frontend && npm run dev
 - Atomic design (atoms/molecules/organisms), Tailwind CSS
 - Accessibility: ARIA attributes, keyboard navigation, focus trapping, skip link, axe-core CI verification
 
-### Testing (742 tests)
+### Testing (752 tests)
 
-- 271 Go tests (235 unit + 36 integration with `-tags integration`) — per-package schemas via `TEST_DATABASE_URL`, concurrency race tests, auth security edge cases
-- 451 frontend tests (Vitest 4 + @solidjs/testing-library + axe-core)
+- 277 Go tests (236 unit + 41 integration with `-tags integration`) — per-package schemas via `TEST_DATABASE_URL`, handler HTTP integration tests, concurrency race tests, auth security edge cases
+- 455 frontend tests (Vitest 4 + @solidjs/testing-library + axe-core)
 - 20 Playwright E2E tests (auth flows, signup, settings, password reset, components)
 - Multi-job CI with path filters: change detection, spec-drift gate, sharded backend unit/integration/coverage, frontend, scaffold-verify, and E2E (docs-only PRs skip heavy jobs)
 - govulncheck + npm audit + Codecov coverage tracking with regression thresholds

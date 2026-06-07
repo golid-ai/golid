@@ -6,6 +6,8 @@ alwaysApply: false
 
 # OpenAPI Spec Patterns
 
+> **Thesis:** The OpenAPI spec is hand-maintained and drives frontend type generation. Update it whenever endpoints change, then regenerate types.
+
 The API is documented in `backend/openapi.yaml` (OpenAPI 3.1, hand-maintained).
 
 ## When to Update

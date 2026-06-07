@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Go Handler Layer Patterns
 
+> **Thesis:** Handlers are thin translators between HTTP and services. They validate input, extract auth, delegate to services, and return JSON — nothing more.
+
 Follow the established patterns in `auth.go` and `user.go`.
 
 ## Structure

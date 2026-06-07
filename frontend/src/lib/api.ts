@@ -33,6 +33,7 @@ export interface AuthResponse {
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const API_VERSION = "v1";
+const APP_REQUEST_HEADER = "golid-app";
 
 const ACCESS_TOKEN_KEY = "golid_access_token";
 const REFRESH_TOKEN_KEY = "golid_refresh_token";
@@ -127,6 +128,7 @@ export async function api<T>(
 
   const requestHeaders: Record<string, string> = {
     "Content-Type": "application/json",
+    "X-Requested-With": APP_REQUEST_HEADER,
     ...headers,
   };
 
@@ -176,7 +178,10 @@ async function tryRefreshToken(): Promise<boolean> {
     try {
       const response = await fetch(`${API_BASE}/api/${API_VERSION}/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": APP_REQUEST_HEADER,
+        },
         body: JSON.stringify({ refresh_token: tokens.refresh }),
       });
 

@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Rename Tool Patterns
 
+> **Thesis:** A missed file means a downstream user ships with the wrong brand. A naive replacement corrupts domain URLs. Every rename must be domain-safe and total.
+
 The rename tool (`make rename` / `go run ./cmd/rename`) rebrands the entire project. It's high-risk — a missed file means a downstream user ships with "Golid" in their app, and a naive replacement corrupts domain URLs.
 
 ## Domain-Safe Replacement

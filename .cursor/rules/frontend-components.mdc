@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Component Creation Patterns
 
+> **Thesis:** Components are stateless building blocks. Atoms compose into molecules, molecules into organisms. Every component exports from the barrel.
+
 Follow the established patterns from `Button.tsx` (atom) and `Modal.tsx` (molecule).
 
 ## Atom vs Molecule vs Organism

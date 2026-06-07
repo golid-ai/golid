@@ -6,6 +6,8 @@ alwaysApply: false
 
 # SSE / Real-Time Patterns
 
+> **Thesis:** SSE uses one-time ticket auth (never JWT in URLs), per-user buffered channels, and frontend reconnect with exponential backoff.
+
 ## Hub Architecture
 
 `SSEHub` is a singleton created in `wire.BuildServices` (`internal/wire/services.go`). Per-user channel sets with buffered channels (16). Non-blocking sends — if a client's buffer is full, the event is dropped (logged as warning). Max 5 connections per user prevents resource exhaustion.

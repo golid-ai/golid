@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Frontend Lib Patterns
 
+> **Thesis:** Lib files are the shared foundation: typed API client, auth store, constants, and utilities. Every API call is typed, every protected route is registered.
+
 Follow the established patterns in `api.ts`, `auth.ts`, and `constants.ts`.
 
 ## API Client (`api.ts`)

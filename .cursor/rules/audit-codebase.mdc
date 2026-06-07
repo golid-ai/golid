@@ -5,6 +5,8 @@ alwaysApply: false
 
 # Codebase Audit Checklist
 
+> **Thesis:** Score the codebase across 7 categories with exact file citations. Check ADRs before flagging documented design decisions.
+
 Run this checklist for release readiness audits. Cite exact file paths and line numbers for every finding. Check docs/decisions/ for ADRs before flagging documented design decisions.
 
 ## Backend

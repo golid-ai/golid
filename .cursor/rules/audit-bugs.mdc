@@ -5,6 +5,8 @@ alwaysApply: false
 
 # Bug Audit Checklist
 
+> **Thesis:** Run this checklist against any file or module being reviewed. Each item references a real bug found in this codebase.
+
 Run this checklist against any file or module being reviewed. Each item references a real bug found in this codebase.
 
 ## Audit Strategy

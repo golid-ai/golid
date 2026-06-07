@@ -6,6 +6,8 @@ alwaysApply: false
 
 # SolidJS Page Patterns
 
+> **Thesis:** Pages fetch data on mount, guard against stale async with alive checks, and use flat Switch/Match for content states — never nested Show.
+
 Follow the established patterns in `dashboard/index.tsx` and `settings/index.tsx`.
 
 ## Data Fetching
