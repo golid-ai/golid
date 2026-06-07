@@ -32,7 +32,7 @@ Most starter templates give you a folder structure and leave you to wire everyth
 - **Go + SolidJS > Node + React** — Go compiles to a single binary, starts in <100ms, handles 10x the concurrent connections of Node.js. SolidJS benchmarks faster than React in every metric. No vendor lock-in to Vercel.
 - **Opt-in complexity** — Email, job queues, tracing, and metrics are off by default. Set one env var to enable each. `docker compose up` works with zero configuration.
 - **AI-native development** — 37 Cursor AI rules auto-activate based on which file you're editing. AI assistants generate code that follows established codebase patterns on the first try.
-- **793 tests across three layers** — 322 Go unit tests, 451 SolidJS component tests, and 20 Playwright E2E tests. 82%+ Codecov coverage. Not a scaffold — a starter that proves itself.
+- **742 tests across three layers** — 271 Go tests (235 unit + 36 integration), 451 SolidJS component tests, and 20 Playwright E2E tests. Codecov regression tracking on backend and frontend. Not a scaffold — a starter that proves itself.
 - **No vendor lock-in** — Runs on Cloud Run, Fly.io, Railway, Render, or bare metal. PostgreSQL everywhere. No proprietary abstractions.
 
 | | Golid | Next.js + API | Go-only starters | Rails / Laravel |
@@ -93,9 +93,9 @@ cd frontend && npm run dev
 - Atomic design (atoms/molecules/organisms), Tailwind CSS
 - Accessibility: ARIA attributes, keyboard navigation, focus trapping, skip link, axe-core CI verification
 
-### Testing (793 tests, 82%+ coverage)
+### Testing (742 tests)
 
-- 322 Go unit tests + integration tests with per-package schemas (real PostgreSQL via `TEST_DATABASE_URL`, concurrency race tests, auth security edge cases)
+- 271 Go tests (235 unit + 36 integration with `-tags integration`) — per-package schemas via `TEST_DATABASE_URL`, concurrency race tests, auth security edge cases
 - 451 frontend tests (Vitest 4 + @solidjs/testing-library + axe-core)
 - 20 Playwright E2E tests (auth flows, signup, settings, password reset, components)
 - Multi-job CI with path filters: change detection, spec-drift gate, sharded backend unit/integration/coverage, frontend, scaffold-verify, and E2E (docs-only PRs skip heavy jobs)
@@ -211,7 +211,7 @@ See [scripts/README.md](scripts/README.md) for full details and [docs/deployment
 | [Deployment Options](docs/deployment-options.md) | Cloud Run, Fly.io, Railway, Render, bare metal |
 | [API Reference](backend/openapi.yaml) | OpenAPI 3.1 spec |
 | [Changelog](CHANGELOG.md) | Release history |
-| [Full Index](docs/README.md) | Complete documentation map (27 docs, 5 ADRs) |
+| [Full Index](docs/README.md) | Complete documentation map (module specs, organism pattern, CLI reference, 5 ADRs) |
 
 ### Cursor AI Rules
 
@@ -219,7 +219,7 @@ See [scripts/README.md](scripts/README.md) for full details and [docs/deployment
 
 | Rule | Activates on | What it does |
 |------|-------------|-------------|
-| `go-service.mdc` | `service/**/*.go` | Service patterns: retry, auth, transactions, pagination |
+| `go-service.mdc` | `backend/internal/service/**/*.go` | Service patterns: retry, auth, transactions, pagination |
 | `go-handler.mdc` | `handler/*.go` | Handler patterns: interfaces, validation, route registration |
 | `sse-realtime.mdc` | `service/sse/**/*.go`, `sse.ts` | SSE hub, ticket auth, keepalive, reconnect |
 | `write-tests.mdc` | `backend/**/*_test.go` | Backend integration and unit test patterns |

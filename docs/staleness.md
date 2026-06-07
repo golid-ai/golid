@@ -3,25 +3,25 @@
 > Check this table during audits. If a verification trigger has occurred
 > since the last verified date, the document needs review.
 >
-> Last updated: 2026-06-06
+> Last updated: 2026-06-07
 
 ## Cross-Cutting Documents
 
 | Document | Stale when... | Last verified |
 |----------|---------------|---------------|
-| `docs/architecture.md` | Auth flow, middleware stack, SSE hub, or data-fetching pattern changes | 2026-06-06 |
+| `docs/architecture.md` | Auth flow, middleware stack, SSE hub, or data-fetching pattern changes | 2026-06-07 |
 | `docs/best-practices.md` | SolidJS fetching pattern, error handling, or testing conventions change | 2026-06-06 |
 | `docs/cli-reference.md` | Makefile targets, health/ready endpoints, or test DB setup change | 2026-06-06 |
 | `docs/testing-checklist.md` | Module business rules or critical integration scenarios change | 2026-06-06 |
-| `docs/example-module.md` | Scaffold output layout, wire paths, or frontend page patterns change | 2026-02-28 |
+| `docs/example-module.md` | Scaffold output layout, wire paths, or frontend page patterns change | 2026-06-07 |
 
 ## Per-Module Documents
 
 | Document | Stale when... | Last verified |
 |----------|---------------|---------------|
-| `docs/modules/auth/spec.md` | Auth service business logic or API surface changes | 2026-06-06 |
-| `docs/modules/users/spec.md` | User service business logic or API surface changes | 2026-06-06 |
-| `docs/modules/feature/spec.md` | Feature service business logic or API surface changes | 2026-06-06 |
+| `docs/modules/auth/spec.md` | Auth service business logic or API surface changes | 2026-06-07 |
+| `docs/modules/users/spec.md` | User service business logic or API surface changes | 2026-06-07 |
+| `docs/modules/feature/spec.md` | Feature service business logic or API surface changes | 2026-06-07 |
 | `docs/modules/_templates/spec.md` | Spec template structure or citation format changes | 2026-06-06 |
 
 ## Code-Level Triggers

@@ -45,19 +45,27 @@ The middleware stack is configured in `middleware/stack.go`:
 
 Auth middleware runs only on the `protected` route group. Public routes (login, register, etc.) use `StrictRateLimiter()` instead.
 
-### Services (`internal/service/`)
+### Services (`internal/service/<pkg>/`)
 
-Business logic lives here. Services:
+Business logic lives in domain subpackages. Each service:
 
-- Receive validated input from handlers
-- Execute database queries (via pgxpool directly or sqlc-generated code)
-- Return domain types or `apperror` errors
-- Never import `echo` or any HTTP types
+- Receives validated input from handlers
+- Executes database queries (via pgxpool directly or sqlc-generated code)
+- Returns domain types or `apperror` errors
+- Never imports `echo` or any HTTP types
 
-Current services:
-- **AuthService** — registration, login, JWT generation, password reset, email verification, change password
-- **UserService** — profile lookup, profile updates
-- **EmailService** — Mailgun integration with `IsConfigured()` graceful degradation
+Current subpackages:
+- **`auth/`** — registration, login, JWT generation, password reset, email verification, change password
+- **`user/`** — profile lookup, profile updates
+- **`feature/`** — DB-backed feature flags with TTL cache
+- **`sse/`** — per-user SSE hub, one-time ticket auth
+- **`email/`** — Mailgun integration with `IsConfigured()` graceful degradation
+
+Stateless helpers live outside `service/`: **`internal/pagination/`** (query normalization) and **`internal/retry/`** (exponential backoff for fire-and-forget calls).
+
+### Wiring (`internal/wire/`)
+
+`wire.BuildServices`, `wire.BuildHandlers`, and `wire.RegisterRoutes` construct dependencies and mount routes. `cmd/server/main.go` owns process lifecycle only (config, DB, observability, shutdown order).
 
 ### Database (`internal/db/`)
 

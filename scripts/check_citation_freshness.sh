@@ -11,7 +11,11 @@
 #   1 — at least one citation is stale (file missing OR line out of bounds OR
 #       still uses the pre-refactor flat `service/<file>.go:N` layout)
 #
-# Golid module map (auth, users, feature) — citations use
+# Only validates [Verified: path:line] citations. Symbol citations
+# ([Verified: service/auth/auth.go, Register()]) are enforced by spec-drift
+# and review — this script skips non-numeric line suffixes by design.
+#
+# Golid module map (auth, users, feature) — line citations use
 # `service/<pkg>/<file>.go` paths under backend/internal/.
 
 set -u

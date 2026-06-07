@@ -16,6 +16,20 @@
 
 ---
 
+## Module Specs & Organism
+
+| Doc | Description |
+|-----|-------------|
+| [Organism Pattern](organism-pattern.md) | How rules, specs, plans, and drift checks wire together |
+| [CLI Reference](cli-reference.md) | Make targets, health endpoints, `TEST_DATABASE_URL`, test DB init |
+| [Testing Checklist](testing-checklist.md) | Auth, users, feature scenarios + infra smoke |
+| [Staleness Tracker](staleness.md) | Last-verified dates for docs and specs |
+| [Auth Module](modules/auth/spec.md) | Auth service spec with verified citations |
+| [Users Module](modules/users/spec.md) | User profile spec |
+| [Feature Module](modules/feature/spec.md) | Feature flags spec |
+
+---
+
 ## Reference
 
 | Doc | Description |
@@ -37,19 +51,22 @@ Rules in `.cursor/rules/` that give the AI agent context automatically.
 |------|-------------|
 | `codebase-standards.mdc` | Core standards: parameterized SQL, transactions, apperror, alive guards, nullable timestamps, external API patterns, testing conventions |
 | `parallel-subagents.mdc` | Use parallel subagents when auditing or editing 5+ independent files |
+| `git-commits.mdc` | Atomic commits, branch naming, sweep-up exception for shared-file edits |
 
 ### File-Scoped (auto-activate when editing matching files)
 
 | Rule | Fires on | What it does |
 |------|----------|-------------|
-| `go-service.mdc` | `service/*.go` | Service layer: auth helpers, SQL, transactions, error handling, pagination, TIMESTAMPTZ pattern |
+| `go-service.mdc` | `backend/internal/service/**/*.go` | Service layer: auth helpers, SQL, transactions, error handling, pagination, TIMESTAMPTZ pattern |
 | `go-handler.mdc` | `handler/*.go` | Handler layer: thin handlers, auth extraction, validation, route registration |
 | `solidjs-pages.mdc` | `routes/**/*.tsx` | Pages: data fetching, alive guards, modals, DestructiveModal, container widths |
 | `frontend-components.mdc` | `components/**/*.tsx` | Component patterns: atoms vs molecules, props, cn(), accessibility |
 | `frontend-lib.mdc` | `lib/*.ts` | API client: typed endpoints, error handling, PRIVATE_ROUTES |
 | `sql-migrations.mdc` | `migrations/*.sql` | Migrations: up/down, UUIDs, indexes, triggers, enums |
 | `seed-data.mdc` | `seeds/*.sql` | Seed data: stable UUIDs, idempotent inserts, realistic data |
-| `write-tests.mdc` | `*_test.go` | Tests: integration with WithTestDB, unit table-driven |
+| `write-tests.mdc` | `backend/**/*_test.go` | Backend integration (WithTestDB) and unit table-driven tests |
+| `write-tests-frontend.mdc` | `frontend/**/*.test.ts(x)` | Component tests with @solidjs/testing-library |
+| `write-tests-e2e.mdc` | `frontend/tests/e2e/*.spec.ts` | Playwright E2E patterns |
 | `ci-workflow.mdc` | `.github/workflows/*` | CI pipeline patterns |
 | `deploy-infra.mdc` | `scripts/deploy.sh`, `infra/*` | Infrastructure: env var chain, Docker, Cloud Run, secrets |
 | `openapi.mdc` | `api/*.yaml` | OpenAPI spec conventions |

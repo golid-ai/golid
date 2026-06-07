@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Nothing yet.
+
+## [0.2.0] - 2026-06-01
+
+### Added
+
 - **Opt-in job queue** — asynq + Redis with `IsConfigured()` gate. `REDIS_URL` set = persistent queue with retries. Unset = goroutine fallback. Worker process via `cmd/worker/main.go`
 - **Opt-in persistent rate limiting** — Redis fixed-window counter when `REDIS_URL` set. In-memory fallback when not. Fail-open on Redis errors with logging
 - **Opt-in observability** — OpenTelemetry distributed tracing via `OTEL_ENDPOINT` (no-op when unset). Prometheus metrics via `METRICS_ENABLED` (`/metrics` endpoint, request count/duration, SSE connections gauge)
@@ -41,12 +47,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings page: `snackbar` -> `toast` for TypeScript compatibility
 - Auth handler email sends: queue when Redis available, goroutine fallback when not
 - Rate limiter: Redis-backed when `REDIS_URL` set, in-memory when not
-- Coverage thresholds set to production gates (80/84/77/80 statements/branches/functions/lines)
+- Coverage thresholds set to production gates (later recalibrated to 68/47/73/68 in 0.3.0 for Vitest 4 — see `frontend/vitest.config.ts`)
 - CSRF cookie documented with SameSite=Lax intent comment
 - Pagination helper documented with intent comments
 - Go scaffold tool replaced bash script (portable, uses text/template)
 - **Rename tool** — `make rename` to rebrand the project (Go module paths, package.json, Docker files, CI configs, docs)
-- 37 Cursor AI rules (was 14): added sse-realtime.mdc, rename-tool.mdc, frontend-forms.mdc, common-commands.mdc, document-module.mdc, write-rules.mdc + updated 6 existing rules
+- 37 Cursor AI rules (was 14): added sse-realtime.mdc, rename-tool.mdc, frontend-forms.mdc, common-commands.mdc, document-module.mdc, write-rules.mdc + updated 6 existing rules (expanded to 37 in 0.3.0 with operational rules from uflex backport)
 
 ### Fixed
 
