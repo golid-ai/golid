@@ -41,7 +41,7 @@ The tool must cover every file with hardcoded project names. Current categories:
 | 9 | Community files (SECURITY, CHANGELOG, CONTRIBUTING) | GitHub repo + titled name |
 | 10 | `codecov.yml` | Module path |
 | 11 | `config/.env.*` | APP_NAME + DB names |
-| 12 | `scripts/*.sh` + `scripts/README.md` | Project name + titled |
+| 12 | `scripts/*.sh` + `scripts/README.md` | Project name + titled (`init-test-db.sh` default DB name) |
 | 13 | Swagger docs, DevContainer, Dockerfiles | Titled + project name |
 | 14 | `infra/*.yaml` + `.github/workflows/*.yml` | Project name |
 | 15 | Scaffold template + backend Makefile | Titled name |

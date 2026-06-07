@@ -71,16 +71,23 @@ func quoteIdent(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
+func migrationsDirFromEnv(env string) (string, error) {
+	abs, err := filepath.Abs(env)
+	if err != nil {
+		return "", fmt.Errorf("resolve TEST_MIGRATIONS_PATH: %w", err)
+	}
+	info, err := os.Stat(abs)
+	if err != nil || !info.IsDir() {
+		return "", fmt.Errorf("migrations path not found: %s", abs)
+	}
+	return abs, nil
+}
+
 func findMigrationsDir() (string, error) {
 	migrationsDirOnce.Do(func() {
 		if env := os.Getenv("TEST_MIGRATIONS_PATH"); env != "" {
-			abs, err := filepath.Abs(env)
-			if err != nil {
-				migrationsDirErr = fmt.Errorf("resolve TEST_MIGRATIONS_PATH: %w", err)
-				return
-			}
-			if info, err := os.Stat(abs); err == nil && info.IsDir() {
-				migrationsDir = abs
+			if dir, err := migrationsDirFromEnv(env); err == nil {
+				migrationsDir = dir
 				return
 			}
 			// Relative paths like backend/migrations resolve from each package's

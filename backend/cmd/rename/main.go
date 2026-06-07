@@ -119,6 +119,7 @@ func main() {
 	// 12. Update deploy/teardown scripts and scripts README
 	changed += replaceInFileSafe(root+"scripts/deploy.sh", oldProjectName, newName)
 	changed += replaceInFileSafe(root+"scripts/teardown.sh", oldProjectName, newName)
+	changed += replaceInFileSafe(root+"scripts/init-test-db.sh", oldProjectName, newName)
 	changed += replaceInFileSafe(root+"scripts/README.md", oldProjectName, newName)
 	changed += replaceInFile(root+"scripts/README.md", oldTitled, newTitled)
 

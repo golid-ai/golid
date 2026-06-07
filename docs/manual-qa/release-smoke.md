@@ -20,6 +20,7 @@ cd frontend && npm run typecheck && npm run test:run
 ## Manual
 
 - [ ] Complete [auth-smoke.md](auth-smoke.md)
+- [ ] Complete [devcontainer-smoke.md](devcontainer-smoke.md) if devcontainer or Docker frontend images changed
 - [ ] README quick start steps work on fresh clone (or devcontainer)
 - [ ] CHANGELOG version and date match intended tag
 

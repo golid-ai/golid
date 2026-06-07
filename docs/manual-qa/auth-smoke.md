@@ -5,7 +5,7 @@
 ## Setup
 
 - [ ] Devcontainer or `make dev` running
-- [ ] `GET http://localhost:8080/health` returns 200
+- [ ] `curl -sf http://localhost:8080/health` and `curl -sf http://localhost:8080/ready` return 200
 
 ## Registration and login
 

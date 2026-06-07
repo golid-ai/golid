@@ -101,7 +101,10 @@ All env vars are in `config/.env.local` (loaded automatically by the DevContaine
 # Backend (auto-started by DevContainer via Air)
 cd backend && go build ./...            # Build check
 cd backend && go test ./...             # Unit tests (~351 cases)
-cd backend && go test -tags integration ./...  # Integration tests (needs TEST_DATABASE_URL)
+export TEST_DATABASE_URL='postgres://dev:dev@localhost:5432/golid_test?sslmode=disable'
+scripts/init-test-db.sh
+cd backend && TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
+  go test -tags integration ./internal/handler/... ./internal/service/... -race
 cd frontend && npm run test:coverage    # Vitest (~622 tests) + coverage floors
 cd frontend && npm run typecheck        # Required before push (CI enforces)
 
