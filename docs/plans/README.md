@@ -83,6 +83,10 @@ and archive rather than letting it rot.
 **Archive:** completed plans stay readable for bisect and onboarding ("why did
 we adopt wire/subpackages?"). Do not delete.
 
+## Active plans
+
+- [coverage-and-eslint.md](coverage-and-eslint.md) — recover Codecov to 80%+, upgrade TS-eslint 8 (post-0.3)
+
 ## Example in this repo
 
 - [archive/v0.3.0-platform-hardening.md](archive/v0.3.0-platform-hardening.md) — multi-phase backport program (complete)

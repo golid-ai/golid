@@ -4,12 +4,19 @@
 
 ## Quick Setup
 
+**DevContainer (recommended):** Reopen in Container — migrations, seeds, and backend start automatically.
+
+**Docker Compose:**
+
 ```bash
-make setup   # installs deps, copies .env, runs migrations, seeds DB
-make dev     # starts backend (Air hot-reload) + frontend (Vite) + Postgres
+make setup
+export DATABASE_URL=postgres://dev:dev@localhost:5432/golid?sslmode=disable
+make migrate-up seed    # first run only
+make dev                # DB + backend (docker compose up)
+cd frontend && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Test accounts are seeded — see `backend/seeds/dev_seed.sql`. Alternatively, use "Reopen in Container" for a fully provisioned DevContainer.
+Open [http://localhost:3000](http://localhost:3000). Test accounts after seed — see `backend/seeds/dev_seed.sql`.
 
 ## Codebase Primer
 
