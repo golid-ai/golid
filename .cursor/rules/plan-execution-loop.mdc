@@ -1,0 +1,99 @@
+---
+description: Execute a docs/plans/*.md slice with subagent implement → audit → fix until 90+ — invoke manually when running a plan
+alwaysApply: false
+---
+
+# Plan Execution Loop
+
+> **Thesis:** One plan slice at a time — implement, audit (≥90/100), fix, re-audit — then next slice. Parent agent orchestrates; subagents implement and audit.
+>
+> **Invoke when:** User says "run the plan", "execute slice X", or points at `docs/plans/*.md` for implementation.
+
+## Per-slice loop (do not skip)
+
+```
+1. IMPLEMENT — Task subagent: read plan slice only; implement; run verification commands; update Progress row
+2. AUDIT   — Task subagent (readonly): grade /100 vs slice acceptance; PASS only if ≥90
+3. FIX     — if FAIL: Task subagent applies audit fix list; no scope creep
+4. RE-AUDIT — repeat 2–3 until ≥90
+5. NEXT SLICE — only after current slice PASS
+```
+
+## Subagent prompts must include
+
+- Exact slice ID and file path to plan section
+- Acceptance criteria from plan (copy verbatim)
+- Verification commands (`npm run test:coverage`, `check_spec_drift.sh`, etc.)
+- Forbidden scope (other slices, unrelated refactors)
+- "Return: grade, PASS/FAIL, files changed, blockers"
+
+## Parent agent responsibilities
+
+- Read plan slice before dispatching — do not dump whole plan into subagent
+- Run `opt/homebrew/bin/bash scripts/check_spec_drift.sh origin/main` before commit when handler/service touched
+- Commit per slice or logical batch after PASS; never commit with audit below 90
+- Update `docs/plans/*.md` Progress table after each PASS
+
+## Audit dimensions (default weights)
+
+| Dimension | What to check |
+|-----------|---------------|
+| Completeness | All deliverables in slice scope |
+| Accuracy | Paths, commands, plan citations match repo |
+| Acceptance | Slice-specific gates met |
+| Scope | No slice creep; spec sync if required |
+| Verification | Commands run, exit 0 |
+
+## Contract closeout (from `slice-and-ship`)
+
+Before commit on backend slices: spec sync or `[skip-spec(module): reason]`; run `check_spec_drift.sh`.
+
+## Parallel slices within one plan
+
+Independent slices (e.g. B4a ∥ B4b ∥ B4c) may run as parallel **implement** subagents in the **same working tree** when they touch disjoint files. Each slice still gets its own **audit → fix → re-audit** loop before merge.
+
+Pre-flight: `rg` plan slice file lists — if two slices touch the same file, run them sequentially.
+
+## Multiple plans in parallel (worktrees required)
+
+When running **two or more plans** concurrently (each with its own execution loop), **do not share one working tree.** Each plan gets isolated git state — same rules as `parallel-subagents` "When subagents will commit code".
+
+```
+Parent branch (e.g. steve-dev)
+├── worktree: ../golid-plan-a  →  branch plan/a-short-name  →  docs/plans/foo.md loop
+└── worktree: ../golid-plan-b  →  branch plan/b-short-name  →  docs/plans/bar.md loop
+```
+
+**Setup (parent agent):**
+
+```bash
+git worktree add -b plan/<name> ../golid-<name> HEAD
+# Dispatch plan execution loop subagent with working_directory = that worktree path
+```
+
+**Land back on parent branch:**
+
+1. Pre-flight: `rg` both plans for overlapping file paths — resolve or serialize conflicting plans
+2. Cherry-pick **one commit at a time** from each plan branch (smaller/additive plan first) — see `parallel-subagents` cherry-pick loop
+3. After each pick: build + test; fix conflicts before next pick
+4. Run full verification on parent: `check_spec_drift.sh`, `npm run typecheck`, `go test ./...`
+5. `git worktree remove` + `git branch -D plan/<name>` when landed
+
+**Forbidden on parent repo while worktrees run:** `git reset --hard`, `git clean -fd`, `git checkout --force` — can destroy uncommitted work in sibling worktrees.
+
+## Anti-patterns
+
+| Bad | Good |
+|-----|------|
+| Implement B4a–c in one pass | B4a PASS → then B4b |
+| Two plans editing same branch simultaneously | One worktree per plan |
+| Bulk cherry-pick plan commits | One commit at a time |
+| Audit whole plan at end | Audit each slice before next |
+| Skip audit because "tests pass" | Audit grades behavior + docs + scope |
+| Commit at 82/100 | Fix loop until ≥90 |
+
+## Related
+
+- `slice-and-ship` — slice definition, contract closeout
+- `git-commits` — `check_spec_drift.sh` before commit; parallel shared-file exception
+- `parallel-subagents` — worktree isolation, cherry-pick order, shared-file pre-flight
