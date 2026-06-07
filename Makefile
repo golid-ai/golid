@@ -9,6 +9,7 @@ setup: ## Copy .env.example, generate JWT secret, install frontend deps
 	@JWT=$$(openssl rand -hex 32) && \
 		perl -pi -e "s/CHANGE_ME_64_CHAR_HEX_STRING_AT_LEAST_32_CHARS/$$JWT/" config/.env.local
 	@echo "✓ config/.env.local created with secure JWT secret"
+	@scripts/init-test-db.sh
 	@cd frontend && npm install
 	@echo "✓ frontend dependencies installed"
 

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/golid-ai/golid/backend/internal/apperror"
+	"github.com/golid-ai/golid/backend/internal/service/auth"
 	"github.com/golid-ai/golid/backend/internal/testutil"
 )
 
@@ -30,10 +31,10 @@ func derefStr(p *string) string {
 func TestUpdateProfile_Integration(t *testing.T) {
 	testutil.WithTestDB(t, func(pool *pgxpool.Pool) {
 		ctx := context.Background()
-		authSvc := NewAuthService(pool, "test-jwt-secret-that-is-at-least-32-characters-long!", "test-issuer", 15*time.Minute, 7*24*time.Hour, 1*time.Hour)
+		authSvc := auth.NewAuthService(pool, "test-jwt-secret-that-is-at-least-32-characters-long!", "test-issuer", 15*time.Minute, 7*24*time.Hour, 1*time.Hour)
 		userSvc := NewUserService(pool)
 
-		result, err := authSvc.Register(ctx, &RegisterInput{
+		result, err := authSvc.Register(ctx, &auth.RegisterInput{
 			Email:     "profile@example.com",
 			Password:  "password123",
 			FirstName: "Original",
@@ -112,10 +113,10 @@ func TestUpdateProfile_NotFound_Integration(t *testing.T) {
 func TestUpdateProfile_AvatarURL_Integration(t *testing.T) {
 	testutil.WithTestDB(t, func(pool *pgxpool.Pool) {
 		ctx := context.Background()
-		authSvc := NewAuthService(pool, "test-jwt-secret-that-is-at-least-32-characters-long!", "test-issuer", 15*time.Minute, 7*24*time.Hour, 1*time.Hour)
+		authSvc := auth.NewAuthService(pool, "test-jwt-secret-that-is-at-least-32-characters-long!", "test-issuer", 15*time.Minute, 7*24*time.Hour, 1*time.Hour)
 		userSvc := NewUserService(pool)
 
-		result, err := authSvc.Register(ctx, &RegisterInput{
+		result, err := authSvc.Register(ctx, &auth.RegisterInput{
 			Email:     "avatar@example.com",
 			Password:  "password123",
 			FirstName: "Test",

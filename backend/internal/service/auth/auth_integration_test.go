@@ -15,6 +15,7 @@ const testJWTSecret = "test-jwt-secret-that-is-at-least-32-characters-long!"
 
 func newTestAuthService(t *testing.T) (*AuthService, func()) {
 	t.Helper()
+	testutil.SkipIfNoTestDB(t)
 	db := testutil.SetupTestDB()
 	svc := NewAuthService(db.Pool, testJWTSecret, "test-issuer", 15*time.Minute, 7*24*time.Hour, 1*time.Hour)
 	return svc, func() {
