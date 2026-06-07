@@ -2,7 +2,7 @@
 # Started by VS Code/Cursor "Frontend Dev Server" task on devcontainer folderOpen.
 set -euo pipefail
 
-ROOT="/workspace"
+ROOT="${WORKSPACE_FOLDER:-/workspace}"
 FRONTEND="${ROOT}/frontend"
 
 echo "Waiting for npm install..."
@@ -10,7 +10,6 @@ while [ ! -f "${FRONTEND}/.npm-ready" ]; do
   sleep 2
 done
 
-# GET /health — liveness (process up). GET /ready — DB reachable (Compose healthcheck).
 echo "Waiting for backend (port 8080)..."
 while ! curl -sf http://localhost:8080/health >/dev/null 2>&1; do
   sleep 2

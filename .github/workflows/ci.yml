@@ -15,7 +15,7 @@ permissions:
   pull-requests: read
 
 env:
-  COVERPKG: ./internal/apperror/...,./internal/config/...,./internal/handler/...,./internal/middleware/...,./internal/observability/...,./internal/queue/...,./internal/service/...,./internal/validate/...
+  COVERPKG: ./internal/apperror/...,./internal/config/...,./internal/handler/...,./internal/middleware/...,./internal/observability/...,./internal/pagination/...,./internal/queue/...,./internal/retry/...,./internal/service/...,./internal/validate/...,./internal/wire/...
 
 jobs:
   changes:
