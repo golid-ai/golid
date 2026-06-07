@@ -75,6 +75,7 @@ docs/plans/
   README.md              ← this file
   <active-plan>.md       ← in-flight work (0–2 active plans is healthy)
   archive/               ← completed or superseded plans (institutional memory)
+    <date>/              ← e.g. 6-7-26/ — batch archived on that date
 ```
 
 **Active plans:** keep short and current. If a plan stalls, mark `Superseded`
@@ -85,11 +86,12 @@ we adopt wire/subpackages?"). Do not delete.
 
 ## Active plans
 
-- [coverage-and-eslint.md](coverage-and-eslint.md) — B0–B4d done locally (993 tests; Vitest **~91%** stmts on included files); **B3b** pending — lock Codecov `target: 80%` after CI confirms project ≥79.5%
+_None — archive completed work under `archive/<date>/`._
 
-## Example in this repo
+## Archive
 
-- [archive/v0.3.0-platform-hardening.md](archive/v0.3.0-platform-hardening.md) — multi-phase backport program (complete)
+- [archive/6-7-26/coverage-and-eslint.md](archive/6-7-26/coverage-and-eslint.md) — Codecov recovery to **82.98%**, TS-eslint 8, B4 component tests, `target: 80%` gate (2026-06-07)
+- [archive/6-7-26/v0.3.0-platform-hardening.md](archive/6-7-26/v0.3.0-platform-hardening.md) — multi-phase backport program (2026-06-07)
 
 ## Related
 

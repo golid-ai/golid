@@ -223,7 +223,7 @@ The rename tool updates 20+ file categories (imports, Docker, CI, Cursor rules, 
 | Auth           | TOCTOU-safe refresh, selector/verifier                  | SSR redirects, reactive 401 logout           |
 | Linting        | golangci-lint (see `backend/.golangci.yml`)             | ESLint + `eslint-plugin-solid`               |
 | Testing        | Unit + integration (real DB), race tests                | Vitest 4 + axe-core + Playwright E2E         |
-| Coverage       | Codecov sharded backend/frontend flags                  | Vitest floors **75/54/78/75** (included files); recovery plan in `docs/plans/coverage-and-eslint.md` |
+| Coverage       | Codecov **82.98%** project; `target: 80%` gate           | Vitest floors **75/54/78/75** (included files); see `docs/plans/archive/6-7-26/` |
 | CI             | Path filters, spec-drift, rule-health, sharded coverage | lint, typecheck, build, audit (non-blocking) |
 
 ---

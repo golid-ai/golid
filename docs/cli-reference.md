@@ -82,7 +82,7 @@ make clean             # Remove build artifacts
 
 ```bash
 cd frontend && npm run test:run          # Vitest (~622 component + lib tests)
-cd frontend && npm run test:coverage     # With coverage (floors 75/54/78/75; see docs/plans/coverage-and-eslint.md)
+cd frontend && npm run test:coverage     # With coverage (floors 75/54/78/75; see docs/plans/archive/6-7-26/coverage-and-eslint.md)
 cd frontend && npm run typecheck         # tsc --noEmit (run before push)
 cd frontend && npm run generate:types    # Regenerate from openapi.yaml
 

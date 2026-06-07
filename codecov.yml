@@ -20,13 +20,9 @@ coverage:
   status:
     project:
       default:
-        target: auto
+        target: 80%
         threshold: 2%
     patch: off
-
-notify:
-  after_n_builds: 2
-  wait_for_ci: false
 
 fixes:
   - "github.com/golid-ai/golid/backend/::backend/"

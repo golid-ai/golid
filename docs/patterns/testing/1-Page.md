@@ -99,7 +99,7 @@ function createUser(overrides = {}) {
 
 ## Coverage Targets
 
-Enforced floors match `frontend/vitest.config.ts` (included files only). After B4d (local): **~91%** statements / **~74%** branches / **~94%** lines on included files; Codecov project **~79%** (CI upload pending) — recovery tracked in [coverage-and-eslint plan](../../plans/coverage-and-eslint.md).
+Enforced floors match `frontend/vitest.config.ts` (included files only). After B4d (local): **~91%** statements / **~74%** branches / **~94%** lines on included files; Codecov project **82.98%** — recovery complete; see [coverage-and-eslint plan](../../plans/archive/6-7-26/coverage-and-eslint.md).
 
 | Metric | Vitest floor (included files) |
 |--------|-------------------------------|
@@ -123,7 +123,7 @@ Enforced floors match `frontend/vitest.config.ts` (included files only). After B
 - [ ] Integration tests for API routes
 - [ ] Component tests for UI behavior
 - [ ] MSW for API mocking
-- [ ] Coverage meets Vitest floors (`vitest.config.ts`) and Codecov CI status (see [coverage-and-eslint](../../plans/coverage-and-eslint.md))
+- [ ] Coverage meets Vitest floors (`vitest.config.ts`) and Codecov CI status (see [coverage-and-eslint](../../plans/archive/6-7-26/coverage-and-eslint.md))
 - [ ] Tests run in CI
 
 ---

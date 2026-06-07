@@ -113,7 +113,7 @@ test("calls onDismiss when close button clicked", async () => {
 
 After writing tests, update `vitest.config.ts` thresholds to 5% below the new actual coverage. This prevents regression without blocking future work. Ratchet up as coverage grows.
 
-Current thresholds (`vitest.config.ts`, included files only): `statements: 75, branches: 54, functions: 78, lines: 75`. CI fails if coverage drops below these. Codecov project recovery (target 80%) is tracked in `docs/plans/coverage-and-eslint.md`.
+Current thresholds (`vitest.config.ts`, included files only): `statements: 75, branches: 54, functions: 78, lines: 75`. CI fails if coverage drops below these. Codecov project gate (`target: 80%`) is documented in `docs/plans/archive/6-7-26/coverage-and-eslint.md`.
 
 ### Keep Tests In Sync With Code
 

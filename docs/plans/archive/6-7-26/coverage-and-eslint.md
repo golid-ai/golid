@@ -1,6 +1,6 @@
 # Coverage Recovery + TypeScript-ESLint 8
 
-> **Status:** B4 complete (local); **B3b pending** CI upload confirming project ≥79.5%  
+> **Status:** Complete (archived 2026-06-07) — Codecov project **82.98%**; `target: 80%` gate locked (B3b)  
 > **Risk tier:** T2 — toolchain and test expansion, no auth/schema/migration changes  
 > **Thesis:** Close the gap between honest Codecov reporting (~68% project at start) and
 > documented quality bars (~80%) by testing uncovered backend wiring/observability,
@@ -29,7 +29,7 @@ Record new numbers in **Progress** when re-running after slices land.
 | `npm audit --audit-level=high` | local | `cd frontend && npm audit --audit-level=high` | **5** (4 moderate, **1 high** — h3 only after A1) |
 | ESLint stack | repo | `frontend/package.json:59-64` | `eslint@^8.57`, `@typescript-eslint/*@^8.60`, `eslint-plugin-solid@^0.14` |
 | npm audit CI gate | repo | `.github/workflows/ci.yml:340-347` | **Non-blocking** (warn + exit 0) |
-| Codecov project target | repo | `codecov.yml:4-7` | `target: auto`, `threshold: 2%` |
+| Codecov project target | repo | `codecov.yml` | `target: 80%`, `threshold: 2%` |
 
 **Why Vitest (74%) ≠ Codecov frontend (65%):** Vitest excludes showcase/heavy components
 (`vitest.config.ts:26-39`); Codecov frontend flag counts **all** `frontend/src/` including
@@ -496,23 +496,23 @@ B0 → A1 → A2 → B1 ─┐
 | B1 | Done | CI backend flag **81.44%** ✓. Wire **100%**, handler error branches, `InitTracer` **90.5%** |
 | B2 | Done | Vitest included: **76.57%** stmts / **55.43%** branches (was 74.28% / 52.94%); branch tests in `validation.ts` (`validate`, `getFirstError`), `auth.ts`/`auth.initialize.test.ts` (error paths, initialize, session-expired), `api.ts` (401 refresh, `getErrorMessage`, parseError), `settings.test.tsx` (explicit expects, save retry/success), `format.ts`, `ui.ts`, `use-breakpoint.ts`; Vitest branches gate **≥55% met** |
 | B3 | Done (Vitest floors) | Thresholds **75 / 54 / 78 / 75**. Codecov `target: auto` — deferred to **B3b** after B4 |
-| B4 | Done (local) | CI pre-B4d: project **78.68%**, frontend **77%**, backend **81.44%**. Local post-B4d: Vitest **91.54%** stmts / **74.12%** branches / **93.72%** lines; **622** Vitest tests (**993** total). Await CI upload for Codecov project gate |
+| B4 | Done | CI post-B4d: project **82.98%**, frontend **83.94%**, backend **81.44%**. Local Vitest **91.54%** stmts / **74.12%** branches / **93.72%** lines; **622** Vitest tests (**993** total) |
 | B4a | Done | `Sidebar.test.tsx` + `Navbar.auth.test.tsx`: mobile overlay/close, collapsed opacity, non-admin hides Components, nested `isActive`, `displayName` fallback, auth drawer branches. **+16 tests** (522 total). Vitest **77.65%** stmts / **56.62%** branches; `Sidebar.tsx` **95.87%** / **93.87%**; `Navbar.tsx` **78.12%** / **66.66%** |
 | B4b | Done | `Menu.test.tsx`: Submenu/SubmenuTrigger/SubmenuContent, keyboard (ArrowDown/Up/Escape/ArrowLeft), item onClick, SubmenuTrigger `aria-expanded` toggle, outside mousedown close, `aria-controls` open-state link. **+15 tests** (554 total). Vitest **85.84%** stmts / **65.91%** branches; `Menu.tsx` **86.62%** / **57.55%** |
 | B4c | Done | `Select.test.tsx` + `MultiSelect.test.tsx` + `Combobox.test.tsx`: select/deselect, chip clear, keyboard nav (Arrow/Enter/Escape/Home/End), disabled trigger, filter/typeahead, empty filter. **+17 tests** (554 total). Vitest **85.53%** stmts / **65.4%** branches; `Select.tsx` **88.48%** / **63.88%**; `MultiSelect.tsx` **84.97%** / **61.2%**; `Combobox.tsx` **83.72%** / **58.16%** |
 | B4d | Done | Stretch offenders: new `LoadingOverlay.test.tsx`; extended `Tooltip`, `Textarea`, `RadioGroup`, `Tabs`, `Menu`, `MultiSelect`, `sse.test.ts`. **+68 tests** (622 Vitest / 993 total). Offender lines (local): `LoadingOverlay` **100%**, `Textarea` **100%**, `RadioGroup` **100%**, `Tabs` **100%**, `Tooltip` **~94%**, `sse` **~94%**, `MultiSelect` **~95%**, `Menu` **~92%** |
-| B3b | Pending | `codecov.yml` `target: 80%` after CI upload confirms project ≥79.5% |
+| B3b | Done | `codecov.yml` `target: 80%`; removed deprecated top-level `notify:` (CI upload **82.98%** project) |
 
 ## Execution readiness audit (2026-06-07)
 
 | Dimension | Grade | Notes |
 |-----------|-------|-------|
-| Completeness | 95 | B0–B4d complete; B3b gated on CI upload |
-| Accuracy | 94 | Codecov scope reconciled; docs refreshed post-B4d |
+| Completeness | 98 | B0–B4d + B3b complete; plan archived 2026-06-07 |
+| Accuracy | 96 | Codecov **82.98%**; docs and `codecov.yml` aligned |
 | Actionability | 91 | Copy-paste commands; per-slice acceptance |
 | Slice independence | 90 | B4a–d split validated |
-| Verification | 95 | 622 Vitest + typecheck pass; await Codecov upload |
-| **Overall** | **~94** | **B3b only** — lock `target: 80%` after CI ≥79.5% |
+| Verification | 98 | 622 Vitest + typecheck + CI Codecov **82.98%** |
+| **Overall** | **~95** | **Complete** — archived under `6-7-26/` |
 
 ## Retro hook (fill when complete)
 
@@ -520,7 +520,7 @@ One lesson for the next plan: _Vitest line % and Codecov headline % diverge when
 
 ## Related
 
-- `docs/plans/archive/v0.3.0-platform-hardening.md` — Vitest 4 recalibration
+- `docs/plans/archive/6-7-26/v0.3.0-platform-hardening.md` — Vitest 4 recalibration
 - `.cursor/rules/write-tests.mdc`, `write-tests-frontend.mdc`, `ci-workflow.mdc`
 - `frontend/vitest.config.ts`, `codecov.yml`, `.github/workflows/ci.yml:18,140-347`
 - `frontend/.eslintrc.cjs:14` — `solid/reactivity` off
