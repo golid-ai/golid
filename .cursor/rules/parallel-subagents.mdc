@@ -51,7 +51,7 @@ Use the fast model for mechanical renames; default model for changes requiring j
 
 If subagents will branch, commit, or otherwise touch git state:
 
-- **Worktree isolation is mandatory.** Each subagent gets its own `git worktree`. NEVER let a subagent operate directly in the parent repo.
+- **Worktree isolation is mandatory.** Each subagent gets its own `git worktree`. NEVER let a subagent operate directly in the parent repo (e.g., `/workspace`).
 - **Forbid destructive git ops on the parent repo.** Explicitly tell every subagent: do NOT run `git reset --hard`, `git clean -fd`, `git stash drop`, or `git checkout --force` outside their assigned worktree. A previous incident lost uncommitted user edits this way.
 - **Forbid `git add -A`** — subagents must explicitly add only the files they changed, so untracked user state in the parent isn't accidentally swept in.
 - **Isolate cross-cutting touches in a final commit.** When two subagents both edit shared files (openapi, specs, wire files, barrels, `constants.ts`), instruct each to put those edits in one dedicated final commit. Conflicts then land in one focused commit instead of mixed in with functional changes — much faster to resolve. This is the one legitimate exception to the "one logical change per commit" rule in `git-commits` — see "Parallel Shared-File Exception" there for what qualifies and what doesn't. Name it `chore: sweep-up shared-file edits from <batch-name>` and list the per-feature mapping in the body.

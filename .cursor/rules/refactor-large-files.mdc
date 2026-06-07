@@ -1,6 +1,5 @@
 ---
 description: Guidance for splitting large route files into maintainable pieces
-globs: frontend/src/routes/**/*.tsx
 alwaysApply: false
 ---
 
@@ -86,3 +85,46 @@ export function ItemCard(props: { item: Item; onClick: () => void }) {
 3. **Own state is OK** — modals can have their own form signals (`title`, `description`, `saving`)
 4. **Alive guards stay in parent** — the parent manages the component lifecycle
 5. **Don't over-split** — a 400-line file with one modal is fine. Split when there are 3+ distinct UI sections.
+
+## Dedup Gotcha: "Use the Existing Helper" Hides Behavior Changes
+
+When splitting a large file reveals duplicated code that already has a centralized version elsewhere, **stop and check whether the duplicates have intentional behavior differences before proposing the migration.** A refactor that swaps `localCheckX(...)` for `sharedCheckX(...)` looks like pure dedup but can silently change auth, validation, or error semantics.
+
+The smoking gun is usually a comment on the shared helper explaining why callers haven't migrated. If you see that comment, the duplication is intentional and the migration is a **product decision**, not a refactor.
+
+**Concrete case (`backend/internal/service/match/match_access.go:47-57`):** the centralized `verifyBusinessMatchAccess` allows business owners + members at a configurable role; `service/task/task.go` and `service/task/timesheet.go` keep their own `verifyMatchMembership` that gates owner-only. The doc comment on `verifyBusinessMatchAccess` literally calls out: *"replacing them is a separate, behavior-changing migration tracked as a follow-up."* A first draft of `large-service-file-refactor.md` proposed the migration as a one-liner and would have silently broadened "who can submit timesheets" from owner to every business member.
+
+### Workflow when you spot duplication
+
+1. **Read the shared helper's doc comment in full.** If it explains why callers haven't migrated, treat that as a hard stop on the migration.
+2. **Diff the duplicated functions semantically**, not textually. Same SQL ≠ same authorization. Same validation ≠ same error code.
+3. **If behaviors differ:**
+   - Scope the dedup to the truly shared part — usually the SQL JOIN, the parsing, or the struct unmarshal. Extract that as a private helper (`loadMatchInfo`, `parseMatchID`).
+   - Leave each caller's divergent business logic (auth predicate, error message, side effects) in the caller.
+   - State this explicitly in the plan: **"Pure dedup, no auth/behavior surface change."**
+4. **If you think the behaviors *should* converge:** that's a product/permissions decision. File a separate ticket, get a product call, then ship the convergence as its own PR — don't smuggle it inside a refactor.
+
+### Anti-rationalization
+
+| Excuse | Counter |
+|---|---|
+| "The shared helper is strictly more permissive, so swapping is safe" | Strictly more permissive is the textbook definition of a permission widening. That's the change you're not allowed to ship as a refactor. |
+| "The doc comment is stale" | The doc comment is the codified intent. If it's stale, ship a separate commit that updates it (with product sign-off) before the migration. |
+| "Other callers already use the shared helper" | Those callers were originally written against it. The duplicating callers were written against the narrower predicate on purpose. Different callers can want different policies. |
+
+## Exception: Self-Contained Tabs
+
+When a page is organized as tabs where each tab manages its own data fetching and state (e.g., settings page), tabs can import shared stores directly (like `auth`) instead of receiving data via props. The test: if removing the parent's `onMount` wouldn't break the tab, it's self-contained.
+
+```
+settings/
+├── index.tsx              ← Shell with Tabs + inline AccountTab (~120 lines)
+├── _components/
+│   ├── Section.tsx         ← Shared layout component
+│   ├── EssentialsTab.tsx   ← Own signals, reads auth directly
+│   ├── PortfolioTab.tsx    ← Own onMount, uploads, alive guard
+│   ├── NotificationsTab.tsx
+│   └── TeamTab.tsx         ← Own data fetching, invite flow
+```
+
+This is valid because there's zero cross-tab signal coupling — no tab sets signals that another tab reads.

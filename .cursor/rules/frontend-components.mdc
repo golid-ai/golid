@@ -138,3 +138,20 @@ Never call `onCleanup()` after an `await` — use mutable refs cleaned up in the
 - Use inline styles — use Tailwind classes
 - Create a raw HTML element when a component exists (`<select>` → use `<Select>`, `confirm()` → use `<DestructiveModal>`)
 - Use `lazy()` without a `<Suspense>` boundary — it silently renders nothing
+- Build "demo state" (random failures, fake delays, mocked data, `simulateX` helpers) directly into a component that is also used in production. If a component needs a showcase variant, gate the demo behavior on the absence of an integration prop (`Show when={hasFiles() && !props.onFilesSelected}`) so the demo UI only renders when no callback is wired. Mock data on dedicated showcase routes (e.g. `(private)/components/sections/`) is fine — those routes are the showcase, not consumers of one component.
+
+### Legitimate raw-`<input>` exceptions
+
+Two raw `<input>` cases are intentional and should not be wrapped with the
+shared `<Input>` component:
+
+1. **Hidden file inputs triggered by ref.** The `<Input>` component does not
+   support file uploads. Use a hidden `<input ref={fileRef} type="file"
+   class="hidden" />` clicked from a styled `<Button>`. See
+   `settings/_components/ProfileHeader.tsx` if present.
+2. **Honeypot anti-spam fields.** Hidden inputs with `autocomplete="off"` and a
+   tempting name like `website` should stay raw so bots fill them and humans do
+   not see them. Wrapping them in `<Input>` defeats the trap.
+
+If a third legitimate case appears, add it here in the same commit that
+introduces it.

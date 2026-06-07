@@ -12,132 +12,49 @@ alwaysApply: false
 ## Order of Operations
 
 1. **Schema first** — read the migrations in `backend/migrations/` to understand tables, enums, relationships, indexes
-2. **Service logic** — read `backend/internal/service/<module>/*.go` for business rules, auth checks, transactions, status transitions
-3. **Handler surface** — read `backend/internal/handler/*.go` for request validation, response shapes, route registration in `backend/internal/wire/routes.go`
+2. **Service logic** — each service module lives in its own subpackage at `backend/internal/service/<module>/`. Read `<module>.go` for business rules, auth checks, transactions, status transitions
+3. **Handler surface** — read `backend/internal/handler/*.go` for request validation and response shapes; route registration lives in `backend/internal/wire/routes.go`
 4. **Frontend routes** — read `frontend/src/routes/(private)/*.tsx` for pages, modals, state management
-5. **Write the spec** — fill the template below
+5. **Write the spec** — fill `docs/modules/_templates/spec.md` and save it to
+   `docs/modules/{module}/spec.md`
 
 ## Evidence Standards
 
 - Every business rule must be marked:
-  - `[Verified: service/item/item.go, Create()]` — symbol citation (preferred in module specs)
-  - `[Verified: service/item/item.go:142]` — line citation (checked by `check_citation_freshness.sh`)
+  - `[Verified: service/auth/auth.go, Register()]` — confirmed by reading the code (function names preferred)
+  - `[Verified: service/auth/auth.go:142]` — line citation (checked by `check_citation_freshness.sh`)
   - `[NEEDS VERIFICATION]` — inferred from naming or partial evidence
 - Do NOT invent business rules. If you can't confirm it, mark it unverified.
-- Use concrete evidence: function names, line numbers, SQL column names, enum values
+- Use **function names** in `[Verified:]` annotations when possible — line numbers drift with every PR; function names are stable.
 
-## Spec Template
+## Anti-Rot Rules
 
-```markdown
-# Module: [Name]
+These are the #1 source of documentation staleness. Follow strictly:
 
-> **Thesis:** [One sentence — what this module does and why it exists]
+- **Never put exact line counts** in docs. Use complexity tiers (Low/Medium/High/Critical) or approximate scale (`~3k lines`). Exact counts are wrong after the next PR.
+- **Never list code quality issues** (missing error handling, unused imports, dead code) in docs. Those are linter/grep concerns, not documentation.
+- **Do list architectural concerns** (file too large for splitting, duplicated utility, drift risk between frontend/backend). These change rarely and help future developers.
+- **Never put exact line numbers in Known Issues**. Use function names or describe the pattern.
 
-| | |
-|---|---|
-| **Domain** | [e.g., Core, Billing, User Management] |
-| **Complexity** | Low / Medium / High / Critical |
-| **Status** | Complete / In Progress / Not Started |
+## Template Reference
 
----
-
-## Scope
-
-**Includes:**
-- [entities, services, handlers this spec covers]
-
-**Excludes:**
-- [what belongs in other module specs]
-
-**Depends On:**
-- [other modules referenced by FK or service call]
-
----
-
-## Entities
-
-Derived from `backend/migrations/*.sql`:
-
-| Table | Key Columns | Relationships | Notes |
-|-------|-------------|---------------|-------|
-| | | | |
-
----
-
-## State Machine
-
-Derived from service status checks and enum definitions:
-
-| Status | Transitions To | Guard | Side Effects |
-|--------|---------------|-------|-------------|
-| | | | |
-
----
-
-## Business Rules
-
-Derived from service methods. Mark each rule.
-
-### Validation
-- [Verified: service/x.go:line] Rule description
-
-### Auth / Permissions
-- Handler: `requireUserID` + `requireUserType` (authn)
-- Service: `verifyResourceAccess` or equivalent (authz)
-
-### Side Effects
-- Emails, webhooks, SSE events, cascading status changes
-- Fire-and-forget goroutines with `service.Retry()`
-
----
-
-## API Surface
-
-Derived from handler route registration in `backend/internal/wire/routes.go`:
-
-| Method | Route | Handler | Auth | Description |
-|--------|-------|---------|------|-------------|
-| GET | /api/v1/x | List | JWT | List with pagination |
-| POST | /api/v1/x | Create | JWT | Create new |
-| GET | /api/v1/x/:id | GetByID | JWT | Get single |
-| PUT | /api/v1/x/:id | Update | JWT | Update |
-| DELETE | /api/v1/x/:id | Delete | JWT | Soft delete |
-
----
-
-## Frontend
-
-| Route | Page | Key Components | Data Fetching |
-|-------|------|---------------|--------------|
-| /x | List page | Table, filters, modals | onMount + signals |
-
----
-
-## Current Implementation
-
-| Layer | Files |
-|-------|-------|
-| Handler | `backend/internal/handler/x.go` |
-| Service | `backend/internal/service/x/x.go` |
-| Migration | `backend/migrations/000XXX_*.up.sql` |
-| Frontend | `frontend/src/routes/(private)/x/` |
-| Tests | `backend/internal/handler/x_test.go` |
-```
+Use `docs/modules/_templates/spec.md`. Do not recreate the template by memory;
+copy it first, then fill it with verified evidence.
 
 ## Complexity Ratings
 
 | Rating | Criteria |
 |--------|----------|
-| Low | < 500 lines, simple CRUD, no state machine |
-| Medium | 500-1,500 lines, has state machine or moderate rules |
-| High | 1,500-3,000 lines, complex state machines, financial calcs |
-| Critical | 3,000+ lines, polymorphic entities, cross-system deps |
+| Low | < 500 lines, simple CRUD, no state machine, 0-1 integrations |
+| Medium | 500-1,500 lines, has state machine or moderate rules, 1-2 integrations |
+| High | 1,500-3,000 lines, complex state machines, financial calcs, 2+ integrations |
+| Critical | 3,000+ lines, polymorphic entities, cross-system deps, data migration risks |
 
 ## Output
 
 Save to `docs/modules/{module}/spec.md`. Create the directory if it doesn't exist.
 
-**After updating a spec,** check `docs/permissions.md` if endpoint auth logic changed.
+**After updating a spec,** regenerate `docs/dependency-graph.md` if Depends On entries changed. Check `docs/flows.md` for flows involving this module. If endpoint auth logic changed, update `docs/permissions.md`.
 
 ## After Writing
 

@@ -7,6 +7,9 @@ alwaysApply: true
 
 > **Thesis:** Universal guardrails that apply regardless of which file you're editing — the principles that every other rule assumes you follow.
 
+- **Module spec mapping** — before modifying a module, read its spec at `docs/modules/{module}/spec.md`. Folders: `auth`, `users`, `feature`. Multi-file auth: `auth_password`, `auth_verify` → `auth` spec.
+- **Command lookup before shell work** — before running nontrivial local, test, deploy, GCP, Git, or contract-validation commands, read `common-commands` / `docs/cli-reference.md`, use known-good repo commands, and diagnose the first concrete failure instead of probing equivalent tools.
+
 ## Backend (Go)
 
 - **Parameterized queries only** — never `fmt.Sprintf` with values into SQL. Always use `$N` placeholders.
@@ -25,7 +28,8 @@ alwaysApply: true
 ## Frontend (SolidJS)
 
 - **`Switch/Match` for content states, NEVER nested `<Show>`** — nested `<Show when={!loading()}>` → `<Show when={error()}>` chains create stacked reactive scopes that leak computations during route transitions. Use flat `Switch/Match` with one `Match` per state.
-- **`batch()` async signal updates** — `batch(() => { setData(result); setLoading(false); })` after every `await`. Prevents intermediate states during route transitions. Never use `try/catch/finally` with signals — `finally { setLoading(false) }` runs unbatched after `catch { setError(...) }`, creating an intermediate state. Instead, put `setLoading(false)` inside both `try` and `catch`, wrapped in `batch()`.
+- **`batch()` async signal updates** — `batch(() => { setData(result); setLoading(false); })` after every `await`. Prevents intermediate states during route transitions. Put `setLoading(false)` inside both `try` and `catch`, wrapped in `batch()`. A `finally` that only releases an independent re-entry lock (`setToggling(false)`) is acceptable — see `frontend-forms`.
+- **Never early-return route components before reactive setup** — move auth/access guards into JSX with `<Show when={...} fallback={...}>`. Early returns skip signal creation; the component can't re-render when an async guard (e.g., `auth.user` loading) later passes.
 - **`onMount` + `defer: true`** — use `onMount` for initial fetch, `createEffect(on(..., { defer: true }))` for reactive refetches. Never let `createEffect` fire synchronously during mount.
 - **No reactive expressions inside `<Title>`** — pre-compute as `createMemo`, pass resolved string. Inline reactivity in `<Title>` leaks during route transitions.
 - **`onMount` + signals for all page data — no `createResource`** — the project uses `onMount` + `createSignal` + `alive` guard + `batch` for all data fetching. `createResource` causes orphaned computation warnings on route transitions and Suspense issues in conditional components. (`createAsync` + `query` from `@solidjs/router` is the official Solid 2.0 direction but not yet adopted.)
@@ -85,10 +89,45 @@ if t != nil { s := t.Format(time.RFC3339); result.Field = &s }
 - **Minimal impact** — changes should only touch what's necessary. Don't refactor adjacent code, rename unrelated variables, or "improve" files you weren't asked to change.
 - **Stop and re-plan when stuck** — if a fix takes more than 2 attempts, stop. Re-read the error, check assumptions, and re-plan the approach. Don't keep pushing the same strategy hoping it works on the third try.
 - **Verify before marking done** — run tests, typecheck, and build after every change. Diff behavior against what you expect. A change isn't done until it's proven correct, not just "looks right."
+- **Never run `-tags=integration` against the dev DB** — verify `TEST_DATABASE_URL` first. If it is not safe, use compile-only checks like `go test -tags=integration <pkg> -run '^$'` and say the full destructive suite was not run. Full warning lives in `write-tests`.
+- **Change sizing** — keep each commit to one logical change, ideally under ~100 lines of diff. If a commit body needs sub-sections, it should be N commits. See `git-commits` rule.
+- **Pre-merge audit gate** — before declaring a feature/card "done", run the relevant audit checklist (`audit-bugs` for a single module, `audit-codebase` for cross-cutting).
+
+## Keep Rules and Docs In Sync
+
+When a code change invalidates or reveals a gap in a rule or doc, update it in the same pass. Stale rules actively mislead.
+
+- **Changed a convention or pattern?** Update the relevant `.cursor/rules/` file.
+- **Changed a module's behavior?** Update `docs/modules/{module}/spec.md`.
+- **Added/removed a component?** Update `frontend/src/components/index.ts`.
+- **Changed deploy scripts or env vars?** Update `docs/` and `config/.env.example`.
+- **Added a new route?** Add to `PRIVATE_ROUTES` in `frontend/src/lib/constants.ts`.
+- **Found a bug pattern worth codifying?** Add to `audit-bugs.mdc` and the relevant domain rule.
+- **Added or changed an API endpoint?** Update `backend/openapi.yaml`.
+
+If unsure whether a rule is affected, grep `.cursor/rules/` for the pattern you changed.
+
+## Keep Tests In Sync
+
+When making code changes, update or add tests in the same pass. Don't ship code without corresponding tests.
+
+- **Added a new API route?** Add handler tests: success, not-found, validation error, unauthorized.
+- **Changed a service function?** Update tests to cover new/changed branches, not just verify old tests pass.
+- **Added a new page/route?** Add a render test (loading state, loaded state with mocked API).
+- **Changed a function signature?** Update all test call sites.
+- **Removed code?** Remove or update tests for the removed behavior. Dead tests rot.
+
+## Anti-Rationalization
+
+Workflow rules own their specific "don't skip the step" counters. When a task
+touches tests, commits, audits, or spec sync, read the nearest active rule's
+Anti-Rationalization section instead of relying on a generic reminder here.
 
 Full details with code examples in the project documentation.
 
 ## Rule Index
+
+Non-globbed files (`cmd/server/main.go`, `internal/wire/*.go`, `internal/db/*.go`, `frontend/src/app.tsx`) use Core Guardrails as primary guidance — intentional, not a gap.
 
 Domain rules fire automatically via file globs. For workflow tasks, invoke by name:
 
@@ -96,10 +135,15 @@ Domain rules fire automatically via file globs. For workflow tasks, invoke by na
 - **Common commands:** `common-commands` (known-good local/dev/test/deploy commands)
 - **Git conventions:** `git-commits` (commit messages, branch naming, change sizing)
 - **Any repo plan:** `planning-standards` (quality bar for `docs/plans/**/*.md`)
-- **Plan a new feature:** `plan-feature` → `slice-and-ship` → domain rules → `write-tests` → `audit-bugs`
+- **Plan a new feature:** `plan-feature` → `slice-and-ship` / `plan-execution-loop` → domain rules → `write-tests` → `audit-bugs`
 - **Plan infra/deploy/env work:** `plan-infra` → `deploy-infra` → `ci-workflow` as needed
 - **Implement a planned feature:** `slice-and-ship` (implement → test → sync → commit → audit, one criterion at a time)
 - **Document a module:** `document-module` → `audit-codebase` (verify)
+- **Audit for bugs:** `audit-bugs` (single module) or `audit-codebase` (full system)
+- **Spec drift check:** `scripts/check_spec_drift.sh` + `check_citation_freshness.sh` + `check_rule_health.sh` (see `ci-workflow`)
+- **Refactor a large file:** `refactor-large-files`
+- **Form/error patterns:** `frontend-forms`
+- **Create or maintain a rule:** `write-rules`
 - **Module specs:** `docs/modules/{module}/spec.md` — auth, users, feature (extend as modules land)
 - **Frontend routing:** `solidstart-routing` — `(private)` / `(public)` groups and `PRIVATE_ROUTES`
 - **Frontend tests:** `write-tests-frontend`; **E2E:** `write-tests-e2e`; **backend tests:** `write-tests`

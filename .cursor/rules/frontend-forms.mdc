@@ -1,12 +1,14 @@
 ---
 description: Form submission and error display patterns — toast vs Alert, batch() in try/catch, field-level errors
+globs: frontend/src/routes/**/login*.tsx,frontend/src/routes/**/signup*.tsx,frontend/src/routes/**/forgot-password*.tsx,frontend/src/routes/**/reset-password*.tsx,frontend/src/routes/**/onboarding/**/*.tsx,frontend/src/routes/**/settings/**/*.tsx,frontend/src/components/**/*Form*.tsx,frontend/src/components/**/*Modal*.tsx
 alwaysApply: false
 ---
 
 # Frontend Forms & Error Display
 
 > **Thesis:** Display page-load errors in Switch/Match states, submission errors
-> via toast, and field-level errors inline. Never use try/catch/finally with signals.
+> via toast, and field-level errors inline. Keep user-visible submit state batched
+> with its success or error branch.
 
 ## Error Display Decision Tree
 
@@ -17,7 +19,8 @@ alwaysApply: false
 
 ## Form Submission Pattern
 
-Uses `batch()` in both `try` and `catch`, never `finally`.
+Uses `batch()` in both `try` and `catch`; do not put user-visible submit state
+in `finally`.
 
 ```tsx
 const [saving, setSaving] = createSignal(false);
@@ -49,14 +52,14 @@ const handleSubmit = async () => {
       }
     });
   }
-  // NO finally — setSaving(false) is in both try and catch, wrapped in batch()
+  // setSaving(false) is in both branches, wrapped in batch()
 };
 ```
 
 ## Why No `finally`
 
 ```tsx
-// BAD — finally runs unbatched after catch, creating intermediate state
+// BAD — finally runs unbatched after catch, creating intermediate visible state
 try { ... }
 catch { batch(() => { setError(msg); setSaving(false); }); }
 finally { setSaving(false); } // runs AFTER catch, unbatched — error + saving both true briefly
@@ -71,11 +74,45 @@ try {
 }
 ```
 
+This rule is about atomic user-visible state. A `finally` that only releases an
+independent re-entry lock (`setToggling(false)`) is acceptable because it does
+not need to batch with the optimistic revert or toast.
+
 ## Rules
 
 - `toast.success()` for mutations, never for reads
 - `toast.error()` for submission failures, `<Alert>` for page-load failures
 - Field-level errors: set a `fieldErrors` signal from `apiErr.details`, clear on re-submit, render inline under each `<Input>`
 - Submit button: `<Button loading={saving()} disabled={saving()}>Save</Button>`
-- `setSaving(false)` goes inside both `try` and `catch`, wrapped in `batch()` — never in `finally`
+- `setSaving(false)` goes inside both `try` and `catch`, wrapped in `batch()` — not in `finally`
 - Form reset after successful submit: either close modal or clear signals via `batch()`
+
+## Optimistic Updates Need Submission Locks
+
+Optimistic UI without a lock fires concurrent requests on rapid clicks and
+reconciles in arrival order, not click order. Always gate re-entry while the
+request is in flight, revert on failure, and show a toast.
+
+```tsx
+const [toggling, setToggling] = createSignal(false);
+
+async function handleToggle() {
+  if (toggling()) return;
+  setToggling(true);
+  applyOptimistic();
+  try {
+    const result = await api.toggle();
+    if (!alive) return;
+    applyServerState(result);
+  } catch {
+    if (!alive) return;
+    revertOptimistic();
+    toast.error("Update failed");
+  } finally {
+    if (alive) setToggling(false);
+  }
+}
+```
+
+For list rows, track in-flight IDs (`string[]` signal) instead of a single
+boolean so one row's request does not block unrelated rows.

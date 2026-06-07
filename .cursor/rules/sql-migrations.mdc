@@ -8,11 +8,26 @@ alwaysApply: false
 
 > **Thesis:** Migrations are the source of truth for the data model. Every table gets UUIDs, TIMESTAMPTZ, FK indexes, and an updated_at trigger.
 
-Follow the established patterns in `000001_init.up.sql`.
+**Reference files:** `000001_init.up.sql`
 
 ## File Naming
 
 `000NNN_description.up.sql` and `000NNN_description.down.sql` — always create both.
+
+## Once Committed, Never Edited
+
+Migrations are append-only history. Once a migration file is committed, even on
+a feature branch, do not modify it. Any schema change goes in a new migration
+with the next sequence number.
+
+- Need to add a column? New `ALTER TABLE ... ADD COLUMN`.
+- Need to drop a column you just added? New `ALTER TABLE ... DROP COLUMN`.
+- Forgot an index? New `CREATE INDEX`.
+
+Editing an already-committed `.up.sql` silently desyncs schemas: any environment
+that ran the old version will never pick up the change, while fresh databases
+will. Before editing any `00NN_*.sql` file, ask: "is this committed?" If yes,
+create a new migration.
 
 ## Up Migration
 
@@ -70,3 +85,33 @@ When writing status transitions in service code that references these enums:
 -- GOOD — idempotent, no error on repeat
 UPDATE items SET status = 'in_progress' WHERE id = $1 AND status = 'new';
 ```
+
+## Adding a CHECK Constraint to an Existing Table
+
+Any `ADD CONSTRAINT ... CHECK (...)` against an existing table risks failing at deploy time on a single legacy row that violates the new predicate. The `ALTER TABLE` errors out with a generic message and no row IDs, blocking the migration.
+
+Always precede the `ADD CONSTRAINT` with a `DO $$ ... RAISE` pre-flight that names the offending IDs. Defensive only — no-op when data is clean.
+
+```sql
+DO $$
+DECLARE
+    bad_ids TEXT;
+BEGIN
+    SELECT string_agg(id::text, ', ') INTO bad_ids
+    FROM items
+    WHERE status NOT IN ('new', 'in_progress', 'complete', 'cancelled');
+    IF bad_ids IS NOT NULL THEN
+        RAISE EXCEPTION
+            'Migration NNN cannot apply items_status_check: % row(s) violate predicate (ids: %). Fix data before re-running.',
+            (SELECT count(*) FROM items WHERE status NOT IN ('new', 'in_progress', 'complete', 'cancelled')),
+            bad_ids;
+    END IF;
+END $$;
+
+ALTER TABLE items
+    ADD CONSTRAINT items_status_check CHECK (
+        status IN ('new', 'in_progress', 'complete', 'cancelled')
+    );
+```
+
+When this matters most: any CHECK that tightens a previously-loose column (`NOT NULL` → `> 0`, free-text → enum, etc.). One bad legacy row is enough to fail the deploy.

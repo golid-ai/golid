@@ -51,11 +51,11 @@ await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
 When text appears in multiple elements, use role-based selectors:
 
 ```typescript
-// BAD: "Golid" appears in navbar, h1, and footer
-await expect(page.getByText("Golid")).toBeVisible();
+// BAD: "Uflex" appears in navbar, h1, and footer
+await expect(page.getByText("Uflex")).toBeVisible();
 
 // GOOD: targets the specific heading
-await expect(page.getByRole("heading", { name: "Golid" })).toBeVisible();
+await expect(page.getByRole("heading", { name: "Uflex" })).toBeVisible();
 ```
 
 When a heading and button share text, target the button role:
@@ -102,45 +102,11 @@ The signup form uses `type="text"` with `inputmode="email"` rather than
 page.locator('[placeholder="you@example.com"]');
 ```
 
-## Prefer Client-Side Navigation
-
-For authenticated pages, use sidebar links instead of `page.goto()`. `page.goto()`
-triggers a full SSR request which can fail if the page has SSR-unsafe imports.
-
-```typescript
-// BAD — triggers SSR, may show blank page if component uses window/document
-await page.goto("/settings");
-
-// GOOD — client-side navigation, no SSR
-await page.locator('a[href="/settings"]').first().click();
-await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
-```
-
-## Duplicate Elements (Desktop + Mobile)
-
-Responsive layouts often render the same link/button twice. Use `.first()`:
-
-```typescript
-await expect(page.getByRole("link", { name: "Sign Up" }).first()).toBeVisible();
-```
-
 ## Serial Execution
 
 E2E tests run with serial workers: `workers: 1` and `fullyParallel: false`.
 Auth endpoints use strict rate limiting (`AUTH_RATE_LIMIT`, default 5 req/min).
 Parallel workers exhaust the limit instantly, and tests share a mutable database.
-
-## E2E Test Credentials
-
-E2E tests use seeded users from `backend/seeds/dev_seed.sql`. If you change seed
-data credentials, update ALL E2E test files in `frontend/tests/e2e/`.
-
-## No `globalSetup` Warmup
-
-Golid does not use Playwright `globalSetup`. CI pre-builds the backend image and
-starts the compose stack before tests; locally, `webServer` in `playwright.config.ts`
-starts the frontend dev server. That is sufficient — 20/20 E2E tests pass without a
-separate warmup hook (uflex uses `globalSetup` for a heavier multi-host stack).
 
 ## Running Tests
 

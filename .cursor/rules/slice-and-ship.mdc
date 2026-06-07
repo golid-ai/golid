@@ -24,8 +24,10 @@ A slice is the smallest change that is independently:
 A slice is **larger** than a commit (a slice may be 2–4 atomic commits) and **smaller** than a feature (a feature is usually 3–8 slices).
 
 For seed/demo work, mirror the user-facing walkthrough in the commit structure:
-accounts → core CRUD → settings/profile → optional secondary surfaces. Each
+auth → profile/settings → feature flags → optional showcase surfaces. Each
 layer should be usable and rollback-validated before the next layer lands.
+This preserves git archaeology: future-you can answer "why is this data shaped
+this way?" from the commit timeline.
 
 ## The Loop
 
@@ -96,14 +98,9 @@ contract closeout means the rest of the codebase can safely depend on it.
 
 ## Why This Rule Exists
 
-Auditing an entire feature pile after landing 5–10 commits produces large
-follow-up rollups that should have been zero. Slice-by-slice audit catches
-cross-cut bugs as the first slice's findings, not as a third audit pass.
+Three audit-cleanup rollups since `87c59bd` (`d5af0e9`, `9f7e878`, `d176e89`) totaled ~30 file changes that should have been zero. Each happened because we landed an entire feature in 5–10 commits, then audited the pile. The same `23505 → Conflict` translation gap was found in `match.go` (round 1) and `application.go` (round 3) — two months apart, same conceptual fix. A slice-by-slice audit would have caught the second instance the first time.
 
-Concretely: if a multi-step feature were sliced into "list resource", "create
-resource", "update resource", "delete with guards" — and each slice were
-audited before the next started — permission and status-guard bugs would surface
-on the first slice, not after the whole feature ships.
+Concretely: if Project-Based Work had been sliced into "list project on marketplace", "apply to project from detail page", "confirm project suggestion", "accept deliverable", "terminate match cleanup" — and each slice had been audited before the next started — the cross-cut bugs would have surfaced as the first slice's findings, not as a third audit pass.
 
 ## What a Slice Is Not
 
@@ -117,7 +114,7 @@ on the first slice, not after the whole feature ships.
 | Excuse | Counter |
 |---|---|
 | "These two criteria are tightly coupled, I'll do them together" | Coupling is the symptom, not the justification. If they truly can't be sliced, the plan is wrong — re-slice the plan, then implement. |
-| "I'll batch the tests for all slices at the end" | Follow-up test commits cost more than writing the test inline. Test lands with the slice or the slice isn't done. |
+| "I'll batch the tests for all slices at the end" | That's how `aa78e98`, `40834e9`, `5bb69aa`, `f29d720` got written weeks late. Test lands with the slice or the slice isn't done. |
 | "Auditing each slice is too slow" | The audit on a single-slice diff is 60–90 seconds (small surface area). The audit on a full-feature diff takes 10× longer and misses things. |
 | "The slice is implemented, just commit it" | If the audit produced 5+ findings, stop and reassess slice/commit shape before committing. Finding count is a stronger signal than line count that reviewer attention was spread too thin. |
 | "I'm in flow, I don't want to stop and audit" | Flow is the failure mode. The cost of an audit-discovered bug grows with every slice landed on top of it. Stop and audit. |

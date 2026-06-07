@@ -5,9 +5,30 @@ alwaysApply: false
 
 # Bug Audit Checklist
 
-> **Thesis:** Run this checklist against any file or module being reviewed. Each item references a real bug found in this codebase.
+> **Thesis:** Run this checklist against any file or module being reviewed.
+> Each item references a real bug found in this codebase.
 
-Run this checklist against any file or module being reviewed. Each item references a real bug found in this codebase.
+## When to Run
+
+Use `workflow-routing` first when the user asks for review/audit depth or when
+the diff crosses T2/T3 triggers; this checklist is scoped by that tier.
+
+Two trigger points, not just one:
+
+1. **Pre-merge gate** — before declaring a card/feature "done", run the relevant section of this checklist against every file you touched. Running this proactively converts post-hoc audit cleanup into the original commit. This is the highest-ROI use.
+2. **On demand** — when explicitly asked to audit, review for bugs, or grade code quality.
+
+The checklist below is the same for both; only the trigger differs.
+
+## Evidence Requirements
+
+A finding isn't "audited" until you've produced one of:
+
+- **File path + function name + line range** for the offending pattern (e.g., `service/auth/auth.go::Register lines 45-60`).
+- **`rg` command + match count** for codebase-wide patterns (e.g., `rg "_ = pool\.Exec" -g '*.go' | wc -l → 3 hits`).
+- **"Verified clean"** with the search you ran, when no instances exist (e.g., `rg "createResource" frontend/ → 0 hits`).
+
+"Looks fine" is not an audit result. If you can't cite the search, you didn't run it.
 
 ## Audit Strategy
 
@@ -21,7 +42,7 @@ A single audit pass catches ~60-70% of real issues. Each pass has blind spots du
 
 ## Backend Service Files
 
-- [ ] **SQL injection** — any `fmt.Sprintf` with values going into SQL? Must use `$N` placeholders.
+- [ ] **SQL injection** — any `fmt.Sprintf` with values or identifiers going into SQL? Values must use `$N` placeholders; identifiers should be literal SQL or explicitly whitelisted.
 - [ ] **Missing transactions** — any method with 2+ writes that isn't wrapped in `Begin/Commit`?
 - [ ] **Silent error discards** — any `_ = pool.Exec(...)` or `_ = fn(...)`? Must log errors.
 - [ ] **ErrNoRows masking** — any `_ = pool.QueryRow(...)` that ignores real DB errors? Must check `err != nil && err != pgx.ErrNoRows`.
@@ -32,6 +53,8 @@ A single audit pass catches ~60-70% of real issues. Each pass has blind spots du
 - [ ] **ON CONFLICT without UNIQUE constraint** — any `ON CONFLICT (col1, col2)` requires a matching `UNIQUE` index on those columns. Without it, PostgreSQL returns a runtime error.
 - [ ] **Hardcoded values in service constructors** — names, emails, URLs should come from config/env, not hardcoded strings.
 - [ ] **Missing `rows.Err()` after `rows.Next()` loops** — partial iteration errors are silent without this check. Every `for rows.Next()` must be followed by `if err := rows.Err()`.
+- [ ] **`apperror.NotFound("X not found")` double-suffix** — `apperror.NotFound(resource string)` formats its argument as `"%s not found"`, so `apperror.NotFound("User not found")` emits `"User not found not found"`. Pass the bare resource noun (e.g. `apperror.NotFound("User")`).
+- [ ] **Bare `err == pgx.ErrNoRows` instead of `errors.Is(err, pgx.ErrNoRows)`** — direct equality breaks when any caller wraps the error with `fmt.Errorf("...: %w", err)`. Use `errors.Is` defensively.
 
 ## Backend Handler Files
 
@@ -73,3 +96,13 @@ A single audit pass catches ~60-70% of real issues. Each pass has blind spots du
 - [ ] **Missing error handling in goroutines** — any `go fn()` without error logging?
 - [ ] **SSE endpoints excluded from middleware** — SSE (long-lived) endpoints must skip gzip compression (causes flush panic on close) and request timeout middleware. Check `middleware/stack.go` skipper functions.
 - [ ] **Modal overflow** — any modal content taller than the viewport? The global Modal has `max-h-[90vh] overflow-y-auto` but verify iframe/large content modals use appropriate height constraints.
+
+## Anti-Rationalization
+
+| Excuse | Counter |
+|---|---|
+| "It's a small change, audit isn't needed" | Small gaps compound — run the relevant section. |
+| "Tests pass, ship it" | Audit checks whether the *new* branch is tested at all, not whether existing tests still pass. |
+| "I'll audit in a follow-up PR" | Follow-up audit PRs balloon in scope. Audit now or pay 10× later. |
+| "The audit takes longer than the change" | Pick the relevant section, skip the others. A focused section takes minutes. |
+| "I read the code, looks fine" | "Looks fine" produces no evidence. Run the `rg` search and cite the result. See Evidence Requirements above. |

@@ -19,7 +19,7 @@ alwaysApply: false
 ## When this applies
 
 - OG/social-card preview images (`/api/v1/profiles/:slug/og-image`)
-- Badge/credential PNGs
+- Badge/credential PNGs (e.g. Labs certifications)
 - QR code endpoints with branded chrome
 - Invoice/receipt PDF generation
 - Any endpoint that returns image bytes computed from request input
@@ -54,12 +54,12 @@ func RenderOGImage(profile *Profile) ([]byte, error) {
 // Pure function. No network, no shell-out, no external runtime.
 // Same input → same bytes. Testable in 50ms via `go test`.
 // Hot-reloadable via Air during iteration.
-func RenderProfileOGImage(ctx context.Context, profile *PublicProfile) (*OGImage, error) {
+func RenderPublicProfileOGImage(ctx context.Context, profile *PublicStudentProfile) (*PublicProfileOGImage, error) {
     img := image.NewRGBA(...)
-    drawCardSurface(img, ...)
-    drawText(img, profile.DisplayName, ...)
+    drawProofCardSurface(img, ...)
+    drawText(img, name, ...)
     // ... pure draw calls only
-    return &OGImage{PNG: bytes, ETag: computeETag(profile)}, nil
+    return &PublicProfileOGImage{PNG: bytes, ETag: computeETag(profile)}, nil
 }
 ```
 
@@ -96,10 +96,11 @@ input data is unchanged.
 // Renderer change → bytes change → but ETag stays the same because
 // the input is unchanged. Cached clients keep showing the old image
 // for the full max-age window (5+ min).
-func computeETag(profile *PublicProfile) string {
+func computeETag(profile *PublicStudentProfile) string {
     h := sha256.New()
-    fmt.Fprintf(h, "%s\x00", profile.Slug)
-    fmt.Fprintf(h, "%s\x00", profile.DisplayName)
+    fmt.Fprintf(h, "%s\x00", profile.ProfileSlug)
+    fmt.Fprintf(h, "%s\x00", profile.FirstName)
+    // ... profile fields
     return `W/"og-` + hex.EncodeToString(h.Sum(nil))[:24] + `"`
 }
 ```
@@ -108,29 +109,49 @@ func computeETag(profile *PublicProfile) string {
 
 ```go
 // Bump this constant whenever the renderer produces visually
-// different bytes for the same input.
-const ogRendererVersion = "v1"
+// different bytes for the same input. Renderer-only changes
+// invalidate every previously-cached ETag on first request
+// after deploy.
+//
+// Bump log:
+//   - v1  initial portrait-card render
+//   - v2  landscape redesign with retina 2x and neon teal border
+const ogRendererVersion = "v2"
 
-func computeETag(profile *PublicProfile) string {
+func computeETag(profile *PublicStudentProfile) string {
     h := sha256.New()
     fmt.Fprintf(h, "%s\x00", ogRendererVersion)  // FIRST
-    fmt.Fprintf(h, "%s\x00", profile.Slug)
-    fmt.Fprintf(h, "%s\x00", profile.DisplayName)
+    fmt.Fprintf(h, "%s\x00", profile.ProfileSlug)
+    // ... profile fields
     return `W/"og-` + hex.EncodeToString(h.Sum(nil))[:24] + `"`
 }
 ```
 
-**Bump the constant when:** layout, colors, fonts, borders, gradients, or
-dimensions change. **Do NOT bump when:** only input data changes, or refactors
-that don't change rendered output.
+**Bump the constant when:**
+
+- Layout changes (positions, sizes, padding)
+- Colors change
+- Font face or size changes
+- Border, gradient, or visual treatment changes
+- Image dimensions change (e.g. switching to 2x render)
+
+**Do NOT bump when:**
+
+- Profile data changes (those already invalidate via field hash)
+- Refactor that doesn't change rendered output
+- Adding new edge-case handling (e.g. truncating longer names) that
+  doesn't change output for existing inputs
 
 **Lock the contract with a test:**
 
 ```go
 func TestETag_VersionBumpInvalidatesCache(t *testing.T) {
-    profile := &PublicProfile{Slug: "test", DisplayName: "Test"}
+    profile := &Profile{...}
     currentETag := computeETag(profile)
-    bumpedETag := computeETagWithVersion(profile, "v-test-bump")
+    // Simulate a renderer version bump by recomputing with a
+    // different version string. Must produce a different ETag.
+    bumpedFields := []string{"v-test-bump", profile.Slug, ...}
+    bumpedETag := hashFields(bumpedFields)
     if currentETag == bumpedETag {
         t.Fatal("ETag did not change when renderer version differed")
     }
@@ -160,7 +181,8 @@ clients don't sniff the bytes as something other than PNG.
 
 ## Rule 4: Per-request render budget
 
-Image rendering is CPU-bound and unbounded by default. Always wrap the
+Image rendering is CPU-bound and unbounded by default (a huge name
++ long skills + many fields can take seconds). Always wrap the
 render in a `context.WithTimeout`.
 
 ```go
@@ -172,6 +194,16 @@ func Handler(c echo.Context) error {
     img, err := RenderImage(ctx, profile)
     // ...
 }
+
+func RenderImage(ctx context.Context, profile *Profile) (*Image, error) {
+    if err := ctx.Err(); err != nil { return nil, err }  // pre-expensive
+    drawGradient(img)
+    if err := ctx.Err(); err != nil { return nil, err }  // mid-expensive
+    drawText(...)
+    if err := ctx.Err(); err != nil { return nil, err }  // pre-encode
+    encodePNG(img)
+    return result, nil
+}
 ```
 
 A render that exceeds the budget returns 500 with `no-store` so a
@@ -180,18 +212,27 @@ transient slow render doesn't poison the cache.
 ## Rule 5: Max encoded bytes ceiling
 
 Define an explicit `MaxBytes` constant and reject renders that
-exceed it. Unfurlers have their own caps (Slack/LinkedIn/Twitter ~5MB,
-Facebook ~8MB) but you want to fail fast on a runaway render.
+exceed it. Unfurlers have their own caps (Slack 5MB, LinkedIn 5MB,
+Twitter 5MB, Facebook 8MB) but you want to fail fast on a runaway
+render before you hit the wire.
 
 ```go
-const OGImageMaxBytes = 2 * 1024 * 1024  // 2MB
+const PublicProfileOGImageMaxBytes = 2 * 1024 * 1024  // 2MB at 2x render
 
-if buf.Len() > OGImageMaxBytes {
+// After png.Encode:
+if buf.Len() > PublicProfileOGImageMaxBytes {
     return nil, fmt.Errorf("og image too large: %d bytes", buf.Len())
 }
 ```
 
-## Related rules
+## Reference implementations
 
-- `iteration-surface` — build a preview harness before polishing renders with slow feedback loops.
-- `write-tests` — golden-file and ETag tests for pure renderers.
+When adding a dynamic image endpoint to Golid, follow this rule's patterns
+deterministically (renderer version constant, ETag mixing, HEAD parity, render
+budget, max bytes). Wire the handler in `internal/wire/routes.go` and exclude
+the route from gzip/timeout middleware if long-lived or cache-sensitive.
+
+## Reference docs
+
+- `.cursor/rules/dynamic-image-endpoints.mdc` — full pattern (this file)
+- `docs/patterns/` — add a 1-pager when the first Golid dynamic image endpoint ships

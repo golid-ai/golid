@@ -7,17 +7,52 @@ alwaysApply: false
 
 > **Thesis:** Plan the data model and permission model upfront. Everything else — API surface, frontend, tests — follows from those two decisions.
 
-Use this structure when planning a new feature module.
+Run `workflow-routing` before this rule so the plan's risk tier and process
+weight match the feature's blast radius.
+
+Use this structure when asked to plan or design a new feature/module.
+Save repo plans under `docs/plans/`; they become the execution input for
+`slice-and-ship`. Module specs remain current-state truth, not future-plan
+documents. Inherits the universal checklist and length guidance from
+`planning-standards`.
+
+**Check `docs/flows.md`** for existing cross-module flows that may be affected.
+**Check `docs/dependency-graph.md`** for blast radius — which modules depend on
+the one you're modifying. **Check `docs/permissions.md`** for authorization patterns.
+If a similar successful plan exists in `docs/plans/` or `docs/plans/archive/`,
+cross-reference it for phasing, QA gates, rollback, and pre-launch checklists.
 
 ## Planning Checklist
 
 1. **Explore existing code** — read the schema, related services, frontend routes. Understand what exists.
 2. **Scaffold boilerplate** — run `make new-module name=<module>` to generate migration, service, handler, and route stubs.
-3. **Identify the data model** — what tables, enums, relationships are needed? Check if any already exist in `backend/migrations/000001_init.up.sql`.
-4. **Define the API surface** — list every endpoint (verb + path + purpose).
-5. **Identify auth requirements** — who can do what? Map to the two-layer pattern (handler: authn, service: authz).
-6. **Note side effects** — what happens on status changes? Cascading updates? History entries?
-7. **Plan seed data** — test accounts need realistic data for manual testing during development.
+3. **Identify the data model** — what tables, enums, relationships are needed? Check if any already exist in `backend/migrations/000001_init.up.sql`. For every existing table/column/enum the plan references, cite migration:line. Include a "Schema Verification" section in the plan with the verified references; grep all migrations to populate it before writing any seed/migration SQL.
+4. **Define goals and non-goals** — make the product boundary explicit before designing tables/routes.
+5. **Define the API surface** — list every endpoint (verb + path + purpose) and verify route namespace against existing conventions (`/me/*` for caller-owned resources, module paths for shared resources).
+6. **Identify auth requirements** — who can do what? Map to the two-layer pattern (handler: authn, service: authz).
+7. **Note side effects** — what happens on status changes? Cascading updates? History entries?
+8. **Plan seed data** — test accounts need realistic data for manual testing during development.
+9. **Plan rollout** — define deploy gates, rollback/kill-switch posture, QA smoke checks, and any pre-launch checklist.
+
+## Cross-Module / Money / Auth Plans
+
+When a plan touches money math, authorization gates, subscriptions, legal state,
+or three or more modules, add these sections before implementation:
+
+- **Pre-Edit Search Checklist** — exact `rg` commands and expected findings for
+  invoice creation, constraints, auth gates, admin surfaces, generated types, or
+  other coupling points. Do not rely on memory for call-site discovery.
+- **Invariants** — falsifiable post-conditions that must remain true after the
+  change. Example: existing paid invoices calculate the same fee as before.
+- **Rollback Posture** — what is additive, what is backwards-compatible, and
+  what blocks rollback.
+- **Manual QA Matrix** — scenario → expected result rows that anyone can run in
+  QA/demo.
+- **Contract Sync Targets** — name every OpenAPI schema, frontend API type,
+  module spec, seed file, and rule/doc that must change with the slice.
+
+These sections turn audit findings into executable gates. If an audit finds a
+miss in one of these areas, update the plan before coding.
 
 ## Plan Structure (phases)
 
@@ -37,7 +72,7 @@ Phase 2: Backend Service
 Phase 3: Backend Handler + Routes
   - Request types, validation
   - Handler methods
-  - Wire in internal/wire/ (services.go, handlers.go, routes.go)
+  - Route registration in `internal/wire/routes.go`
 
 Phase 4: Frontend API Types + Client
   - TypeScript interfaces matching backend structs
@@ -51,6 +86,7 @@ Phase 5: Frontend Pages + Components
 
 ## Key Decisions to Make Upfront
 
+- **Goals / non-goals** — name what v1 does and what is intentionally deferred.
 - **Modal vs page** for detail views — prefer modal for "detail within a list" (notes, items). Use page for standalone content.
 - **Transaction boundaries** — identify which operations need multi-write transactions.
 - **Permission model** — who can create/read/update/delete? Map to `verifyResourceAccess` or similar. See "Role-Based Permissions" below.
@@ -58,6 +94,31 @@ Phase 5: Frontend Pages + Components
 - **Computed vs stored** — prefer computed fields (via SQL subquery) over stored aggregates.
 - **Side effects** — what happens on key events? Emails, webhooks, audit logging?
 - **Real-time updates** — for features that need server push (live notifications, collaborative edits), consider SSE. Exclude SSE endpoints from gzip and timeout middleware in `middleware/stack.go`.
+- **User-generated content** — decide plaintext vs Markdown vs sanitized HTML, XSS posture, rate limits/throttles, duplicate-abuse controls, reports/moderation, and retention after account deletion.
+- **Performance posture** — for derived sorts, computed counts, broad `ILIKE` search, or throttling `COUNT(*)` checks, name the expected index/query plan or explicitly accept low-volume sequential scans for v1. Do not invent observability gates the project does not have; use existing slow-query logs, `EXPLAIN ANALYZE`, or concrete test evidence.
+- **Docs timing** — OpenAPI/module specs/permissions docs land with the slice that changes behavior, not in a final cleanup-only commit.
+
+## Execution Readiness
+
+- Prefer shippable slices that deliver user-visible value. Internal-only schema/service work can be an implementation milestone, but don't call it a complete slice unless it must land separately for review size.
+- Each user-facing slice needs a deploy gate, a rollback or kill-switch note, and a manual QA smoke path.
+- For risky migrations or auth/security changes, call out asymmetric rollback cases and whether hotfix-forward is safer than revert.
+
+## Iterative Planning Loop
+
+For T2/T3 plans, treat planning as a critique loop before implementation, not a
+single authoring pass:
+
+1. Parent agent drafts or updates the plan and owns final decisions.
+2. Spawn focused subagents to audit independent surfaces: data/permissions,
+   API/contracts, frontend/UX, docs/QA/rollback.
+3. Parent reconciles findings into the plan, explicitly recording decisions and
+   rejected alternatives where future audits might disagree.
+4. Repeat once when subagents find high-severity gaps or plan contradictions.
+
+Use this loop when the feature crosses privacy, security, money, public
+contracts, or three or more modules. Skip it for T0/T1 work; the extra time only
+pays back when a missed decision would create release risk.
 
 ## Role-Based Permissions
 
@@ -81,22 +142,12 @@ Services accept `userID` directly from the handler (extracted from JWT context) 
 
 ## Frontend Component Rule
 
-**Use existing components from `~/components` — never create raw HTML equivalents.** If a component doesn't exist, ask before building one.
-
-- Dropdowns/selects: `<Select>` + `<SelectItem>` (not raw `<select>`)
-- Multi-select: `<MultiSelect>` + `<MultiSelectItem>`
-- Buttons: `<Button>` with variant/size props
-- Inputs: `<Input>` with size/variant props
-- Textareas: `<Textarea>` with autoGrow
-- Modals: `<Modal>` for general, `<DestructiveModal>` for destructive confirms
-- Tabs: `<Tabs>` + `<TabList>` + `<Tab>` + `<TabPanel>`
-- Status badges: `<Chip>` with variant/size props
-
-Check `frontend/src/components/index.ts` for the full list of available exports before writing UI code.
+For UI component selection, use `frontend-components` and `docs/components.md`.
+Do not repeat the component inventory in feature plans.
 
 ## Reference Files
 
-- Service pattern: `backend/internal/service/auth/auth.go`, `backend/internal/service/user/user.go`
+- Service pattern: `backend/internal/service/auth/auth.go`, `backend/internal/service/user/user.go` (one subpackage per domain under `service/`)
 - Handler pattern: `backend/internal/handler/auth.go`, `backend/internal/handler/user.go`
 - Migration pattern: `backend/migrations/000001_init.up.sql`
 - Frontend page: `frontend/src/routes/(private)/dashboard/index.tsx`, `frontend/src/routes/(private)/settings/index.tsx`
@@ -107,4 +158,5 @@ Check `frontend/src/components/index.ts` for the full list of available exports 
 
 ## Post-Implementation
 
-After implementing, run the audit checklist (`@audit-bugs`) against all new files before considering the feature complete.
+During implementation, follow `slice-and-ship`: each slice gets tests, contract
+sync, and the relevant `audit-bugs` pass before the next slice starts.

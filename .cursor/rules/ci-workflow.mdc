@@ -2,6 +2,7 @@
 description: CI workflow patterns for GitHub Actions
 globs:
   - .github/workflows/*.yml
+  - codecov.yml
 ---
 # CI Workflow Patterns
 

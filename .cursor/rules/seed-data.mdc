@@ -8,7 +8,7 @@ alwaysApply: false
 
 > **Thesis:** Seed data uses stable UUIDs, idempotent upserts, and realistic content. Every new migration gets seed data immediately.
 
-Follow the established pattern in `dev_seed.sql`.
+**Reference files:** `dev_seed.sql`
 
 ## UUID Convention
 
@@ -34,12 +34,32 @@ ON CONFLICT (email) DO UPDATE SET
   email_verified = EXCLUDED.email_verified;
 ```
 
+## Rollback Validation
+
+Before committing seed or migration-backed seed work, validate against a real
+Postgres database inside a rollback transaction. This catches FK ordering,
+enum, trigger, uniqueness, and idempotency bugs that schema reading misses,
+while leaving local/dev data untouched.
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -c 'BEGIN;' \
+  -f backend/migrations/000NNN_new_table.up.sql \
+  -f backend/seeds/demo_seed.sql \
+  -c "SELECT count(*) FROM expected_table;" \
+  -c 'ROLLBACK;'
+```
+
+For seed-only changes, omit the migration file. Always assert at least one
+business-relevant count or state, not just "script exited 0".
+
 ## Data Quality
 
 - **Realistic content** — real-sounding names, descriptions, skills. Not "test123" or "Lorem ipsum".
 - **All profile fields populated** — except file-based fields (resume_url, microview_url, etc.) which require actual uploads.
 - **Varied statuses** — seed entities in different states (new, in_progress, complete, approved) to test all UI states.
 - **Realistic timestamps** — use `NOW() - INTERVAL 'N days'` for created/updated dates to simulate a timeline.
+- **Minimum viable depth** — seed the thinnest realistic slice first, then let demo/customer feedback decide whether more rows are worth authoring. One honest review per hero can be enough for v1 if the gap is explicit and easy to extend later.
 
 ## Cross-Entity Relationships
 

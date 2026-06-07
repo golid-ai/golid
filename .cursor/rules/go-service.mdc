@@ -7,8 +7,10 @@ alwaysApply: false
 # Go Service Layer Patterns
 
 > **Thesis:** Services own business logic and data access. They are framework-agnostic, verify resource membership, and never trust the caller to have checked permissions.
+>
+> **Refrain:** `Validate → Authorize → Execute → Respond`
 
-Follow the established patterns in `auth/auth.go` and `user/user.go`.
+**Reference files:** `auth/auth.go`, `user/user.go`
 
 ## Structure
 
@@ -21,7 +23,19 @@ type XService struct {
 func NewXService(pool *pgxpool.Pool, paginationDefault, paginationMax int) *XService { ... }
 ```
 
-- Constructor takes `*pgxpool.Pool` + pagination config. Auth services may take additional params (JWT secret, durations).
+This is the canonical shape for paginated CRUD services. Real services
+diverge based on dependencies — `NewUserService(pool, publicBaseURL)`,
+`NewAuthService(pool, jwtSecret, jwtIssuer, accessDuration, refreshDuration, passwordResetTTL)` —
+but every service follows the same "concrete struct + constructor + framework-agnostic
+methods" rule. Match the constructor shape that fits the dependencies, not the
+template literally.
+
+**Before modifying a module's service** (changes to status transitions, cross-module
+calls, or the API surface), read `docs/modules/{module}/spec.md` for state machine
+constraints and business rules. If available, also check `docs/dependency-graph.md`
+for blast radius and `docs/flows.md` for cross-module transaction boundaries.
+
+- Constructor takes `*pgxpool.Pool` plus whatever the service genuinely needs (pagination config for list endpoints, external service handles, frontend URL for redirects, etc.).
 - **No Echo imports** — services must be framework-agnostic. No `echo.Context`, no `echo.NewHTTPError`. Use `apperror` for errors, plain `context.Context` for context.
 - Define input/output structs in the same file (e.g., `CreateItemInput`, `ItemDetail`).
 - Return `*Detail` structs with formatted timestamps (`time.RFC3339`), not raw DB types.
@@ -39,9 +53,13 @@ if !access.IsAdmin { return apperror.Forbidden("...") }
 
 Create a `verifyXAccess` helper that chains: fetch resource → get parent → verify membership.
 
+## Validation
+
+- **Bcrypt 72-byte limit** — validate with `len([]byte(password)) > 72`, not `len(password) > 72`. Multi-byte UTF-8 characters undercount with `len(string)`. Error messages should say "72 bytes" not "72 characters."
+
 ## SQL Rules
 
-- **Parameterized queries only** — `$1, $2, ...` placeholders. Never `fmt.Sprintf` with values.
+- **Parameterized queries only** — `$1, $2, ...` placeholders. Never `fmt.Sprintf` values or identifiers into SQL; only placeholder index strings like `$%d` are acceptable.
 - **Dynamic WHERE clauses** — use `argIdx` counter pattern for building filtered list queries.
 - **Computed fields via subquery** — e.g., `(SELECT COALESCE(SUM(hours), 0) FROM time_entries WHERE task_id = t.id) AS actual_hours`. Never store computed values.
 - **`rows.Err()` after every `rows.Next()` loop** — partial iteration errors (network, context cancellation) are only surfaced by `rows.Err()`. Without it, the loop silently returns incomplete data.
@@ -65,6 +83,38 @@ For operations that need both a check and a mutation (read-then-write), use atom
 - Always check `pgx.ErrNoRows` explicitly — return `apperror.NotFound` for missing entities.
 - Check real DB errors before ErrNoRows: `if err != nil && err != pgx.ErrNoRows { return 500 }`.
 - Never `_ = pool.Exec(...)` — log failures with `logger.Error`.
+- Pass bare resource nouns to `apperror.NotFound("User")` — not `"User not found"` (double-suffix).
+
+### PostgreSQL Error Translation Checklist
+
+When a service method writes to a table with a `UNIQUE`, `CHECK`, or `FOREIGN KEY` constraint, the corresponding `pgconn.PgError` SQLSTATE must be translated to an `apperror`. A bare 500 from a PG constraint violation is always a bug — the constraint exists *because* the situation is expected.
+
+| SQLSTATE | Meaning | Translate to |
+|---|---|---|
+| `23505` | unique_violation | `apperror.Conflict("...")` |
+| `23503` | foreign_key_violation | `apperror.BadRequest` (parent missing) or `apperror.Conflict` (child blocking delete) |
+| `23514` | check_violation | `apperror.BadRequest` with the constraint name |
+| `23502` | not_null_violation | `apperror.BadRequest` (input was missing) or `apperror.Internal` (code bug) |
+
+Standard pattern (always use `errors.As`, never type assertion — the error may be wrapped):
+
+```go
+var pgErr *pgconn.PgError
+if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+    return apperror.Conflict("...")
+}
+return apperror.Internal(fmt.Errorf("...: %w", err))
+```
+
+When the same translation appears in two or more methods, **extract a helper** and unit-test it directly with synthetic `*pgconn.PgError` values. The TOCTOU race that triggers 23505 isn't deterministic from an integration test, but a unit test of the helper pins the contract.
+
+### Don't Discard Errors
+
+Every function that returns `error` must have its return checked. Audit pattern:
+
+```bash
+rg "_, _ :=|_ = \w" backend/internal/service/ -g '*.go' --no-heading
+```
 
 ## Status Guards
 

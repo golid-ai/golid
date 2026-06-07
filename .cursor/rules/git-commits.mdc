@@ -39,7 +39,7 @@ only when it adds clarity.
 - No period at end of first line
 - Body separated from title by blank line
 - One logical change per commit — don't bundle unrelated changes
-- Before committing code that touches module-owned handler/service files, run `scripts/check_spec_drift.sh <base-ref>` and fix drift in the same commit (update `docs/modules/<module>/spec.md`, usually the Tests section). If the change legitimately does not affect module behavior, add `[skip-spec(<module>): <reason>]` to the commit message.
+- Before committing code that touches module-owned files, run `scripts/check_spec_drift.sh <base-ref>` and fix any drift in the same commit. If the change legitimately does not affect module behavior, add the required `[skip-spec(<module>): <reason>]` marker to the commit message.
 - Use HEREDOC for multi-line: `git commit -m "$(cat <<'EOF' ... EOF)"`
 - Do NOT commit `.env`, credentials, or secret files
 - Do NOT amend commits that have been pushed
@@ -51,8 +51,8 @@ produced by parallel subagents working on shared files. See `parallel-subagents`
 before using this exception.
 
 If you're writing one, name it explicitly:
-`chore: sweep-up shared-file edits from <batch-name>`. The commit body must
-map each edit to its source feature or subagent.
+`chore: sweep-up shared-file edits from <batch-name>`. Full checklist and
+examples live in `docs/git-reference.md`.
 
 ## Change Sizing
 
@@ -64,8 +64,6 @@ Heuristics for "this should be N commits":
 - The diff touches three or more unrelated subsystems.
 - The message uses "and" between non-trivial verbs ("add X **and** refactor Y **and** fix Z").
 - A future bisect would want to land on a finer-grained commit ("which of these three things broke auth?").
-
-Example of the failure mode: one `chore:` commit bundling JWT middleware, login form validation, and a CI workflow update — three independent changes that should be three commits. A body with `### Backend`, `### Frontend`, and `### CI` sub-headings is the tell.
 
 When in doubt: smaller. Squashing later is trivial; splitting later requires `git rebase -i` and is error-prone.
 
@@ -121,3 +119,5 @@ feat: add login page and update CI and fix health check
 ```
 
 Should be three commits: backend auth middleware, frontend login, CI job.
+
+See `docs/git-reference.md` for additional edge-case guidance.

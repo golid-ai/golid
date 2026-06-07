@@ -57,7 +57,7 @@ YourResource:
 
 ## Conventions
 
-- Endpoint paths must match routes registered in `backend/internal/wire/routes.go`
+- Endpoint paths must match routes registered in `internal/wire/routes.go`
 - Use `$ref` for shared schemas and responses (DRY)
 - Tag names match handler file groupings (Auth, Users, Features, SSE)
 - Reuse `MessageResponse` for simple `{"message": "..."}` responses
@@ -71,6 +71,27 @@ The frontend generates TypeScript types from this spec via `openapi-typescript`:
 cd frontend && npm run generate:types
 ```
 
-This reads `backend/openapi.yaml` and outputs `frontend/src/lib/api.generated.ts`. CI checks for staleness by running this command and `git diff --exit-code` (with `continue-on-error: true`).
+This reads `backend/openapi.yaml` and outputs gitignored `frontend/src/lib/api.generated.ts`. CI runs this command in the frontend job so invalid specs fail the build.
 
-After updating the spec, always regenerate types before committing.
+Regenerate locally when you need the file (for example IDE types or importing from `api.generated.ts`).
+
+## CI Validation
+
+CI runs two checks in the frontend job before type generation:
+
+1. **Duplicate-path linter** — a one-line `grep | sort | uniq -d` over the top-level `/path:` keys, fast-failing if two collide before swagger-cli even parses.
+2. **`swagger-cli validate backend/openapi.yaml`** (added in commit `8ba47b1`) — the underlying YAML parser (js-yaml in safe-load mode) errors on duplicate mapping keys at any depth, and swagger-cli adds structural validation on top:
+
+- Duplicate keys at the path level (`/foo:` defined twice) — also caught by the linter above
+- Duplicate keys at the operation level (`get:` defined twice under one path)
+- Duplicate keys inside a schema (`name:` defined twice under one object)
+- Invalid `$ref`s, missing required schema fields, malformed responses
+
+Both gates exist because if duplicates ever slipped through, last-key-wins would silently drop the earlier block. To run locally before committing a spec change:
+
+```bash
+npx --yes @apidevtools/swagger-cli@4.0.4 validate backend/openapi.yaml
+grep -E '^  /\S+:' backend/openapi.yaml | sort | uniq -d  # should print nothing
+```
+
+The swagger-cli package is deprecated; switch to `@redocly/cli lint` with a minimal config if it ever stops working. Both tools fail at YAML parse time on duplicate keys.

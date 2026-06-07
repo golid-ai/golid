@@ -14,10 +14,16 @@ alwaysApply: false
    enforces and why. This is the most important line — a thesis enables the AI
    to generalize to novel situations; a pointer only enables pattern-matching.
 
-2. **Reference files** — "Follow the established patterns in X" goes here,
+2. **Refrain (optional)** — a short verb-driven phrase that captures the rule's
+   rhythm. Only add one when the rule describes a natural action sequence.
+   Good: `Validate → Authorize → Execute → Respond` (verbs with momentum).
+   Bad: `Config → Env → Script → Constructor` (nouns — a process label, not
+   a refrain).
+
+3. **Reference files** — "Follow the established patterns in X" goes here,
    not in the thesis. The thesis says _what_; references say _where_.
 
-3. **Sections** — BAD/GOOD examples for the highest-consequence patterns.
+4. **Sections** — BAD/GOOD examples for the highest-consequence patterns.
    Keep examples minimal — one BAD, one GOOD, showing the exact mistake and fix.
 
 ## When to Create a New Rule
@@ -45,9 +51,25 @@ Update triggers (only these — don't edit rules speculatively):
   the rule covering that file category
 - Audit finding that should be enforced going forward → add to audit checklist
   AND the relevant domain rule
+- A repeated implementation miss exposes a workflow gap → update the workflow
+  rule that owns the missed step, not just the local domain rule. Example:
+  missed OpenAPI/spec/frontend type sync belongs in `slice-and-ship` closeout.
 
 Keep rule edits minimal — update the specific line or section affected, don't
 rewrite the entire rule. The goal is accuracy, not polish.
+
+For nontrivial workflow guidance, identify three things before adding or
+expanding the rule:
+
+- **Trigger** — the exact task, file glob, or failure signal that should activate
+  the guidance.
+- **Cost** — whether the guidance adds always-on context, auto-loaded glob
+  context, or description-triggered reading.
+- **Protected failure** — the real bug, audit finding, or repeated miss this
+  guidance prevents.
+
+If any of the three is vague, keep the guidance in a reference doc or plan until
+the activation moment is clearer.
 
 ## Naming
 
@@ -59,10 +81,22 @@ Workflow rules use verb phrases: `plan-feature`, `document-module`, `audit-bugs`
 - **Glob-triggered** for domain rules (fires when editing matching files)
 - **Description-triggered** for workflow rules (fires when the task matches)
 - **alwaysApply** only for universal guardrails — every line costs context on
-  every interaction, so this is reserved for the always-on trio:
-  `codebase-standards`, `parallel-subagents`, and `git-commits`
+  every interaction, so this is reserved for codebase-standards and
+  parallel-subagents
+
+## Rule Index Maintenance
+
+When adding a new workflow rule, add it to the Rule Index in
+`codebase-standards.mdc`. When renaming or removing a rule, update the index.
+Stale index entries mislead the AI about what rules exist.
 
 ## Size
 
 Aim for 40-80 lines of content (excluding frontmatter). Over 120 lines suggests
 the rule covers two concerns and should be split.
+
+## Rule Health
+
+Run `scripts/check_rule_health.sh` quarterly, or whenever any rule crosses 150 lines.
+See also `docs/rules-health.md`. The audit is pruning-oriented: prefer deleting,
+moving, or narrowing guidance before adding new rules.
