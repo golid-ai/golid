@@ -5,7 +5,7 @@ globs: ["**/feature*.go", "**/features.ts"]
 
 # Feature Flag Patterns
 
-Follow the established patterns in `service/feature.go` and `handler/feature.go`.
+Follow the established patterns in `service/feature/feature.go` and `handler/feature.go`.
 
 ## Usage in Services
 

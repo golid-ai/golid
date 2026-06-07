@@ -106,12 +106,14 @@ cd backend && go test -tags integration ./internal/service/... -race
 
 ## Spec Drift & Citations
 
+`check_spec_drift.sh` requires **bash 4+** (`mapfile`, associative arrays). On macOS, use Homebrew bash — default `/bin/bash` is 3.2:
+
 ```bash
 # Before committing handler/service changes
-scripts/check_spec_drift.sh origin/main
+/opt/homebrew/bin/bash scripts/check_spec_drift.sh origin/main
 
-# Verify line-number citations in docs/
-scripts/check_citation_freshness.sh
+# Verify line-number citations in docs/ (symbol citations in module specs are skipped by design)
+/opt/homebrew/bin/bash scripts/check_citation_freshness.sh
 ```
 
 Skip markers (use sparingly, document in PR):

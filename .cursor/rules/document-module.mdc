@@ -20,7 +20,8 @@ alwaysApply: false
 ## Evidence Standards
 
 - Every business rule must be marked:
-  - `[Verified: service/item.go:142]` — confirmed by reading the code
+  - `[Verified: service/item/item.go, Create()]` — symbol citation (preferred in module specs)
+  - `[Verified: service/item/item.go:142]` — line citation (checked by `check_citation_freshness.sh`)
   - `[NEEDS VERIFICATION]` — inferred from naming or partial evidence
 - Do NOT invent business rules. If you can't confirm it, mark it unverified.
 - Use concrete evidence: function names, line numbers, SQL column names, enum values

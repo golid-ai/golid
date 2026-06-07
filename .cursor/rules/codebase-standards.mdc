@@ -16,7 +16,7 @@ alwaysApply: true
 - **`apperror` for all errors** — never `echo.NewHTTPError`. Use `apperror.BadRequest`, `.Forbidden`, `.NotFound`, `.Validation`, `.Internal`.
 - **Config over hardcoded values** — platform fee percentages, pagination defaults, timeout durations, and retry counts go in `Config` struct or named constants, not inline in service methods. If you'd need to change it for a different environment, it belongs in config.
 - **Request body size limit** — `middleware.BodyLimit("1M")` is configured in `stack.go`.
-- **SSE uses one-time ticket auth (not JWT in URL)** — See `handler/sse.go` and `service/sse.go`.
+- **SSE uses one-time ticket auth (not JWT in URL)** — See `handler/sse.go` and `service/sse/sse.go`.
 - **Retry on fire-and-forget** — goroutines calling external services use `service.Retry()` with exponential backoff.
 - **Shutdown order** — `e.Shutdown()` first (drain in-flight HTTP), then `sseHub.Shutdown()` (close SSE connections), then `defer db.Close()` (pool cleanup runs last via defer LIFO). Never close the DB pool before draining HTTP/SSE connections.
 
