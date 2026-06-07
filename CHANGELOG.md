@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Tailwind CSS 4** — `@tailwindcss/vite` + `@tailwindcss/postcss`, CSS `@import` entry, `tailwind-variants` v1 (removed `withTV`), v4 utility renames (`shadow-xs`, `rounded-xs`, `outline-hidden`)
+
 ## [0.3.0] - 2026-06-07
 
 Production hardening backport from uflex dogfood — wire/subpackages, parallel CI, integration harness, and toolchain upgrades.

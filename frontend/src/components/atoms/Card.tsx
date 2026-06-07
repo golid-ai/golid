@@ -37,7 +37,7 @@ export interface CardFooterProps extends ParentProps {
 export const Card: Component<CardProps> = (props) => {
   const [local, rest] = splitProps(props, ["class", "children", "onClick", "static", "liftable"]);
 
-  const baseClass = "rounded-2xl border border-foreground/[0.1] bg-card text-card-foreground shadow-elevated transition-all duration-300 outline-none ring-offset-background text-left w-full block";
+  const baseClass = "rounded-2xl border border-foreground/[0.1] bg-card text-card-foreground shadow-elevated transition-all duration-300 outline-hidden ring-offset-background text-left w-full block";
   const interactiveClass = "hover:-translate-y-1 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:-translate-y-1 focus-visible:shadow-2xl";
   const liftableClass = "hover:-translate-y-1 hover:shadow-2xl hover:border-primary/20";
 

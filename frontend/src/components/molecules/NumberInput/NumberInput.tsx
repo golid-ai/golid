@@ -124,7 +124,7 @@ export const NumberInput: Component<NumberInputProps> = (props) => {
 
       <div
         class={cn(
-          "flex items-center rounded-sm border bg-transparent transition-all overflow-hidden min-w-0",
+          "flex items-center rounded-xs border bg-transparent transition-all overflow-hidden min-w-0",
           "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background",
           local.error || local.errorMessage ? "border-danger" : "border-input hover:border-foreground/30",
           local.disabled && "opacity-50 cursor-not-allowed",
@@ -150,7 +150,7 @@ export const NumberInput: Component<NumberInputProps> = (props) => {
           aria-describedby={local.errorMessage ? errorId : undefined}
           aria-required={local.required || undefined}
           class={cn(
-            "flex-1 min-w-0 bg-transparent px-3 focus:outline-none text-foreground placeholder:text-muted-foreground/90",
+            "flex-1 min-w-0 bg-transparent px-3 focus:outline-hidden text-foreground placeholder:text-muted-foreground/90",
             local.prefix && "pl-1",
             local.suffix && "pr-1",
             styles().text,

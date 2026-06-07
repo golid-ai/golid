@@ -266,7 +266,7 @@ export const SortableList: Component<SortableListProps> = (props) => {
           <li
             role="listitem"
             class={cn(
-              "touch-none outline-none rounded-xl group/sort-item overflow-hidden relative w-full text-left",
+              "touch-none outline-hidden rounded-xl group/sort-item overflow-hidden relative w-full text-left",
               // Only show focus ring when not actively dragging
               !isDragging() && "ring-offset-background focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
               !isDragging() && "cursor-grab",
@@ -277,7 +277,7 @@ export const SortableList: Component<SortableListProps> = (props) => {
           >
             <button
               type="button"
-              class="w-full h-full text-left outline-none bg-transparent border-none p-0 m-0"
+              class="w-full h-full text-left outline-hidden bg-transparent border-none p-0 m-0"
               aria-grabbed={draggedIndex() === i()}
               aria-label={`Reorder ${item.title}`}
               onPointerDown={(e) => handlePointerDown(e, i())}
@@ -285,7 +285,7 @@ export const SortableList: Component<SortableListProps> = (props) => {
             >
               <div
                 class={cn(
-                  "flex items-center gap-4 px-5 py-3.5 bg-background border border-foreground/10 rounded-xl transition-all duration-300 shadow-sm",
+                  "flex items-center gap-4 px-5 py-3.5 bg-background border border-foreground/10 rounded-xl transition-all duration-300 shadow-xs",
                   "hover:border-foreground/20 hover:bg-foreground/[0.01] hover:shadow-md",
                   "group-[.is-dragging]/sort-item:bg-transparent group-[.is-dragging]/sort-item:border-transparent group-[.is-dragging]/sort-item:shadow-none",
                   "group/item relative"

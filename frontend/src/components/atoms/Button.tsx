@@ -13,7 +13,7 @@ export const buttonVariants = tv({
     // Disabled state
     "disabled:opacity-50 disabled:cursor-not-allowed",
     // A11y
-    "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+    "ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   ],
   variants: {
     variant: {
@@ -52,7 +52,7 @@ export const buttonVariants = tv({
     },
     rounded: {
       true: "rounded-full",
-      false: "rounded-sm",
+      false: "rounded-xs",
     },
     startIcon: {
       true: "",

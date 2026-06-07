@@ -67,7 +67,7 @@ function SpacingItem(props: {
   onCopy: (text: string, label: string) => void;
 }) {
   return (
-    <div class="flex items-start gap-3 group/item py-1 outline-none">
+    <div class="flex items-start gap-3 group/item py-1 outline-hidden">
       {/* Label & Meta */}
       <div class="w-16 shrink-0 flex flex-col gap-1.5 pt-0.5">
         <span class="text-[14px] font-bold text-foreground group-hover/item:text-blue transition-colors leading-none">
@@ -195,7 +195,7 @@ export function LayoutSection(props: LayoutSectionProps) {
                         {(item) => (
                           <button
                             onClick={() => handleCopy(item.classes, item.label)}
-                            class="flex flex-col gap-1.5 group/snippet w-full text-left min-w-0 overflow-hidden outline-none focus-visible:ring-0"
+                            class="flex flex-col gap-1.5 group/snippet w-full text-left min-w-0 overflow-hidden outline-hidden focus-visible:ring-0"
                           >
                             <div class="flex items-center justify-between px-0.5 min-w-0 gap-4">
                               <span class="text-[10px] font-bold uppercase tracking-widest opacity-40 group-hover/snippet:opacity-100 group-hover/snippet:text-blue transition-all truncate">
@@ -237,7 +237,7 @@ export function LayoutSection(props: LayoutSectionProps) {
                       tabindex="0"
                       role="button"
                       aria-label={`Grid column ${i() + 1}`}
-                      class="h-12 sm:h-16 bg-primary/20 border border-primary/40 rounded-md flex items-center justify-center group/col hover:bg-primary/30 hover:border-primary/60 transition-all cursor-pointer outline-none focus-visible:bg-primary/30 focus-visible:border-primary/60"
+                      class="h-12 sm:h-16 bg-primary/20 border border-primary/40 rounded-md flex items-center justify-center group/col hover:bg-primary/30 hover:border-primary/60 transition-all cursor-pointer outline-hidden focus-visible:bg-primary/30 focus-visible:border-primary/60"
                     >
                       <span class="text-[14px] font-mono font-bold opacity-30 group-hover/col:opacity-100">
                         {i() + 1}
@@ -252,7 +252,7 @@ export function LayoutSection(props: LayoutSectionProps) {
                 <div
                   tabindex="0"
                   role="button"
-                  class="sm:col-span-8 h-20 sm:h-28 bg-blue/20 border border-blue/40 rounded-xl flex flex-col items-center justify-center gap-1 group/panel hover:bg-blue/30 hover:border-blue/60 transition-all cursor-pointer p-4 text-center outline-none focus-visible:bg-blue/30 focus-visible:border-blue/60"
+                  class="sm:col-span-8 h-20 sm:h-28 bg-blue/20 border border-blue/40 rounded-xl flex flex-col items-center justify-center gap-1 group/panel hover:bg-blue/30 hover:border-blue/60 transition-all cursor-pointer p-4 text-center outline-hidden focus-visible:bg-blue/30 focus-visible:border-blue/60"
                 >
                   <span class="text-[14px] font-bold text-blue opacity-80 font-montserrat uppercase tracking-widest">
                     Col-Span-8
@@ -262,7 +262,7 @@ export function LayoutSection(props: LayoutSectionProps) {
                 <div
                   tabindex="0"
                   role="button"
-                  class="sm:col-span-4 h-20 sm:h-28 bg-indigo/20 border border-indigo/40 rounded-xl flex flex-col items-center justify-center gap-1 group/panel hover:bg-indigo/30 hover:border-indigo/60 transition-all cursor-pointer p-4 text-center outline-none focus-visible:bg-indigo/30 focus-visible:border-indigo/60"
+                  class="sm:col-span-4 h-20 sm:h-28 bg-indigo/20 border border-indigo/40 rounded-xl flex flex-col items-center justify-center gap-1 group/panel hover:bg-indigo/30 hover:border-indigo/60 transition-all cursor-pointer p-4 text-center outline-hidden focus-visible:bg-indigo/30 focus-visible:border-indigo/60"
                 >
                   <span class="text-[14px] font-bold text-indigo opacity-80 font-montserrat uppercase tracking-widest">
                     Col-Span-4
@@ -272,7 +272,7 @@ export function LayoutSection(props: LayoutSectionProps) {
                 <div
                   tabindex="0"
                   role="button"
-                  class="sm:col-span-4 h-20 sm:h-28 bg-indigo/20 border border-indigo/40 rounded-xl flex flex-col items-center justify-center gap-1 group/panel hover:bg-indigo/30 hover:border-indigo/60 transition-all cursor-pointer p-4 text-center outline-none focus-visible:bg-indigo/30 focus-visible:border-indigo/60"
+                  class="sm:col-span-4 h-20 sm:h-28 bg-indigo/20 border border-indigo/40 rounded-xl flex flex-col items-center justify-center gap-1 group/panel hover:bg-indigo/30 hover:border-indigo/60 transition-all cursor-pointer p-4 text-center outline-hidden focus-visible:bg-indigo/30 focus-visible:border-indigo/60"
                 >
                   <span class="text-[14px] font-bold text-indigo opacity-80 font-montserrat uppercase tracking-widest">
                     Col-Span-4
@@ -288,7 +288,7 @@ export function LayoutSection(props: LayoutSectionProps) {
                     <div
                       tabindex="0"
                       role="button"
-                      class="sm:col-span-2 h-16 sm:h-24 bg-violet/20 border border-violet/40 rounded-xl flex items-center justify-center hover:bg-violet/30 hover:border-violet/60 transition-all cursor-pointer p-4 text-center outline-none focus-visible:bg-violet/30 focus-visible:border-violet/60"
+                      class="sm:col-span-2 h-16 sm:h-24 bg-violet/20 border border-violet/40 rounded-xl flex items-center justify-center hover:bg-violet/30 hover:border-violet/60 transition-all cursor-pointer p-4 text-center outline-hidden focus-visible:bg-violet/30 focus-visible:border-violet/60"
                     >
                       <span class="text-[12px] font-bold text-violet opacity-80 font-montserrat uppercase tracking-widest">
                         Col-Span-2
@@ -310,7 +310,7 @@ export function LayoutSection(props: LayoutSectionProps) {
                 {(constraint) => (
                   <button
                     onClick={() => handleCopy(constraint.label.split(" ")[0], constraint.name)}
-                    class="space-y-3 group/progress w-full text-left outline-none focus-visible:ring-0"
+                    class="space-y-3 group/progress w-full text-left outline-hidden focus-visible:ring-0"
                   >
                     <div class="flex justify-between items-end">
                       <div class="space-y-1">

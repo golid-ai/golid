@@ -1,12 +1,6 @@
-import { fontFamily } from "tailwindcss/defaultTheme";
-import { withTV } from "tailwind-variants/transformer";
-import typography from "@tailwindcss/typography";
-
 /** @type {import('tailwindcss').Config} */
 const config = {
-  darkMode: ["class"],
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  plugins: [typography],
+  darkMode: "class",
   safelist: [
     "dark",
     // Swatch hover states for styleguide
@@ -279,12 +273,12 @@ const config = {
         sm: "calc(var(--radius) - 4px)"
       },
       fontFamily: {
-        sans: ["Inter", ...fontFamily.sans],
-        montserrat: ["Montserrat", ...fontFamily.sans],
-        nunito: ["Nunito", ...fontFamily.sans]
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        montserrat: ["Montserrat", "ui-sans-serif", "system-ui", "sans-serif"],
+        nunito: ["Nunito", "ui-sans-serif", "system-ui", "sans-serif"]
       }
     }
   }
 };
 
-export default withTV(config);
+export default config;

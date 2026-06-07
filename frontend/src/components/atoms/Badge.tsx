@@ -81,7 +81,7 @@ export const Badge: Component<BadgeProps> = (props) => {
     <Show when={local.value !== undefined && local.value !== null}>
       <div
         class={cn(
-          "absolute -top-2 -right-2 flex items-center justify-center rounded-full font-black leading-none ring-2 ring-background transition-all duration-300 shadow-sm whitespace-nowrap",
+          "absolute -top-2 -right-2 flex items-center justify-center rounded-full font-black leading-none ring-2 ring-background transition-all duration-300 shadow-xs whitespace-nowrap",
           variantStyles[variant()],
           sizeStyles[size()],
           local.pulse && "animate-pulse",

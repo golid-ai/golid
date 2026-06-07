@@ -130,9 +130,9 @@ export const Textarea: Component<TextareaProps> = (props) => {
         onInput={handleInput}
         class={cn(
           // Base styles
-          "flex w-full rounded-sm border bg-transparent px-3 py-2 text-sm",
+          "flex w-full rounded-xs border bg-transparent px-3 py-2 text-sm",
           "ring-offset-background placeholder:text-muted-foreground",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           "disabled:cursor-not-allowed disabled:opacity-50 transition-[border-color,box-shadow]",
           // Variant
           variantStyles[variant()],

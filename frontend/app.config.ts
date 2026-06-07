@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "@solidjs/start/config";
 
 /**
@@ -31,6 +32,7 @@ const app = defineConfig({
     // Vite config shared across all vinxi routers (client, SSR, server-function).
     // Note: server.port/host are ignored by vinxi — use PORT/HOST env vars instead.
     return {
+      plugins: [tailwindcss()],
       resolve: {
         alias: {
           "~": "/src",

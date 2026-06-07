@@ -105,7 +105,7 @@ export const ToggleGroup: Component<ToggleGroupProps> = (props) => {
     <ToggleGroupContext.Provider value={contextValue}>
       <div
         class={cn(
-          "inline-flex -space-x-px rounded-sm shadow-sm isolate overflow-x-auto max-w-full",
+          "inline-flex -space-x-px rounded-xs shadow-xs isolate overflow-x-auto max-w-full",
           props.class
         )}
         role="group"
@@ -170,7 +170,7 @@ export const ToggleGroupItem: Component<ToggleGroupItemProps> = (props) => {
       variant="outline"
       size={buttonSize()}
       class={cn(
-        "rounded-none first:rounded-l-sm last:rounded-r-sm focus:z-20 shrink-0 outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+        "rounded-none first:rounded-l-sm last:rounded-r-sm focus:z-20 shrink-0 outline-hidden ring-0 focus-visible:ring-0 focus-visible:ring-offset-0",
         isSelected() ? currentStyles().selected : currentStyles().unselected,
         currentStyles().focus,
         props.class

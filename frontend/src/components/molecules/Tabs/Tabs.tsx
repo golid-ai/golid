@@ -224,7 +224,7 @@ export const Tab: Component<TabProps> = (props) => {
       class={cn(
         // Base
         "whitespace-nowrap border-b-2 py-4 px-4 text-sm font-medium transition-colors duration-200 flex items-center gap-2 disabled:cursor-not-allowed",
-        "outline-none focus-visible:bg-foreground/[0.08] focus-visible:ring-0 focus-visible:ring-offset-0 rounded-t-lg",
+        "outline-hidden focus-visible:bg-foreground/[0.08] focus-visible:ring-0 focus-visible:ring-offset-0 rounded-t-lg",
         // Active (non-success)
         isActive() && !local.success && "text-foreground border-primary bg-foreground/[0.03]",
         // Active success

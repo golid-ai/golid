@@ -97,7 +97,7 @@ export function TableSection() {
           </h3>
         </div>
 
-        <div class="rounded-xl border border-foreground/5 bg-card/50 overflow-hidden shadow-sm h-[400px] flex flex-col">
+        <div class="rounded-xl border border-foreground/5 bg-card/50 overflow-hidden shadow-xs h-[400px] flex flex-col">
           <div class="overflow-auto flex-grow">
             <table class="w-full text-left border-collapse min-w-[800px]">
               <thead>
@@ -116,7 +116,7 @@ export function TableSection() {
                   {(row) => (
                     <tr
                       tabindex="0"
-                      class="hover:bg-foreground/[0.02] group outline-none focus-visible:bg-foreground/[0.04]"
+                      class="hover:bg-foreground/[0.02] group outline-hidden focus-visible:bg-foreground/[0.04]"
                     >
                       {/* Name with avatar initial */}
                       <td class="px-4 py-2.5">
@@ -205,7 +205,7 @@ export function TableSection() {
           </Link>
         </div>
 
-        <div class="rounded-xl border border-foreground/5 bg-card/50 overflow-hidden shadow-sm h-[400px]">
+        <div class="rounded-xl border border-foreground/5 bg-card/50 overflow-hidden shadow-xs h-[400px]">
           <Suspense>
             <AgGrid gridOptions={gridOptions} />
           </Suspense>

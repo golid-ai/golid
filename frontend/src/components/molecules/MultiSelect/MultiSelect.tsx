@@ -271,8 +271,8 @@ export function MultiSelect<T extends string | number = string | number>(props: 
           onClick={toggle}
           onKeyDown={handleKeydown}
           class={cn(
-            "flex w-full items-center justify-between rounded-sm border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all",
-            "hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "flex w-full items-center justify-between rounded-xs border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all",
+            "hover:border-foreground/30 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             props.size === "sm" && "min-h-9 py-0.5",
             props.size === "lg" && "min-h-11 py-1.5",
@@ -290,7 +290,7 @@ export function MultiSelect<T extends string | number = string | number>(props: 
                   <Chip
                     variant="default"
                     size="sm"
-                    class="gap-1 pr-1 h-5 transition-all rounded-[3px] shadow-sm"
+                    class="gap-1 pr-1 h-5 transition-all rounded-[3px] shadow-xs"
                   >
                     <span class="truncate max-w-[150px] font-bold px-0.5 text-[9px] uppercase tracking-wider">
                       {getItemLabel(itemValue)}
@@ -299,7 +299,7 @@ export function MultiSelect<T extends string | number = string | number>(props: 
                       tabindex="-1"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={(e) => removeValue(e, itemValue)}
-                      class="flex items-center justify-center rounded-sm hover:bg-white/20 p-0.5 transition-colors"
+                      class="flex items-center justify-center rounded-xs hover:bg-white/20 p-0.5 transition-colors"
                     >
                       <Icon name="close" size={9} />
                     </button>
@@ -310,7 +310,7 @@ export function MultiSelect<T extends string | number = string | number>(props: 
                 <Chip
                   variant="neutral"
                   size="sm"
-                  class="h-5 px-1.5 rounded-[3px] shadow-sm bg-foreground/10 text-[9px] font-bold uppercase tracking-wider border-none"
+                  class="h-5 px-1.5 rounded-[3px] shadow-xs bg-foreground/10 text-[9px] font-bold uppercase tracking-wider border-none"
                 >
                   +{remainingCount()} more
                 </Chip>
@@ -330,7 +330,7 @@ export function MultiSelect<T extends string | number = string | number>(props: 
         {/* Content - always render children for item registration, but only show visually when open */}
         <div
           class={cn(
-            "absolute z-[60] w-full rounded-sm border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 max-h-[244px] overflow-y-auto shadow-2xl",
+            "absolute z-[60] w-full rounded-xs border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 max-h-[244px] overflow-y-auto shadow-2xl",
             "bg-background/95 dark:bg-card/95",
             direction() === "up" ? "bottom-full mb-2 origin-bottom" : "mt-2 origin-top",
             open() ? "animate-in fade-in-0 zoom-in-95" : "hidden",
@@ -392,7 +392,7 @@ export const MultiSelectItem: Component<MultiSelectItemProps> = (props) => {
       ref={itemRef}
       id={id}
       class={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-1.5 pl-10 pr-2 text-sm font-medium outline-none",
+        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-1.5 pl-10 pr-2 text-sm font-medium outline-hidden",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         "hover:bg-foreground/[0.05] transition-colors",
         isActive() && "bg-foreground/[0.08]",

@@ -49,7 +49,7 @@ export default function Login() {
           <div class="relative flex flex-col justify-center items-center gap-5 p-8 sm:py-10 sm:px-10 sm:min-w-[220px]">
             <div class="absolute inset-0 bg-gradient-to-br from-cta-teal/[0.03] via-transparent to-cta-blue/[0.03]" />
             <div class="relative flex flex-col items-center gap-3">
-              <a href="/" class="outline-none group">
+              <a href="/" class="outline-hidden group">
                 <span class="text-2xl font-bold font-montserrat text-midnight dark:text-mist group-hover:text-cta-green transition-colors duration-300">
                   Golid
                 </span>

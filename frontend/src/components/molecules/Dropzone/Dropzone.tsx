@@ -154,7 +154,7 @@ export const Dropzone: Component<DropzoneProps> = (props) => {
         aria-label={props.label}
         class={cn(
           "relative pt-10 pb-10 w-full text-center cursor-pointer rounded-lg border-2 border-dashed transition-all duration-300 bg-foreground/[0.02] hover:bg-primary/5 border-foreground/10",
-          "focus-visible:outline-none focus-visible:border-foreground/40 focus-visible:bg-foreground/[0.04]",
+          "focus-visible:outline-hidden focus-visible:border-foreground/40 focus-visible:bg-foreground/[0.04]",
           isDragOver() &&
             "border-primary bg-primary/5 shadow-[0_0_20px_rgba(27,157,120,0.1)]"
         )}
@@ -230,7 +230,7 @@ export const Dropzone: Component<DropzoneProps> = (props) => {
                       <Button
                         variant="ghost"
                         onClick={() => removeFile(entry.file)}
-                        class="absolute top-1 right-1 bg-background hover:bg-danger hover:text-danger-foreground transition-colors rounded-full flex items-center justify-center h-6 w-6 group p-0 border border-foreground/10 shadow-sm"
+                        class="absolute top-1 right-1 bg-background hover:bg-danger hover:text-danger-foreground transition-colors rounded-full flex items-center justify-center h-6 w-6 group p-0 border border-foreground/10 shadow-xs"
                       >
                         <Icon
                           name="close"

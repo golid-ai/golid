@@ -7,49 +7,78 @@
 /* ============================================ */
 
 /* Import component-specific styles - MUST be before @tailwind for postcss-import */
-@import "./styles/components/index.css";
+@import './styles/components/index.css' layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 
-/* GLOBAL SCROLLBAR OVERRIDES (Outside Tailwind Layers) */
-::-webkit-scrollbar {
-	width: 16px;
-	height: 16px;
+@config '../tailwind.config.js';
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-::-webkit-scrollbar-track {
-	background-color: hsl(var(--neutral)) !important;
+@utility fill-icon {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24 !important;
 }
 
-::-webkit-scrollbar-thumb {
-	cursor: pointer !important;
-	background-color: hsl(var(--primary));
-	border-radius: 20px !important;
-	/* The trick to narrower thumbs: transparent borders + background-clip: padding-box */
-	border: 4px solid transparent !important;
-	background-clip: padding-box !important;
-}
+@layer utilities {
+  /* GLOBAL SCROLLBAR OVERRIDES (Outside Tailwind Layers) */
+  ::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-	background-color: hsl(var(--primary)/80%) !important;
-}
+  ::-webkit-scrollbar-track {
+    background-color: hsl(var(--neutral)) !important;
+  }
 
-::-webkit-scrollbar-thumb:active {
-	background-color: hsl(var(--primary));
-}
+  ::-webkit-scrollbar-thumb {
+    cursor: pointer !important;
+    background-color: hsl(var(--primary));
+    border-radius: 20px !important;
+    /* The trick to narrower thumbs: transparent borders + background-clip: padding-box */
+    border: 4px solid transparent !important;
+    background-clip: padding-box !important;
+  }
 
-::-webkit-scrollbar-corner {
-	background-color: hsl(var(--neutral)) !important;
-}
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--primary) / 80%) !important;
+  }
 
-/* Firefox Support - Wrapped to prevent overriding Webkit in Chrome */
-@supports (-moz-appearance: none) {
-	* {
-		scrollbar-width: auto;
-		scrollbar-color: hsl(var(--primary)) hsl(var(--neutral));
-	}
+  ::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--primary));
+  }
+
+  ::-webkit-scrollbar-corner {
+    background-color: hsl(var(--neutral)) !important;
+  }
+
+  /* Firefox Support - Wrapped to prevent overriding Webkit in Chrome */
+  @supports (-moz-appearance: none) {
+    * {
+      scrollbar-width: auto;
+      scrollbar-color: hsl(var(--primary)) hsl(var(--neutral));
+    }
+  }
 }
 
 @layer base {
@@ -295,22 +324,18 @@
 }
 
 @layer utilities {
-	.fill-icon {
-		font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
-	}
-}
+  /* Accessibility: Skip Link */
+  .skip-link {
+    @apply fixed left-1/2 top-3 z-1000 -translate-x-1/2 translate-y-[-150%] rounded-full bg-primary px-7 py-2 text-sm font-medium text-primary-foreground shadow-lg transition-all duration-300 no-underline focus:translate-y-0 focus:outline-hidden;
+  }
 
-/* Accessibility: Skip Link */
-.skip-link {
-	@apply fixed left-1/2 top-3 z-[1000] -translate-x-1/2 -translate-y-[150%] rounded-full bg-primary px-7 py-2 text-sm font-medium text-primary-foreground shadow-lg transition-all duration-300 no-underline focus:translate-y-0 focus:outline-none;
-}
+  .skip-link:focus-visible {
+    @apply text-primary-foreground!;
+  }
 
-.skip-link:focus-visible {
-	@apply text-primary-foreground !important;
-}
-
-.skip-link:hover {
-	@apply bg-moonlight dark:bg-mist;
+  .skip-link:hover {
+    @apply bg-moonlight dark:bg-mist;
+  }
 }
 
 @layer base {
@@ -375,7 +400,7 @@
 	}
 
 	a {
-		@apply transition-colors outline-none;
+		@apply transition-colors outline-hidden;
 	}
 
 	/* Link Focus Logic: Color Swapping (No chrome, no flash) */
@@ -388,7 +413,7 @@
 	}
 
 	button {
-		@apply ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2;
+		@apply ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2;
 	}
 }
 
@@ -401,7 +426,7 @@
 }
 
 .dark .shadow-elevated {
-	@apply border border-white/[0.03];
+	@apply border border-white/3;
 }
 
 .glass {

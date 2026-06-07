@@ -94,7 +94,7 @@ export const Input: Component<InputProps> = (props) => {
       <div
         class={cn(
           // Base wrapper styles
-          "relative flex w-full items-center gap-2 rounded-sm border bg-transparent text-sm ring-offset-background transition-all",
+          "relative flex w-full items-center gap-2 rounded-xs border bg-transparent text-sm ring-offset-background transition-all",
           // Focus state on wrapper (includes icons in focus ring)
           "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
           // Disabled state
@@ -123,7 +123,7 @@ export const Input: Component<InputProps> = (props) => {
             {...inputProps}
             class={cn(
               // Base input styles (transparent, no border - wrapper handles it)
-              "peer w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/90 focus:outline-none disabled:cursor-not-allowed transition-all",
+              "peer w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/90 focus:outline-hidden disabled:cursor-not-allowed transition-all",
               isFloating() ? "h-auto pt-4 pb-0.5" : "h-full",
               isFloating() && "placeholder:opacity-0"
             )}

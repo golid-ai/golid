@@ -66,7 +66,7 @@ export function IconsSection(props: IconsSectionProps) {
                         tabIndex={0}
                         role="button"
                         aria-label={`Copy icon name: ${icon}`}
-                        class="group/icon flex items-center justify-center w-12 h-12 rounded-lg bg-foreground/[0.03] border border-foreground/10 hover:bg-foreground/[0.06] hover:border-primary/20 transition-[transform,shadow] duration-300 cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        class="group/icon flex items-center justify-center w-12 h-12 rounded-lg bg-foreground/[0.03] border border-foreground/10 hover:bg-foreground/[0.06] hover:border-primary/20 transition-[transform,shadow] duration-300 cursor-pointer active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
                         <Icon name={icon} class="text-xl text-foreground group-hover/icon:scale-110 transition-transform duration-300 group-hover/icon:text-primary icon-fill-on-hover" />
                       </div>

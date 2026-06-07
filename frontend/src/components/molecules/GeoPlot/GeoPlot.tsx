@@ -523,7 +523,7 @@ export const GeoPlot: Component<GeoPlotProps> = (props) => {
           : `${d.name}, ${d.value} ${props.labels?.value ?? "value"}`
       );
       (circle as unknown as HTMLElement).style.cursor = "pointer";
-      circle.classList.add("focus:outline-none");
+      circle.classList.add("focus:outline-hidden");
 
       circle.addEventListener("focus", () => {
         setHoveredPoint(d);
@@ -585,7 +585,7 @@ export const GeoPlot: Component<GeoPlotProps> = (props) => {
     >
       {/* Zoom Controls */}
       <div class="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
-        <div class="flex items-center bg-background/80 backdrop-blur-md rounded-md shadow-sm">
+        <div class="flex items-center bg-background/80 backdrop-blur-md rounded-md shadow-xs">
           <Button variant="ghost" size="xs-icon" onClick={() => {
             const nz = Math.max(0.5, zoom() * 0.8);
             if (mode() === "map") { const f = nz / zoom(); setPanX((p) => p * f); setPanY((p) => p * f); }
@@ -605,7 +605,7 @@ export const GeoPlot: Component<GeoPlotProps> = (props) => {
             <span class="text-lg leading-none">+</span>
           </Button>
         </div>
-        <Chip variant="neutral" size="xs" clickable active indicator={false} class="w-full justify-center shadow-sm font-medium" onClick={recenter}>
+        <Chip variant="neutral" size="xs" clickable active indicator={false} class="w-full justify-center shadow-xs font-medium" onClick={recenter}>
           Recenter
         </Chip>
       </div>

@@ -276,7 +276,7 @@ export function MiscSection() {
           <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
             Management Tabs
           </h3>
-          <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-8 rounded-2xl border border-foreground/10 shadow-sm flex-grow flex flex-col">
+          <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-8 rounded-2xl border border-foreground/10 shadow-xs flex-grow flex flex-col">
             <Tabs activeTab={activeTab()} onTabChange={setActiveTab}>
               <TabList>
                 <Tab name="telemetry">
@@ -327,7 +327,7 @@ export function MiscSection() {
           <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
             File Uploads
           </h3>
-          <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-8 rounded-2xl border border-foreground/10 shadow-sm flex-grow flex flex-col">
+          <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-8 rounded-2xl border border-foreground/10 shadow-xs flex-grow flex flex-col">
             <p class="text-xs text-muted-foreground mb-6 max-w-2xl leading-relaxed">
               Enterprise-grade file intake with drag-and-drop, progress tracking, and status indicators.
             </p>
@@ -484,7 +484,7 @@ export function MiscSection() {
                 Drag and Drop
               </h3>
             </div>
-            <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-8 rounded-2xl border border-foreground/10 shadow-sm flex-grow relative">
+            <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-8 rounded-2xl border border-foreground/10 shadow-xs flex-grow relative">
               <div class="absolute top-6 right-6 flex items-center gap-2">
                 <Chip
                   variant="blue"
@@ -526,7 +526,7 @@ export function MiscSection() {
         <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
           Breadcrumb Navigation
         </h3>
-        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-sm">
+        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-xs">
           <div class="grid grid-cols-1 xl:grid-cols-2 gap-y-12 gap-x-16">
             <div class="space-y-4">
               <span class="text-[10px] font-bold uppercase tracking-widest opacity-40">
@@ -596,7 +596,7 @@ export function MiscSection() {
         <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
           Stand-alone Pagination
         </h3>
-        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] rounded-2xl border border-foreground/10 shadow-sm overflow-hidden flex flex-col">
+        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] rounded-2xl border border-foreground/10 shadow-xs overflow-hidden flex flex-col">
           <div class="p-8 border-b border-foreground/5">
             <p class="text-xs text-muted-foreground leading-relaxed opacity-70">
               The pagination component can be used independently of tables for
@@ -635,10 +635,10 @@ export function MiscSection() {
           </Link>
         </div>
 
-        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-sm">
+        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-xs">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6">
             {/* 1. Line: Deals & Leads */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <LineGraph title="Deals & Leads" subtitle="YTD 2025" icon="trending_up"
                 data={pipelineData} x="monthNum" y="value" stroke="metric"
                 options={{ x: { tickFormat: (d: unknown) => months[d as number] ?? "", ticks: 12 }, color: { legend: false, domain: ["Closed Deals", "Leads"], range: ["#22d3ee", "#a78bfa"] },
@@ -646,21 +646,21 @@ export function MiscSection() {
                 caption="Pipeline conversion rate trending upward with seasonal peaks." />
             </div>
             {/* 2. Line: Skill Growth Velocity */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <LineGraph title="Skill Growth Velocity" subtitle="24-Week Cohort" icon="school"
                 data={skillGrowthData} x="week" y="score" stroke="skill"
                 options={{ x: { ticks: 8 }, color: { legend: false, domain: ["Technical", "Soft Skills", "Industry"], range: ["#f472b6", "#34d399", "#fbbf24"] } }}
                 caption="Skill acquisition across technical, soft, and industry domains." />
             </div>
             {/* 3. Bar: Hiring by Sector */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <BarGraph title="Hiring by Sector" subtitle="Q1 2025" icon="business_center"
                 data={sectorData} x="sector" y="count" color="sector"
                 options={{ color: { range: ["#22d3ee", "#34d399", "#a78bfa", "#fbbf24", "#f472b6"] } }}
                 caption="Technology and Finance sectors leading growth volume." />
             </div>
             {/* 4. Scatter: Revenue vs Performance */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <ScatterGraph title="Revenue vs Performance" subtitle="n=80 Records" icon="payments"
                 data={scatterData} x="score" y="revenue" fill="segment"
                 options={{ marginLeft: 55, x: { domain: [2.8, 4.0] }, y: { tickFormat: (d: unknown) => `$${d}k` },
@@ -669,79 +669,79 @@ export function MiscSection() {
                 caption="Positive correlation between performance score and revenue." />
             </div>
             {/* 5. Heatmap: Task Completion */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <HeatmapGraph title="Task Completion Velocity" subtitle="90-Day Trajectory" icon="event_available"
                 data={heatmapData} dateKey="date" valueKey="value"
                 caption="Daily task completion volume tracking. Most recent activity bottom-right." />
             </div>
             {/* 6. Radar: Competency */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <RadarGraph title="Candidate Competency" subtitle="Radar Profile" icon="radar"
                 data={hardSkills} color="#22d3ee"
                 caption="Holistic skill assessment across core competency vectors." />
             </div>
             {/* 7. Quadrant: Performance Validation */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <ScatterQuadrant title="Performance Validation" subtitle="Velocity vs Quality" icon="verified"
                 data={quadrantData} x="velocity" y="quality" xLabel="Velocity (hrs/project)" yLabel="Quality Rating (1-5)"
                 caption="Mapping data points into performance quadrants for analysis." />
             </div>
             {/* 8. Matrix: Skill Correlation */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <MatrixGraph title="Skill Correlation" subtitle="Cross-Domain Proficiency" icon="hub"
                 data={matrixData} x="skillA" y="skillB" value="correlation"
                 caption="Identifying skill clusters for cross-functional capabilities." />
             </div>
             {/* 9. Honeycomb: Market Saturation */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <HexbinChart title="Market Saturation" subtitle="Regional Coverage" icon="hive"
                 data={honeycombData} x="lon" y="lat"
                 caption="Hexbin density analysis of regional presence across the partner network." />
             </div>
             {/* 10. Supply Chain: Conversion Pipeline */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <StackedArea title="Conversion Pipeline" subtitle="Stage Funnel" icon="account_tree"
                 data={supplyData} x="i" y="value" z="stage"
                 caption="Tracking the flow from lead to closed deal." />
             </div>
             {/* 11. Rhythm: Work Punch Card */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <ActivityGrid title="Work Rhythm" subtitle="Punch Card Activity" icon="schedule"
                 data={rhythmData} x="hour" y="day" value="count"
                 caption="Hourly distribution of task completion across the work week." />
             </div>
             {/* 12. Timeline: Active Projects */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <TimelineGraph title="Active Projects" subtitle="Operational Lifecycle" icon="assignment"
                 data={timelineData} x1="start" x2="end" y="name" fill="status"
                 caption="Gantt-style tracking of active and completed initiatives." />
             </div>
             {/* 13. Difference: Supply vs Demand */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <AreaComparison title="Market Equilibrium" subtitle="Supply vs Demand" icon="balance"
                 data={gapData} x="i" y1="supply" y2="demand"
                 caption="Comparing supply (Green) vs demand (Pink)." />
             </div>
             {/* 14. Step: Task Load */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <StepGraph title="System Load" subtitle="Daily Throughput" icon="speed"
                 data={stepData} x="day" y="load"
                 caption="Incremental tracking of platform throughput and task volume." />
             </div>
             {/* 15. Box: Performance Consistency */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
               <BoxGraph title="Performance Consistency" subtitle="Rating Variance by Dept" icon="analytics"
                 data={boxData} x="dept" y="rating"
                 caption="Distribution of performance ratings showing medians and statistical outliers." />
             </div>
             {/* 16. Tree: Network Hierarchy */}
-            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[450px]">
+            <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[450px]">
               <TreeGraph title="Platform Ecosystem" subtitle="Organization Hierarchy" icon="account_tree"
                 data={treeData} path="id"
                 caption="Structural breakdown of the partner network from organization to team." />
             </div>
             {/* 17. Race: Bar Chart Race (full width) */}
-            <div class="col-span-full rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 min-h-[500px]">
+            <div class="col-span-full rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 min-h-[500px]">
               <BarRace title="Regional Growth Race" subtitle="Cumulative Growth by Organization"
                 data={raceData} category="name" value="value" time="date" duration={1200} />
             </div>
@@ -771,12 +771,12 @@ export function MiscSection() {
               </div>
 
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6">
-                <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+                <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
                   <BarGraph title="Hiring by Sector" subtitle="Current Quarter" icon="business_center"
                     data={filteredDashboardData()} x="sector" y="count" color="sector"
                     options={{ color: { domain: ["Tech", "Design", "Health", "Retail", "Other"], range: ["#22d3ee", "#34d399", "#a78bfa", "#fbbf24", "#f472b6"] } }} />
                 </div>
-                <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-sm p-6 sm:p-10 h-full min-h-[380px]">
+                <div class="rounded-2xl border border-foreground/10 bg-background/40 shadow-xs p-6 sm:p-10 h-full min-h-[380px]">
                   <LineGraph title="Growth Trajectory" subtitle="Monthly Results" icon="trending_up"
                     data={filteredDashboardData()} x="month" y="value" stroke="org"
                     options={{
@@ -798,10 +798,10 @@ export function MiscSection() {
         <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
           Geospatial Intelligence
         </h3>
-        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-sm">
+        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-xs">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6 h-[400px]">
             {/* Globe View */}
-            <div class="flex flex-col h-full rounded-2xl overflow-hidden border border-foreground/10 bg-background/40 shadow-sm relative group">
+            <div class="flex flex-col h-full rounded-2xl overflow-hidden border border-foreground/10 bg-background/40 shadow-xs relative group">
               <div class="absolute top-6 left-6 z-10">
                 <div class="flex items-center gap-3">
                   <div class="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-md border border-foreground/10 flex items-center justify-center shadow-lg">
@@ -824,7 +824,7 @@ export function MiscSection() {
             </div>
 
             {/* Map View */}
-            <div class="flex flex-col h-full rounded-2xl overflow-hidden border border-foreground/10 bg-background/40 shadow-sm relative group">
+            <div class="flex flex-col h-full rounded-2xl overflow-hidden border border-foreground/10 bg-background/40 shadow-xs relative group">
               <div class="absolute top-6 left-6 z-10">
                 <div class="flex items-center gap-3">
                   <div class="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-md border border-foreground/10 flex items-center justify-center shadow-lg">
@@ -856,8 +856,8 @@ export function MiscSection() {
         <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
           Network Topology (3D)
         </h3>
-        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-sm">
-          <div class="flex flex-col h-[600px] rounded-2xl overflow-hidden border border-foreground/10 bg-background/40 shadow-sm relative group">
+        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-xs">
+          <div class="flex flex-col h-[600px] rounded-2xl overflow-hidden border border-foreground/10 bg-background/40 shadow-xs relative group">
             <div class="absolute top-6 left-6 z-10 pointer-events-none">
               <div class="flex items-center gap-3">
                 <div class="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-md border border-foreground/10 flex items-center justify-center shadow-lg">
@@ -889,7 +889,7 @@ export function MiscSection() {
         <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
           Multimedia Capture
         </h3>
-        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-sm">
+        <div class="bg-foreground/[0.005] dark:bg-foreground/[0.02] p-10 rounded-2xl border border-foreground/10 shadow-xs">
           <div class="max-w-3xl mx-auto">
             <Suspense>
               <VideoRecorder

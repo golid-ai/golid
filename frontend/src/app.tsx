@@ -182,7 +182,7 @@ function RootLayout(props: { children: JSX.Element }) {
           <main
             id="main-content"
             tabindex="-1"
-            class="flex flex-1 flex-col outline-none min-w-0 overflow-hidden transition-all duration-300 pt-16"
+            class="flex flex-1 flex-col outline-hidden min-w-0 overflow-hidden transition-all duration-300 pt-16"
             style={{ "margin-left": sidebarWidth() }}
           >
             <ErrorBoundary fallback={(err, reset) => <PageErrorFallback err={err} reset={reset} />}>

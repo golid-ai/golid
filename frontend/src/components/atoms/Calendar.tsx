@@ -370,7 +370,7 @@ export const Calendar: Component<CalendarProps> = (props) => {
       <Show when={showMonthSelector()}>
         <div
           ref={monthSelectorRef}
-          class="absolute inset-0 z-30 bg-background/95 dark:bg-card/95 border border-foreground/10 dark:border-white/10 backdrop-blur-lg p-4 rounded-sm grid grid-cols-3 gap-2 overflow-hidden"
+          class="absolute inset-0 z-30 bg-background/95 dark:bg-card/95 border border-foreground/10 dark:border-white/10 backdrop-blur-lg p-4 rounded-xs grid grid-cols-3 gap-2 overflow-hidden"
         >
           <For each={MONTH_NAMES}>
             {(month, i) => (
@@ -379,7 +379,7 @@ export const Calendar: Component<CalendarProps> = (props) => {
                 size="sm"
                 data-selected={currentMonth() === i()}
                 class={cn(
-                  "aspect-square rounded-sm transition-all w-full h-auto flex flex-col items-center justify-center p-0",
+                  "aspect-square rounded-xs transition-all w-full h-auto flex flex-col items-center justify-center p-0",
                   currentMonth() !== i() && "!text-foreground/60"
                 )}
                 onClick={(e) => selectMonth(i(), e)}
@@ -402,7 +402,7 @@ export const Calendar: Component<CalendarProps> = (props) => {
       <Show when={showYearSelector()}>
         <div
           ref={yearSelectorRef}
-          class="absolute inset-0 z-30 bg-background/95 dark:bg-card/95 border border-foreground/10 dark:border-white/10 backdrop-blur-lg p-4 rounded-sm grid grid-cols-3 gap-3 overflow-y-auto overflow-x-hidden"
+          class="absolute inset-0 z-30 bg-background/95 dark:bg-card/95 border border-foreground/10 dark:border-white/10 backdrop-blur-lg p-4 rounded-xs grid grid-cols-3 gap-3 overflow-y-auto overflow-x-hidden"
         >
           <For each={years()}>
             {(year) => (
@@ -411,7 +411,7 @@ export const Calendar: Component<CalendarProps> = (props) => {
                 size="sm"
                 data-selected={currentYear() === year}
                 class={cn(
-                  "h-9 rounded-sm transition-all w-full text-[13px] flex flex-col items-center justify-center p-0",
+                  "h-9 rounded-xs transition-all w-full text-[13px] flex flex-col items-center justify-center p-0",
                   currentYear() !== year && "!text-foreground/60"
                 )}
                 onClick={(e) => selectYear(year, e)}
@@ -444,7 +444,7 @@ export const Calendar: Component<CalendarProps> = (props) => {
       {/* Calendar grid */}
       <div 
         ref={gridRef}
-        class="grid grid-cols-7 gap-y-1 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        class="grid grid-cols-7 gap-y-1 rounded-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         tabindex="0"
         role="grid"
         aria-label="Calendar"
@@ -461,7 +461,7 @@ export const Calendar: Component<CalendarProps> = (props) => {
                 size="sm-icon"
                 tabindex="-1"
                 class={cn(
-                  "h-8 w-8 text-xs flex items-center justify-center rounded-sm transition-all relative z-10",
+                  "h-8 w-8 text-xs flex items-center justify-center rounded-xs transition-all relative z-10",
                   !isSelected(day, month, year) && (isCurrentMonth ? "" : "opacity-30"),
                   isSelected(day, month, year) && "font-bold",
                   isFocused(day, month, year) && !isSelected(day, month, year) && "ring-2 ring-ring ring-offset-1",

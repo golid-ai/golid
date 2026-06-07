@@ -255,8 +255,8 @@ export function Select<T extends string | number = string | number>(props: Selec
           onClick={toggle}
           onKeyDown={handleKeydown}
           class={cn(
-            "flex w-full items-center justify-between rounded-sm border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all",
-            "hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "flex w-full items-center justify-between rounded-xs border border-input bg-transparent px-3 py-1 text-sm ring-offset-background transition-all",
+            "hover:border-foreground/30 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             props.size === "sm" && "h-9 px-3",
             props.size === "lg" && "h-11 px-4",
@@ -284,7 +284,7 @@ export function Select<T extends string | number = string | number>(props: Selec
         {/* Content - always render children for item registration, but only show visually when open */}
         <div
           class={cn(
-            "absolute z-[60] w-full rounded-sm border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 max-h-[244px] overflow-y-auto shadow-2xl",
+            "absolute z-[60] w-full rounded-xs border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 max-h-[244px] overflow-y-auto shadow-2xl",
             "bg-background/95 dark:bg-card/95",
             direction() === "up" ? "bottom-full mb-2 origin-bottom" : "mt-2 origin-top",
             open() ? "animate-in fade-in-0 zoom-in-95" : "hidden",
@@ -350,7 +350,7 @@ export const SelectItem: Component<SelectItemProps> = (props) => {
       ref={itemRef}
       id={id}
       class={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-10 pr-2 text-sm font-medium outline-none",
+        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-10 pr-2 text-sm font-medium outline-hidden",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         "hover:bg-foreground/[0.05] transition-colors",
         isActive() && "bg-foreground/[0.08]",

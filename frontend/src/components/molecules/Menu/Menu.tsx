@@ -294,7 +294,7 @@ export function MenuContent(props: MenuContentProps) {
     <Show when={menu.open()}>
       <div
         class={cn(
-          "absolute z-[60] w-56 rounded-sm border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
+          "absolute z-[60] w-56 rounded-xs border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
           "bg-[#E8F0F4] dark:bg-[#1A2633]",
           "animate-in fade-in-0 zoom-in-95",
           positionClasses[activePosition()],
@@ -354,7 +354,7 @@ export function MenuItem(props: MenuItemProps) {
     <div
       ref={el}
       class={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors",
+        "relative flex w-full cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm font-medium outline-hidden transition-colors",
         "hover:bg-foreground/[0.05]",
         active() && "bg-foreground/[0.08]",
         props.disabled && "pointer-events-none opacity-50",
@@ -566,7 +566,7 @@ export function SubmenuTrigger(props: SubmenuTriggerProps) {
     <div
       ref={el}
       class={cn(
-        "relative flex w-full cursor-pointer select-none items-center justify-between rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors",
+        "relative flex w-full cursor-pointer select-none items-center justify-between rounded-lg px-3 py-2 text-sm font-medium outline-hidden transition-colors",
         "hover:bg-foreground/[0.05]",
         (active() || submenu.open()) && "bg-foreground/[0.08]",
         props.class
@@ -607,7 +607,7 @@ export function SubmenuContent(props: SubmenuContentProps) {
     <Show when={submenu.open()}>
       <div
         class={cn(
-          "absolute z-[65] w-56 rounded-sm border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
+          "absolute z-[65] w-56 rounded-xs border border-foreground/10 dark:border-white/10 backdrop-blur-lg text-popover-foreground p-2 shadow-2xl",
           "bg-[#E8F0F4] dark:bg-[#1A2633]",
           "animate-in fade-in-0 zoom-in-95",
           // Horizontal Positioning
