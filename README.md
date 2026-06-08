@@ -153,7 +153,7 @@ golid/
 │   ├── plans/                   # Feature plans (active + archive/)
 │   ├── architecture.md          # Layers, auth, SSE, wire
 │   └── patterns/                # Stack quick references (Go, SolidJS, …)
-├── .cursor/rules/               # 38 AI coding rules
+├── .cursor/rules/               # 45 AI coding rules
 ├── config/                      # Environment files
 ├── scripts/                     # Deploy, drift checks, init-test-db, teardown
 └── infra/                       # Cloud Run, Cloud Build configs
