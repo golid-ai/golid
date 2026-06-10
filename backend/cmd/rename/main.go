@@ -19,17 +19,11 @@ const oldNPMScope = "@golid"
 const oldDomain = "golid.ai"
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "Usage: go run ./cmd/rename <new-name> <new-module-path> [new-domain]\n")
+	newName, newModule, newDomain, strict, starterCopyHint := parseArgs()
+	if newName == "" {
+		fmt.Fprintf(os.Stderr, "Usage: go run ./cmd/rename <new-name> <new-module-path> [new-domain] [--strict] [--starter-copy-hint]\n")
 		fmt.Fprintf(os.Stderr, "  e.g. go run ./cmd/rename myapp github.com/myuser/myapp/backend myapp.com\n")
 		os.Exit(1)
-	}
-
-	newName := os.Args[1]
-	newModule := os.Args[2]
-	newDomain := ""
-	if len(os.Args) >= 4 {
-		newDomain = os.Args[3]
 	}
 
 	if err := validateProjectName(newName); err != nil {
@@ -230,6 +224,7 @@ func main() {
 	}
 
 	changed += replaceDomain(root, newName, newDomain)
+	changed += renamePublicAssets(root, newName)
 
 	fmt.Printf("\n=== Rename complete: %d files updated ===\n", changed)
 	fmt.Printf("  Module:  %s -> %s\n", oldModule, newModule)
@@ -238,19 +233,175 @@ func main() {
 	if newDomain != "" {
 		fmt.Printf("  Domain:  %s -> %s\n", oldDomain, newDomain)
 	}
+
+	survivors := reportSurvivors(root)
+	if starterCopyHint {
+		printStarterCopyHints(root)
+	}
+	printPostRenameChecklist(newName, newDomain)
+
+	if strict && len(survivors) > 0 {
+		fmt.Fprintf(os.Stderr, "\nStrict mode: %d survivor(s) remain — fix before commit.\n", len(survivors))
+		os.Exit(1)
+	}
+}
+
+func parseArgs() (name, module, domain string, strict, starterCopyHint bool) {
+	for _, arg := range os.Args[1:] {
+		switch arg {
+		case "--strict":
+			strict = true
+		case "--starter-copy-hint":
+			starterCopyHint = true
+		default:
+			if strings.HasPrefix(arg, "-") {
+				fmt.Fprintf(os.Stderr, "Error: unknown flag %q\n", arg)
+				return "", "", "", false, false
+			}
+			switch {
+			case name == "":
+				name = arg
+			case module == "":
+				module = arg
+			case domain == "":
+				domain = arg
+			default:
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument %q\n", arg)
+				return "", "", "", false, false
+			}
+		}
+	}
+	return name, module, domain, strict, starterCopyHint
+}
+
+func renamePublicAssets(root, newName string) int {
+	var changed int
+	for _, pair := range []struct{ old, new string }{
+		{"golid-og.png", newName + "-og.png"},
+		{"meta.png", newName + "-meta.png"},
+	} {
+		oldPath := filepath.Join(root, "frontend/public/images", pair.old)
+		newPath := filepath.Join(root, "frontend/public/images", pair.new)
+		if _, err := os.Stat(oldPath); err != nil {
+			continue
+		}
+		if err := os.Rename(oldPath, newPath); err != nil {
+			fmt.Fprintf(os.Stderr, "  Warning: could not rename %s: %v\n", pair.old, err)
+			continue
+		}
+		fmt.Printf("  Renamed asset: %s -> %s\n", pair.old, pair.new)
+		changed++
+	}
+	if _, err := os.Stat(filepath.Join(root, "frontend/public/images/favicon-light/favicon.svg")); err == nil {
+		fmt.Println("  Note: replace favicon SVG/ICO artwork manually (binary assets)")
+	}
+	return changed
+}
+
+func reportSurvivors(root string) []string {
+	var hits []string
+	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error { //nolint:errcheck
+		if err != nil {
+			return nil
+		}
+		if info.IsDir() {
+			base := info.Name()
+			if base == "node_modules" || base == ".git" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !shouldScanSurvivor(path, root) {
+			return nil
+		}
+		if hit := scanFileForSurvivor(path); hit != "" {
+			hits = append(hits, hit)
+		}
+		return nil
+	})
+
+	if len(hits) > 0 {
+		fmt.Println("\n=== Survivor report (case-insensitive 'golid') ===")
+		for _, h := range hits {
+			fmt.Println(" ", h)
+		}
+	} else {
+		fmt.Println("\n=== Survivor report: no hits in scanned paths ===")
+	}
+	return hits
+}
+
+func shouldScanSurvivor(path, root string) bool {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		rel = path
+	}
+	rel = filepath.ToSlash(rel)
+	if strings.Contains(rel, "node_modules/") || strings.Contains(rel, ".git/") {
+		return false
+	}
+	if strings.HasPrefix(rel, "backend/cmd/rename/") {
+		return false
+	}
+	if strings.HasPrefix(rel, "docs/plans/") || strings.HasPrefix(rel, "docs/decisions/") {
+		return false
+	}
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".go", ".md", ".mdc", ".tsx", ".ts", ".yaml", ".yml", ".json", ".sh", ".css", ".js", ".mjs", ".cjs", ".env", ".example", ".prod", ".qa", ".local", ".html", ".svg", ".txt":
+		return true
+	default:
+		if strings.Contains(filepath.Base(path), ".env.") {
+			return true
+		}
+		return false
+	}
+}
+
+func scanFileForSurvivor(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	if !strings.Contains(strings.ToLower(string(data)), "golid") {
+		return ""
+	}
+	return path
+}
+
+func printStarterCopyHints(root string) {
+	files := []string{
+		root + "frontend/src/entry-server.tsx",
+		root + "frontend/src/lib/og-meta.tsx",
+		root + "frontend/src/routes/(public)/index.tsx",
+		root + "frontend/tests/e2e/auth.spec.ts",
+	}
+	fmt.Println("\n=== Starter copy (manual rewrite recommended) ===")
+	for _, f := range files {
+		if _, err := os.Stat(f); err == nil {
+			fmt.Printf("  - %s\n", strings.TrimPrefix(f, root))
+		}
+	}
+}
+
+func printPostRenameChecklist(newName, newDomain string) {
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Review the changes: git diff")
 	fmt.Println("  2. Verify build:       cd backend && go build ./...")
-	fmt.Println("  3. Verify frontend:    cd frontend && npm run build")
+	fmt.Println("  3. Verify frontend:    cd frontend && npm run typecheck && npm run build")
+	fmt.Println("  4. Replace OG/favicon artwork under frontend/public/images/ if still Golid-branded")
 	if newDomain == "" {
-		fmt.Println("  4. Update entry-server.tsx og:url with your domain (or re-run with [new-domain])")
+		fmt.Println("  5. Pass production domain: go run ./cmd/rename ... [your-domain] or edit og-meta / entry-server fallbacks")
 	} else {
-		fmt.Printf("  4. Set production env in config/.env.prod:\n")
+		fmt.Printf("  5. Set config/.env.prod:\n")
 		fmt.Printf("       FRONTEND_URL=https://%s\n", newDomain)
 		fmt.Printf("       ALLOWED_ORIGINS=https://%s\n", newDomain)
 		fmt.Printf("       VITE_OG_URL=https://%s\n", newDomain)
+		fmt.Printf("       GCP_PROJECT_ID=<your-gcp-project>\n")
 	}
-	fmt.Println("  5. Update LICENSE copyright if needed")
+	fmt.Println("  6. Rewrite homepage/marketing copy (entry-server, og-meta, landing page, e2e headings)")
+	fmt.Println("  7. First prod deploy: ./scripts/deploy.sh check prod  then  ./scripts/deploy.sh prod")
+	fmt.Println("  8. Update LICENSE copyright if needed")
 }
 
 func repoRoot() string {

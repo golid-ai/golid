@@ -270,10 +270,10 @@ contains `tidestone.co`, not `golid.ai`.
 
 **Acceptance criteria:**
 
-- [ ] Rename `golid-og.png` → `{name}-og.png` when present; update `DEFAULT_OG_IMAGE_URL`
-- [ ] Final step runs ripgrep survivor report; exits 1 on hits in category list (configurable
+- [x] Rename `golid-og.png` → `{name}-og.png` when present; update `DEFAULT_OG_IMAGE_URL`
+- [x] Final step runs ripgrep survivor report; exits 1 on hits in category list (configurable
   `--strict`)
-- [ ] Expanded "Next steps" checklist (domain, assets, prod env, homepage copy, deploy)
+- [x] Expanded "Next steps" checklist (domain, assets, prod env, homepage copy, deploy)
 
 **Verification:** Manual rename on fixture repo → zero strict-mode grep hits.
 
@@ -340,7 +340,7 @@ the rename commit — do not re-run rename with inverted args.
 |-------|--------|--------|
 | 1 — Coverage parity | Done | `main.go`: titled+safe on docs/infra/README/community/issue templates; `frontend/tests` walk; `findEnvFiles`; skip `cmd/rename/main.go` entirely |
 | 2 — Domain argument | Done | Optional `[new-domain]` arg; `replaceDomain()`; Makefile `domain=`; env checklist in output |
-| 3 — Assets + survivor grep | Pending | — |
+| 3 — Assets + survivor grep | Done | `renamePublicAssets`, `reportSurvivors`, `--strict`, expanded checklist |
 | 4 — Rename tool tests | Pending | — |
 | 5 — Deploy backport | Pending | — |
 | 6 — Rule + doc sync | Pending | — |
