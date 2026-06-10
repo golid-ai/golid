@@ -90,6 +90,7 @@ _None — archive completed work under `archive/<date>/`._
 
 ## Archive
 
+- [archive/6-7-26/rename-tool-hardening.md](archive/6-7-26/rename-tool-hardening.md) — rename coverage, domain arg, survivor scan, deploy backports (2026-06-07)
 - [archive/6-7-26/coverage-and-eslint.md](archive/6-7-26/coverage-and-eslint.md) — Codecov recovery to **82.98%**, TS-eslint 8, B4 component tests, `target: 80%` gate (2026-06-07)
 - [archive/6-7-26/v0.3.0-platform-hardening.md](archive/6-7-26/v0.3.0-platform-hardening.md) — multi-phase backport program (2026-06-07)
 

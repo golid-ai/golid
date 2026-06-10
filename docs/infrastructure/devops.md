@@ -424,6 +424,38 @@ Run the secrets check:
 
 ---
 
+## Custom domain (Cloud Run + Cloudflare)
+
+Before the first production deploy with your own domain, set these in
+`config/.env.prod` (see `config/.env.example`):
+
+- `FRONTEND_URL=https://yourdomain.com`
+- `ALLOWED_ORIGINS=https://yourdomain.com`
+- `VITE_OG_URL=https://yourdomain.com` (baked into the frontend image at build time)
+- `GCP_PROJECT_ID=your-gcp-project-id`
+
+`deploy.sh` passes `VITE_OG_URL` into Cloud Build and **does not** overwrite a
+configured `FRONTEND_URL` with the default `*.run.app` URL after the web service
+deploys.
+
+### Map the domain
+
+```bash
+GCP_PROJECT=your-project DOMAIN=yourdomain.com ./scripts/setup-domain.sh
+```
+
+Follow the printed DNS records. **Certificate pending is normal** for 15–60
+minutes while DNS propagates and Google provisions TLS.
+
+### Cloudflare tips
+
+- Apex: `A` / `AAAA` records to the Google load balancer IPs from the mapping
+  output (grey cloud / DNS only — do not proxy until TLS is active if cert is pending)
+- `www`: CNAME to apex, or a redirect rule from `www` → apex
+- After cert shows **Active**, enable proxy/orange cloud if desired
+
+---
+
 ## Image Tags
 
 Images are tagged with: `{git-short-hash}-{epoch-seconds}`

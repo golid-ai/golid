@@ -166,6 +166,10 @@ PROJECT_NAME="your-project"
 
 All resource names, service accounts, and bucket names derive from this value. Then create your env files in `config/` and deploy.
 
+**Shell compatibility:** `deploy.sh`, `teardown.sh`, and `setup-domain.sh` must
+stay compatible with **macOS Bash 3.2** (`/bin/bash`). Do not use Bash 4+
+features such as `declare -A` associative arrays.
+
 ---
 
 ## CI environment variables
