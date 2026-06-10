@@ -77,6 +77,7 @@ func main() {
 	mdcFiles := findFiles(root+".cursor/rules/", ".mdc")
 	for _, f := range mdcFiles {
 		changed += replaceInFile(f, oldModule, newModule)
+		changed += replaceInFile(f, oldTitled, newTitled)
 		changed += replaceInFileSafe(f, oldProjectName, newName)
 	}
 
@@ -118,11 +119,14 @@ func main() {
 	}
 
 	// 9. Update root-level community files (SECURITY, CHANGELOG, CONTRIBUTING)
-	for _, f := range []string{"SECURITY.md", "CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"} {
+	for _, f := range []string{"SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"} {
 		changed += replaceInFile(root+f, oldGitHubRepo, newGitHubRepo)
 		changed += replaceInFile(root+f, oldTitled, newTitled)
 		changed += replaceInFileSafe(root+f, oldProjectName, newName)
 	}
+	// CHANGELOG: module + lowercase only — preserve historical release titles
+	changed += replaceInFile(root+"CHANGELOG.md", oldGitHubRepo, newGitHubRepo)
+	changed += replaceInFileSafe(root+"CHANGELOG.md", oldProjectName, newName)
 
 	// 9b. Update GitHub issue templates
 	issueTemplates := findFiles(root+".github/ISSUE_TEMPLATE/", ".md")
@@ -149,6 +153,8 @@ func main() {
 	changed += replaceInFileSafe(root+"scripts/deploy.sh", oldProjectName, newName)
 	changed += replaceInFileSafe(root+"scripts/teardown.sh", oldProjectName, newName)
 	changed += replaceInFileSafe(root+"scripts/init-test-db.sh", oldProjectName, newName)
+	changed += replaceInFileSafe(root+"scripts/setup-domain.sh", oldProjectName, newName)
+	changed += replaceInFile(root+"scripts/setup-domain.sh", oldTitled, newTitled)
 	changed += replaceInFileSafe(root+"scripts/README.md", oldProjectName, newName)
 	changed += replaceInFile(root+"scripts/README.md", oldTitled, newTitled)
 
@@ -343,6 +349,9 @@ func shouldScanSurvivor(path, root string) bool {
 	if strings.HasPrefix(rel, "backend/cmd/rename/") {
 		return false
 	}
+	if strings.HasPrefix(rel, ".cursor/rules/rename-tool.mdc") {
+		return false
+	}
 	if strings.HasPrefix(rel, "docs/plans/") || strings.HasPrefix(rel, "docs/decisions/") {
 		return false
 	}
@@ -503,6 +512,8 @@ func replaceDomain(root, newName, newDomain string) int {
 	for _, envFile := range findEnvFiles(root + "config/") {
 		paths = append(paths, envFile)
 	}
+	mdcFiles := findFiles(root+".cursor/rules/", ".mdc")
+	paths = append(paths, mdcFiles...)
 	for _, ext := range []string{".tsx", ".ts"} {
 		paths = append(paths, findFiles(root+"frontend/src/", ext)...)
 		paths = append(paths, findFiles(root+"frontend/tests/", ext)...)
@@ -520,8 +531,9 @@ func replaceDomain(root, newName, newDomain string) int {
 	}
 
 	guessHTTPS := "https://" + newName + ".com"
-	if fileContains(root+"frontend/src/lib/og-meta.tsx", guessHTTPS) ||
-		fileContains(root+"frontend/src/entry-server.tsx", guessHTTPS) {
+	if guessHTTPS != newHTTPS &&
+		(fileContains(root+"frontend/src/lib/og-meta.tsx", guessHTTPS) ||
+			fileContains(root+"frontend/src/entry-server.tsx", guessHTTPS)) {
 		fmt.Printf("  Note: found %s — verify TLD matches your domain %q\n", guessHTTPS, newDomain)
 	}
 

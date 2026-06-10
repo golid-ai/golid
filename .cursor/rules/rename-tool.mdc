@@ -49,7 +49,7 @@ The tool must cover every file with hardcoded project names. Current categories:
 | 3 | `docker-compose.yml` | Container/DB names |
 | 4 | `package.json` + lock | npm scope |
 | 5 | `README.md` | GitHub repo + titled + safe lowercase (tree paths) |
-| 6 | `.cursor/rules/*.mdc` | Module path + project name |
+| 6 | `.cursor/rules/*.mdc` | Module path + titled + project name |
 | 7 | `docs/**/*.md` except `decisions/`, `plans/archive/` | Module + safe lowercase + titled |
 | 8 | `frontend/src/**/*.{ts,tsx}` | Titled + safe lowercase + all-caps |
 | 8b | `frontend/src/**/*.css` | Branded class names |
@@ -58,7 +58,7 @@ The tool must cover every file with hardcoded project names. Current categories:
 | 9b | `.github/ISSUE_TEMPLATE/*.md` | GitHub + titled + safe lowercase |
 | 10 | `codecov.yml` | Module path |
 | 11 | All `config/.env.*` via glob | APP_NAME + DB names (warn if `.env.local` missing) |
-| 12 | `scripts/*.sh` + `scripts/README.md` | Project name + titled |
+| 12 | `scripts/*.sh` + `scripts/README.md` | Project name + titled (`setup-domain.sh`, `init-test-db.sh`) |
 | 13 | Swagger docs, DevContainer, Dockerfiles | Titled + project name |
 | 14 | `infra/**/*.yaml` + `.github/workflows/*.yml` | Safe lowercase + titled (descriptions) |
 | 15 | Scaffold template + backend Makefile | Titled name |

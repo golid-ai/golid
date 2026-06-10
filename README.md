@@ -175,7 +175,7 @@ scripts/init-test-db.sh
 cd backend && TEST_MIGRATIONS_PATH="$(pwd)/migrations" \
   go test -tags integration ./internal/handler/... ./internal/service/... -race
 make new-module name=notes         # Scaffold CRUD module
-make rename name=myapp module=github.com/user/myapp/backend
+make rename name=myapp module=github.com/user/myapp/backend domain=myapp.com
 make help                          # All Makefile targets
 
 ./scripts/deploy.sh                # Deploy to QA (Cloud Run)
@@ -241,7 +241,7 @@ Full breakdown: [architecture.md](docs/architecture.md) — auth flow, SSE ticke
 
 ```bash
 git clone https://github.com/YOUR_USER/my-app.git && cd my-app
-make rename name=myapp module=github.com/YOUR_USER/my-app/backend
+make rename name=myapp module=github.com/YOUR_USER/my-app/backend domain=myapp.com
 git diff && make check
 ```
 

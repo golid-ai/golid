@@ -70,7 +70,7 @@ make build             # Backend + frontend production build
 make check             # lint + test + build (full local CI)
 make new-module name=X # Scaffold a CRUD module
 make verify-scaffold   # CI: generate test module, build, clean up
-make rename name=X module=Y  # Rebrand forked project
+make rename name=X module=Y domain=Z  # Rebrand forked project (domain optional)
 make migrate-up        # Requires DATABASE_URL
 make migrate-down      # Rollback one migration
 make seed              # Load dev_seed.sql
