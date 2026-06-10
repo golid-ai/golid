@@ -1,6 +1,6 @@
 // Package main implements the project rename tool.
-// Usage: go run ./cmd/rename <new-name> <new-module-path>
-// Example: go run ./cmd/rename myapp github.com/myuser/myapp
+// Usage: go run ./cmd/rename <new-name> <new-module-path> [new-domain]
+// Example: go run ./cmd/rename myapp github.com/myuser/myapp/backend myapp.com
 package main
 
 import (
@@ -20,15 +20,23 @@ const oldDomain = "golid.ai"
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "Usage: go run ./cmd/rename <new-name> <new-module-path>\n")
-		fmt.Fprintf(os.Stderr, "  e.g. go run ./cmd/rename myapp github.com/myuser/myapp/backend\n")
+		fmt.Fprintf(os.Stderr, "Usage: go run ./cmd/rename <new-name> <new-module-path> [new-domain]\n")
+		fmt.Fprintf(os.Stderr, "  e.g. go run ./cmd/rename myapp github.com/myuser/myapp/backend myapp.com\n")
 		os.Exit(1)
 	}
 
 	newName := os.Args[1]
 	newModule := os.Args[2]
+	newDomain := ""
+	if len(os.Args) >= 4 {
+		newDomain = os.Args[3]
+	}
 
 	if err := validateProjectName(newName); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		os.Exit(1)
+	}
+	if err := validateDomain(newDomain); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		os.Exit(1)
 	}
@@ -221,15 +229,27 @@ func main() {
 		changed += replaceInFile(root+f, oldTitled, newTitled)
 	}
 
+	changed += replaceDomain(root, newName, newDomain)
+
 	fmt.Printf("\n=== Rename complete: %d files updated ===\n", changed)
 	fmt.Printf("  Module:  %s -> %s\n", oldModule, newModule)
 	fmt.Printf("  Project: %s -> %s\n", oldProjectName, newName)
 	fmt.Printf("  GitHub:  %s -> %s\n", oldGitHubRepo, newGitHubRepo)
+	if newDomain != "" {
+		fmt.Printf("  Domain:  %s -> %s\n", oldDomain, newDomain)
+	}
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Review the changes: git diff")
 	fmt.Println("  2. Verify build:       cd backend && go build ./...")
 	fmt.Println("  3. Verify frontend:    cd frontend && npm run build")
-	fmt.Println("  4. Update entry-server.tsx og:url with your domain")
+	if newDomain == "" {
+		fmt.Println("  4. Update entry-server.tsx og:url with your domain (or re-run with [new-domain])")
+	} else {
+		fmt.Printf("  4. Set production env in config/.env.prod:\n")
+		fmt.Printf("       FRONTEND_URL=https://%s\n", newDomain)
+		fmt.Printf("       ALLOWED_ORIGINS=https://%s\n", newDomain)
+		fmt.Printf("       VITE_OG_URL=https://%s\n", newDomain)
+	}
 	fmt.Println("  5. Update LICENSE copyright if needed")
 }
 
@@ -285,6 +305,7 @@ func findFiles(dir, ext string) []string {
 }
 
 var validName = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
+var validDomain = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)
 
 func validateProjectName(name string) error {
 	if len(name) < 2 {
@@ -297,6 +318,71 @@ func validateProjectName(name string) error {
 		return fmt.Errorf("project name %q must be lowercase alphanumeric with optional hyphens (e.g. \"myapp\" or \"my-app\")", name)
 	}
 	return nil
+}
+
+func validateDomain(domain string) error {
+	if domain == "" {
+		return nil
+	}
+	if strings.Contains(domain, "://") {
+		return fmt.Errorf("domain must not include a scheme (use %q not %q)", "example.com", domain)
+	}
+	if !validDomain.MatchString(domain) {
+		return fmt.Errorf("domain %q is not a valid hostname", domain)
+	}
+	return nil
+}
+
+func replaceDomain(root, newName, newDomain string) int {
+	if newDomain == "" {
+		return 0
+	}
+
+	oldHTTPS := "https://" + oldDomain
+	newHTTPS := "https://" + newDomain
+
+	var paths []string
+	paths = append(paths,
+		root+"frontend/src/lib/og-meta.tsx",
+		root+"frontend/src/entry-server.tsx",
+		root+"frontend/src/lib/chunk-recovery.test.ts",
+		root+"scripts/setup-domain.sh",
+		root+"README.md",
+	)
+	for _, envFile := range findEnvFiles(root + "config/") {
+		paths = append(paths, envFile)
+	}
+	for _, ext := range []string{".tsx", ".ts"} {
+		paths = append(paths, findFiles(root+"frontend/src/", ext)...)
+		paths = append(paths, findFiles(root+"frontend/tests/", ext)...)
+	}
+
+	seen := make(map[string]struct{}, len(paths))
+	var changed int
+	for _, path := range paths {
+		if _, ok := seen[path]; ok {
+			continue
+		}
+		seen[path] = struct{}{}
+		changed += replaceInFile(path, oldHTTPS, newHTTPS)
+		changed += replaceInFile(path, oldDomain, newDomain)
+	}
+
+	guessHTTPS := "https://" + newName + ".com"
+	if fileContains(root+"frontend/src/lib/og-meta.tsx", guessHTTPS) ||
+		fileContains(root+"frontend/src/entry-server.tsx", guessHTTPS) {
+		fmt.Printf("  Note: found %s — verify TLD matches your domain %q\n", guessHTTPS, newDomain)
+	}
+
+	return changed
+}
+
+func fileContains(path, substr string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), substr)
 }
 
 func toPascalCase(s string) string {

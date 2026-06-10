@@ -64,14 +64,18 @@ verify-scaffold: ## Verify scaffold-generated code compiles (used by CI)
 	@cd frontend && npm run typecheck
 	@echo "✓ Scaffold output compiles"
 
-rename: ## Rename the project (usage: make rename name=myapp module=github.com/user/myapp/backend)
+rename: ## Rename the project (usage: make rename name=myapp module=github.com/user/myapp/backend [domain=myapp.com])
 ifndef name
-	$(error Usage: make rename name=myapp module=github.com/myuser/myapp/backend)
+	$(error Usage: make rename name=myapp module=github.com/myuser/myapp/backend [domain=myapp.com])
 endif
 ifndef module
-	$(error Usage: make rename name=myapp module=github.com/myuser/myapp/backend)
+	$(error Usage: make rename name=myapp module=github.com/myuser/myapp/backend [domain=myapp.com])
 endif
+ifdef domain
+	cd backend && go run ./cmd/rename $(name) $(module) $(domain)
+else
 	cd backend && go run ./cmd/rename $(name) $(module)
+endif
 
 migrate-up: ## Run database migrations (requires DATABASE_URL)
 	cd backend && migrate -path migrations -database "$$DATABASE_URL" up

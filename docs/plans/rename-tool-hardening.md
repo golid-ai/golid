@@ -258,10 +258,10 @@ cd backend && go test ./cmd/rename/...   # add fixture test (Slice 4)
 
 **Acceptance criteria:**
 
-- [ ] `go run ./cmd/rename <name> <module> <domain>` replaces `golid.ai` → `<domain>`
+- [x] `go run ./cmd/rename <name> <module> <domain>` replaces `golid.ai` → `<domain>`
   in domain-safe files and listed frontend fallbacks
-- [ ] Post-rename prints `FRONTEND_URL`, `ALLOWED_ORIGINS`, `VITE_OG_URL` values
-- [ ] `make rename` forwards optional domain arg
+- [x] Post-rename prints `FRONTEND_URL`, `ALLOWED_ORIGINS`, `VITE_OG_URL` values
+- [x] `make rename` forwards optional domain arg
 
 **Verification:** Fixture test: after rename with `tidestone.co`, `og-meta.tsx` fallback
 contains `tidestone.co`, not `golid.ai`.
@@ -339,7 +339,7 @@ the rename commit — do not re-run rename with inverted args.
 | Slice | Status | Result |
 |-------|--------|--------|
 | 1 — Coverage parity | Done | `main.go`: titled+safe on docs/infra/README/community/issue templates; `frontend/tests` walk; `findEnvFiles`; skip `cmd/rename/main.go` entirely |
-| 2 — Domain argument | Pending | — |
+| 2 — Domain argument | Done | Optional `[new-domain]` arg; `replaceDomain()`; Makefile `domain=`; env checklist in output |
 | 3 — Assets + survivor grep | Pending | — |
 | 4 — Rename tool tests | Pending | — |
 | 5 — Deploy backport | Pending | — |
