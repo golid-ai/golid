@@ -19,8 +19,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build for production
+# Build for production (VITE_* vars bake into SSR meta at build time)
 ENV NODE_ENV=production
+ARG VITE_OG_URL
+ARG VITE_API_URL
+ENV VITE_OG_URL=${VITE_OG_URL}
+ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # ------------------------------------------------------------------------------

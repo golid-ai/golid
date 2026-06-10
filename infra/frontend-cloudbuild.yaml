@@ -8,8 +8,14 @@ steps:
   - 'Dockerfile.prod'
   - '--platform'
   - 'linux/amd64'
+  - '--build-arg'
+  - 'VITE_OG_URL=${_VITE_OG_URL}'
+  - '--build-arg'
+  - 'VITE_API_URL=${_VITE_API_URL}'
   - '.'
 images:
 - '${_TAG}'
 substitutions:
   _TAG: 'default-tag'
+  _VITE_OG_URL: ''
+  _VITE_API_URL: ''
