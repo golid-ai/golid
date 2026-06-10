@@ -1,6 +1,6 @@
 # Rename Tool Hardening (Golid Factory Patch)
 
-> **Status:** In progress  
+> **Status:** Complete (2026-06-07)  
 > **Risk tier:** T2 — tooling + deploy ergonomics; no auth/schema changes  
 > **Thesis:** The Tidestone rebrand exposed systematic gaps in `make rename` and first-prod
 > deploy defaults — patch the tool and factory scripts so the next fork ships with the
@@ -281,8 +281,8 @@ contains `tidestone.co`, not `golid.ai`.
 
 **Acceptance criteria:**
 
-- [ ] `backend/cmd/rename/rename_test.go` with temp fixture tree
-- [ ] Cases: titled-only doc line, README tree, domain replace, self-file not mutated,
+- [x] `backend/cmd/rename/rename_test.go` with temp fixture tree
+- [x] Cases: titled-only doc line, README tree, domain replace, self-file not mutated,
   `replaceInFileSafe` does not corrupt domain during name replace
 
 **Verification:** `go test ./cmd/rename/...`
@@ -291,14 +291,14 @@ contains `tidestone.co`, not `golid.ai`.
 
 **Acceptance criteria:**
 
-- [ ] **Implement** Bash 3.2-safe resource names in `deploy.sh` / `teardown.sh` /
+- [x] **Implement** Bash 3.2-safe resource names in `deploy.sh` / `teardown.sh` /
   `setup-domain.sh` (no `declare -A`; Golid `deploy.sh:81` still uses `declare -A`)
-- [ ] **Implement** `VITE_OG_URL`, `ALLOWED_ORIGINS`, `FRONTEND_URL` preference, and
+- [x] **Implement** `VITE_OG_URL`, `ALLOWED_ORIGINS`, `FRONTEND_URL` preference, and
   `CSRF_ENFORCE` forwarding in `deploy.sh` + frontend prod build chain (Tidestone fixes)
-- [ ] `deploy.sh check` runs frontend typecheck when `check web` or full deploy
-- [ ] `config/.env.example` documents `VITE_OG_URL`, `ALLOWED_ORIGINS`, `FRONTEND_URL` as
+- [x] `deploy.sh check` runs frontend typecheck when `check web` or full deploy
+- [x] `config/.env.example` documents `VITE_OG_URL`, `ALLOWED_ORIGINS`, `FRONTEND_URL` as
   required for custom-domain prod
-- [ ] `docs/infrastructure/devops.md` — Cloudflare + cert-pending runbook (Tidestone notes
+- [x] `docs/infrastructure/devops.md` — Cloudflare + cert-pending runbook (Tidestone notes
   already started; generalize)
 
 **Verification:**
@@ -313,9 +313,9 @@ cd frontend && npm run typecheck
 
 **Acceptance criteria:**
 
-- [ ] Update `.cursor/rules/rename-tool.mdc` file coverage table with new categories
-- [ ] Update `docs/plans/README.md` — move this plan to archive when complete
-- [ ] Optional ADR `docs/decisions/00N-rename-tool-domain-arg.md`
+- [x] Update `.cursor/rules/rename-tool.mdc` file coverage table with new categories
+- [x] Update `docs/plans/README.md` — move this plan to archive when complete
+- [ ] Optional ADR `docs/decisions/00N-rename-tool-domain-arg.md` (deferred)
 
 ---
 
@@ -341,9 +341,9 @@ the rename commit — do not re-run rename with inverted args.
 | 1 — Coverage parity | Done | `main.go`: titled+safe on docs/infra/README/community/issue templates; `frontend/tests` walk; `findEnvFiles`; skip `cmd/rename/main.go` entirely |
 | 2 — Domain argument | Done | Optional `[new-domain]` arg; `replaceDomain()`; Makefile `domain=`; env checklist in output |
 | 3 — Assets + survivor grep | Done | `renamePublicAssets`, `reportSurvivors`, `--strict`, expanded checklist |
-| 4 — Rename tool tests | Pending | — |
-| 5 — Deploy backport | Pending | — |
-| 6 — Rule + doc sync | Pending | — |
+| 4 — Rename tool tests | Done | `rename_test.go` — 8 cases; `go test ./cmd/rename/...` pass |
+| 5 — Deploy backport | Done | Bash 3.2 RES_* vars; VITE_OG build args; ALLOWED_ORIGINS/CSRF; check runs typecheck |
+| 6 — Rule + doc sync | Done | `rename-tool.mdc`, devops runbook, scripts README Bash note; ADR deferred |
 
 ---
 
