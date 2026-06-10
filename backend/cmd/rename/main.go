@@ -50,11 +50,12 @@ func main() {
 	//    Covers internal/wire/, internal/service/* subpackages, and all other backend Go code.
 	goFiles := findFiles(root+"backend/", ".go")
 	for _, f := range goFiles {
+		if strings.HasSuffix(f, "cmd/rename/main.go") {
+			continue
+		}
 		changed += replaceInFile(f, oldModule, newModule)
 		changed += replaceInFile(f, oldTitled, newTitled)
-		if !strings.HasSuffix(f, "cmd/rename/main.go") {
-			changed += replaceInFileSafe(f, oldProjectName, newName)
-		}
+		changed += replaceInFileSafe(f, oldProjectName, newName)
 	}
 
 	// 3. Update docker-compose.yml
@@ -65,9 +66,10 @@ func main() {
 	changed += replaceInFile(root+"frontend/package.json", oldNPMScope, newScope)
 	changed += replaceInFile(root+"frontend/package-lock.json", oldNPMScope, newScope)
 
-	// 5. Update README (title, badge URLs, GitHub references)
+	// 5. Update README (title, badge URLs, GitHub references, tree paths)
 	changed += replaceInFile(root+"README.md", oldGitHubRepo, newGitHubRepo)
-	changed += replaceInFile(root+"README.md", toPascalCase(oldProjectName), toPascalCase(newName))
+	changed += replaceInFile(root+"README.md", oldTitled, newTitled)
+	changed += replaceInFileSafe(root+"README.md", oldProjectName, newName)
 
 	// 6. Update Cursor rules (may reference module path in examples)
 	mdcFiles := findFiles(root+".cursor/rules/", ".mdc")
@@ -81,6 +83,9 @@ func main() {
 	for _, f := range docFiles {
 		changed += replaceInFile(f, oldModule, newModule)
 		changed += replaceInFileSafe(f, oldProjectName, newName)
+		if !isHistoricalDoc(f) {
+			changed += replaceInFile(f, oldTitled, newTitled)
+		}
 	}
 
 	// 8. Update frontend source files (branding in titles, meta tags, navbar, footer)
@@ -100,20 +105,42 @@ func main() {
 		changed += replaceInFile(f, oldUpper, newUpper)
 	}
 
+	// 8c. Update frontend tests (e2e + unit — same branding as src)
+	for _, ext := range []string{".tsx", ".ts"} {
+		testFiles := findFiles(root+"frontend/tests/", ext)
+		for _, f := range testFiles {
+			changed += replaceInFile(f, oldTitled, newTitled)
+			changed += replaceInFileSafe(f, oldProjectName, newName)
+			changed += replaceInFile(f, oldUpper, newUpper)
+		}
+	}
+
 	// 9. Update root-level community files (SECURITY, CHANGELOG, CONTRIBUTING)
-	for _, f := range []string{"SECURITY.md", "CHANGELOG.md", "CONTRIBUTING.md"} {
+	for _, f := range []string{"SECURITY.md", "CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"} {
 		changed += replaceInFile(root+f, oldGitHubRepo, newGitHubRepo)
 		changed += replaceInFile(root+f, oldTitled, newTitled)
+		changed += replaceInFileSafe(root+f, oldProjectName, newName)
+	}
+
+	// 9b. Update GitHub issue templates
+	issueTemplates := findFiles(root+".github/ISSUE_TEMPLATE/", ".md")
+	for _, f := range issueTemplates {
+		changed += replaceInFile(f, oldGitHubRepo, newGitHubRepo)
+		changed += replaceInFile(f, oldTitled, newTitled)
+		changed += replaceInFileSafe(f, oldProjectName, newName)
 	}
 
 	// 10. Update CI/coverage config (GitHub repo references)
 	changed += replaceInFile(root+"codecov.yml", oldModule, newModule)
 
 	// 11. Update environment config files (APP_NAME, DB_USER)
-	for _, envFile := range []string{"config/.env.qa", "config/.env.prod", "config/.env.example"} {
-		changed += replaceInFile(root+envFile, oldTitled, newTitled)
-		changed += replaceInFileSafe(root+envFile, oldProjectName, newName)
-		changed += replaceInFile(root+envFile, oldUpper, newUpper)
+	for _, envFile := range findEnvFiles(root + "config/") {
+		changed += replaceInFile(envFile, oldTitled, newTitled)
+		changed += replaceInFileSafe(envFile, oldProjectName, newName)
+		changed += replaceInFile(envFile, oldUpper, newUpper)
+	}
+	if _, err := os.Stat(root + "config/.env.local"); os.IsNotExist(err) {
+		fmt.Println("  Note: config/.env.local not found — copy from .env.example and set APP_NAME/DB_NAME if you use local env")
 	}
 
 	// 12. Update deploy/teardown scripts and scripts README
@@ -139,6 +166,7 @@ func main() {
 	infraFiles := findFiles(root+"infra/", ".yaml")
 	for _, f := range infraFiles {
 		changed += replaceInFileSafe(f, oldProjectName, newName)
+		changed += replaceInFile(f, oldTitled, newTitled)
 	}
 	ciFiles := findFiles(root+".github/workflows/", ".yml")
 	for _, f := range ciFiles {
@@ -213,6 +241,25 @@ func repoRoot() string {
 		return "../"
 	}
 	return ""
+}
+
+func isHistoricalDoc(path string) bool {
+	return strings.Contains(path, "docs/decisions/") || strings.Contains(path, "docs/plans/archive/")
+}
+
+func findEnvFiles(dir string) []string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, ".env.") {
+			files = append(files, filepath.Join(dir, name))
+		}
+	}
+	return files
 }
 
 func findFiles(dir, ext string) []string {
