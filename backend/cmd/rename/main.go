@@ -509,9 +509,7 @@ func replaceDomain(root, newName, newDomain string) int {
 		root+"scripts/setup-domain.sh",
 		root+"README.md",
 	)
-	for _, envFile := range findEnvFiles(root + "config/") {
-		paths = append(paths, envFile)
-	}
+	paths = append(paths, findEnvFiles(root+"config/")...)
 	mdcFiles := findFiles(root+".cursor/rules/", ".mdc")
 	paths = append(paths, mdcFiles...)
 	for _, ext := range []string{".tsx", ".ts"} {
